@@ -39,7 +39,7 @@ func main() {
 		metricName := request.PathValue("name")
 		metricValue := request.PathValue("value")
 
-		// Проверяем, что передан валидный тип и не пустое значение
+		// Проверяем, что передан валидный тип
 		metricTypes := []string{metricTypeGauge, metricTypeCounter}
 		if !slices.Contains(metricTypes, metricType) {
 			writer.WriteHeader(http.StatusBadRequest)
