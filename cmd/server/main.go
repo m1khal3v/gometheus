@@ -47,13 +47,13 @@ func main() {
 		}
 
 		// Проверяем, что название не пустое
-		if "" == strings.TrimSpace(metricName) {
+		if strings.TrimSpace(metricName) == "" {
 			writer.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		// Проверяем, что передано непустое значение метрики
-		if "" == strings.TrimSpace(metricValue) {
+		if strings.TrimSpace(metricValue) == "" {
 			writer.WriteHeader(http.StatusBadRequest)
 			return
 		}
