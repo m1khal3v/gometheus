@@ -29,10 +29,10 @@ func main() {
 		}
 
 		// Проверяем, что передан валидный Content-Type
-		if request.Header.Get("Content-Type") != "text/plain" {
-			writer.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		// if request.Header.Get("Content-Type") != "text/plain" {
+		//	writer.WriteHeader(http.StatusBadRequest)
+		//	return
+		// }
 
 		// Разбираем путь
 		metricType := request.PathValue("type")
