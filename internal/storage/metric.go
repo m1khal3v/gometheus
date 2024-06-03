@@ -123,7 +123,7 @@ func NewMetric(metricType string, name string, value any) (*Metric, error) {
 	}
 }
 
-func (metric Metric) GetValue() any {
+func (metric *Metric) GetValue() any {
 	switch metric.Type {
 	case MetricTypeGauge:
 		return metric.FloatValue
@@ -132,8 +132,4 @@ func (metric Metric) GetValue() any {
 	}
 
 	return nil
-}
-
-func (metric Metric) String() string {
-	return fmt.Sprintf("%v", metric.GetValue())
 }

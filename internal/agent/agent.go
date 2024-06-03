@@ -14,7 +14,7 @@ const pollInterval = 2 * time.Second
 const reportInterval = 10 * time.Second
 
 var mutex sync.Mutex
-var allMetrics []*storage.Metric
+var allMetrics = make([]*storage.Metric, 0)
 
 func Start() {
 	go sendMetrics()
@@ -25,7 +25,8 @@ func Start() {
 }
 
 func collectMetrics() {
-	for range time.Tick(pollInterval) {
+	ticker := time.NewTicker(pollInterval)
+	for range ticker.C {
 		metrics, err := collector.CollectAll(
 			runtime.NewCollector(),
 			random.NewCollector(0, 512),
@@ -41,10 +42,11 @@ func collectMetrics() {
 }
 
 func sendMetrics() {
-	for range time.Tick(reportInterval) {
+	ticker := time.NewTicker(reportInterval)
+	for range ticker.C {
 		mutex.Lock()
 		for _, metric := range allMetrics {
-			err := client.SendMetric(*metric)
+			err := client.SendMetric(metric)
 			// TODO: logger
 			if err != nil {
 				return

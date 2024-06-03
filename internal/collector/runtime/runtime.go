@@ -66,7 +66,7 @@ func (collector *Collector) Collect() ([]*storage.Metric, error) {
 }
 
 func (collector *Collector) collectMetric(metrics []*storage.Metric, memStats *runtime.MemStats, name string) {
-	field := reflect.ValueOf(memStats).FieldByName(name)
+	field := reflect.ValueOf(*memStats).FieldByName(name)
 	if !field.IsValid() {
 		panic(fmt.Sprintf("Property '%v' not found in memStats", name))
 	}

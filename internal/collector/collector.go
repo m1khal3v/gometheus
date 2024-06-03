@@ -7,7 +7,7 @@ type Collector interface {
 }
 
 func CollectAll(collectors ...Collector) ([]*storage.Metric, error) {
-	var allMetrics []*storage.Metric
+	var allMetrics = make([]*storage.Metric, 0)
 
 	for _, collector := range collectors {
 		metrics, err := collector.Collect()

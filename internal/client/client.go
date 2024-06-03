@@ -8,14 +8,14 @@ import (
 
 const host = "http://localhost:8080/"
 
-func SendMetric(metric storage.Metric) error {
+func SendMetric(metric *storage.Metric) error {
 	response, err := http.Post(
 		fmt.Sprintf(
 			"%v/update/%v/%v/%v",
 			host,
 			metric.Type,
 			metric.Name,
-			metric.String(),
+			metric.GetValue(),
 		),
 		"text/plain",
 		nil,
@@ -23,6 +23,7 @@ func SendMetric(metric storage.Metric) error {
 	if err != nil {
 		return err
 	}
+	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
 		// TODO: когда будут нормальные ошибки можно будет сделать что-нибудь повеселее
