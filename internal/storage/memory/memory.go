@@ -20,6 +20,10 @@ func (storage *Storage) Save(metric *storages.Metric) error {
 		} else {
 			current.IntValue += metric.IntValue
 		}
+	default:
+		return storages.UnknownTypeError{
+			Type: metric.Type,
+		}
 	}
 
 	return nil
