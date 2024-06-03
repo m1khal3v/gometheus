@@ -133,3 +133,7 @@ func (metric Metric) GetValue() any {
 
 	return nil
 }
+
+func (metric Metric) String() string {
+	return fmt.Sprintf("%v", metric.GetValue())
+}
