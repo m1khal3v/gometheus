@@ -99,3 +99,55 @@ func TestStorage_Save(t *testing.T) {
 		})
 	}
 }
+
+func TestStorage_Get(t *testing.T) {
+	tests := []struct {
+		name       string
+		preset     map[string]*storages.Metric
+		metricName string
+		want       *storages.Metric
+	}{
+		{
+			name:       "empty storage",
+			preset:     map[string]*storages.Metric{},
+			metricName: "m1",
+			want:       nil,
+		},
+		{
+			name: "defined name",
+			preset: map[string]*storages.Metric{
+				"m2": {
+					Type:     storages.MetricTypeCounter,
+					Name:     "m2",
+					IntValue: int64(1),
+				},
+			},
+			metricName: "m2",
+			want: &storages.Metric{
+				Type:     storages.MetricTypeCounter,
+				Name:     "m2",
+				IntValue: int64(1),
+			},
+		},
+		{
+			name: "undefined name",
+			preset: map[string]*storages.Metric{
+				"m3": {
+					Type:       storages.MetricTypeGauge,
+					Name:       "m3",
+					FloatValue: float64(1.1),
+				},
+			},
+			metricName: "m4",
+			want:       nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := &Storage{
+				Metrics: tt.preset,
+			}
+			assert.Equal(t, tt.want, storage.Get(tt.metricName))
+		})
+	}
+}

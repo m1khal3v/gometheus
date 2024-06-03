@@ -8,6 +8,10 @@ type Storage struct {
 	Metrics map[string]*storages.Metric
 }
 
+func (storage *Storage) Get(name string) *storages.Metric {
+	return storage.Metrics[name]
+}
+
 func (storage *Storage) Save(metric *storages.Metric) error {
 	switch metric.Type {
 	case storages.MetricTypeGauge:
