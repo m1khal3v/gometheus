@@ -1,0 +1,37 @@
+package route
+
+import (
+	"errors"
+	storages "github.com/m1khal3v/gometheus/internal/storage"
+	"net/http"
+	"strings"
+)
+
+func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *http.Request) {
+	// Разбираем путь
+	metricType := request.PathValue("type")
+	metricName := request.PathValue("name")
+
+	// Проверяем, что тип не пустой
+	if strings.TrimSpace(metricType) == "" {
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	metric, err := routeContainer.Storage.Get(metricName)
+	// Проверяем что метрика существует и передан верный тип
+	if errors.Is(err, storages.MetricNotFoundError{}) || metric.Type != metricType {
+		writer.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// Отдаем значение метрики
+	writer.Header().Set("Content-Type", "text/plain")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte(metric.GetStringValue()))
+}

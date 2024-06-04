@@ -1,24 +1,13 @@
 package route
 
 import (
-	"github.com/m1khal3v/gometheus/internal/storage"
+	"github.com/m1khal3v/gometheus/internal/logger"
+	"github.com/m1khal3v/gometheus/internal/store"
 	"net/http"
 	"strings"
 )
 
 func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *http.Request) {
-	// Разрешаем только POST
-	if request.Method != http.MethodPost {
-		writer.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Проверяем, что передан валидный Content-Type
-	// if request.Header.Get("Content-Type") != "text/plain" {
-	//	writer.WriteHeader(http.StatusBadRequest)
-	//	return
-	// }
-
 	// Разбираем путь
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
@@ -36,21 +25,20 @@ func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *
 		return
 	}
 
-	// Проверяем, что передано непустое значение метрики
-	if strings.TrimSpace(metricValue) == "" {
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	// Создаем метрику и обрабатываем ошибки
-	metric, err := storage.NewMetric(metricType, metricName, metricValue)
+	metric, err := store.NewMetric(metricType, metricName, metricValue)
 	if err != nil {
+		logger.Logger.Error(err.Error())
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Сохраняем метрику и обрабатываем ошибки
-	if routeContainer.Storage.Save(metric) != nil {
+	err = routeContainer.Storage.Save(metric)
+	if err != nil {
+		logger.Logger.Fatal(err.Error())
 		writer.WriteHeader(http.StatusInternalServerError)
 	}
+
+	writer.WriteHeader(http.StatusOK)
 }

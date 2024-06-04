@@ -1,4 +1,4 @@
-package storage
+package store
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -178,6 +178,28 @@ func TestNewMetric(t *testing.T) {
 			},
 			wantErr: InvalidValueError{
 				Value: "123.321",
+			},
+		},
+		{
+			name: "empty gauge string value",
+			args: args{
+				metricType: "gauge",
+				name:       "test empty gauge string value",
+				value:      "",
+			},
+			wantErr: InvalidValueError{
+				Value: "",
+			},
+		},
+		{
+			name: "empty counter string value",
+			args: args{
+				metricType: "counter",
+				name:       "test empty counter string value",
+				value:      "",
+			},
+			wantErr: InvalidValueError{
+				Value: "",
 			},
 		},
 		{

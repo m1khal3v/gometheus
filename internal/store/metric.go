@@ -1,4 +1,4 @@
-package storage
+package store
 
 import (
 	"fmt"
@@ -77,6 +77,10 @@ func resolveInt64Value(metricType string, name string, value int64) (*Metric, er
 }
 
 func resolveStringValue(metricType string, name string, value string) (*Metric, error) {
+	if value == "" {
+		return nil, newInvalidValueError(value)
+	}
+
 	switch metricType {
 	case MetricTypeGauge:
 		metricConvertedValue, err := strconv.ParseFloat(value, 64)
@@ -106,9 +110,9 @@ func resolveStringValue(metricType string, name string, value string) (*Metric, 
 }
 
 func NewMetric(metricType string, name string, value any) (*Metric, error) {
-	metricTypes := []string{MetricTypeGauge, MetricTypeCounter}
-	if !slices.Contains(metricTypes, metricType) {
-		return nil, newUnknownTypeError(metricType)
+	err := ValidateMetricType(metricType)
+	if nil != err {
+		return nil, err
 	}
 
 	switch typeValue := value.(type) {
@@ -123,6 +127,19 @@ func NewMetric(metricType string, name string, value any) (*Metric, error) {
 	}
 }
 
+func ValidateMetricType(metricType string) error {
+	metricTypes := []string{
+		MetricTypeGauge,
+		MetricTypeCounter,
+	}
+
+	if !slices.Contains(metricTypes, metricType) {
+		return newUnknownTypeError(metricType)
+	}
+
+	return nil
+}
+
 func (metric *Metric) GetValue() any {
 	switch metric.Type {
 	case MetricTypeGauge:
@@ -132,4 +149,8 @@ func (metric *Metric) GetValue() any {
 	}
 
 	return nil
+}
+
+func (metric *Metric) GetStringValue() string {
+	return fmt.Sprintf("%v", metric.GetValue())
 }

@@ -2,7 +2,7 @@ package runtime
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/storage"
+	"github.com/m1khal3v/gometheus/internal/store"
 	"reflect"
 	"runtime"
 )
@@ -47,10 +47,10 @@ func NewCollector() *Collector {
 	return &Collector{PollCount: 0}
 }
 
-func (collector *Collector) Collect() ([]*storage.Metric, error) {
+func (collector *Collector) Collect() ([]*store.Metric, error) {
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
-	metrics := make([]*storage.Metric, 0, 29)
+	metrics := make([]*store.Metric, 0, 28)
 	for _, name := range getCollectableMemStatsMetrics() {
 		metrics = append(metrics, collector.collectMetric(memStats, name))
 	}
@@ -60,19 +60,19 @@ func (collector *Collector) Collect() ([]*storage.Metric, error) {
 	return metrics, nil
 }
 
-func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) *storage.Metric {
+func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) *store.Metric {
 	field := reflect.ValueOf(*memStats).FieldByName(name)
 	if !field.IsValid() {
 		panic(fmt.Sprintf("Property '%v' not found in memStats", name))
 	}
 
-	metric, err := storage.NewMetric(
-		storage.MetricTypeGauge,
+	metric, err := store.NewMetric(
+		store.MetricTypeGauge,
 		name,
 		field.Convert(reflect.TypeOf(float64(0))).Float(),
 	)
 	if err != nil {
-		panic(fmt.Sprintf("Can't create '%v' metric", name))
+		panic(err)
 	}
 
 	collector.PollCount = collector.PollCount + 1
@@ -80,15 +80,15 @@ func (collector *Collector) collectMetric(memStats *runtime.MemStats, name strin
 	return metric
 }
 
-func (collector *Collector) getPollCount() *storage.Metric {
-	metric, err := storage.NewMetric(
-		storage.MetricTypeCounter,
+func (collector *Collector) getPollCount() *store.Metric {
+	metric, err := store.NewMetric(
+		store.MetricTypeCounter,
 		"PollCount",
 		int64(collector.PollCount),
 	)
 
 	if err != nil {
-		panic("Can't create PollCount metric")
+		panic(err)
 	}
 
 	return metric

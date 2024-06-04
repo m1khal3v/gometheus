@@ -1,22 +1,27 @@
 package collector
 
-import "github.com/m1khal3v/gometheus/internal/storage"
+import (
+	"errors"
+	"github.com/m1khal3v/gometheus/internal/store"
+)
 
 type Collector interface {
-	Collect() ([]*storage.Metric, error)
+	Collect() ([]*store.Metric, error)
 }
 
-func CollectAll(collectors ...Collector) ([]*storage.Metric, error) {
-	var allMetrics = make([]*storage.Metric, 0)
+func CollectAll(collectors ...Collector) ([]*store.Metric, error) {
+	var allMetrics = make([]*store.Metric, 0)
+	var allErrors error = nil
 
 	for _, collector := range collectors {
 		metrics, err := collector.Collect()
 		if err != nil {
-			return nil, err
+			allErrors = errors.Join(allErrors, err)
+			continue
 		}
 
 		allMetrics = append(allMetrics, metrics...)
 	}
 
-	return allMetrics, nil
+	return allMetrics, allErrors
 }
