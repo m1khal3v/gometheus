@@ -17,7 +17,6 @@ func testRequest(t *testing.T, server *httptest.Server, method string, path stri
 
 	response, err := server.Client().Do(request)
 	require.NoError(t, err)
-	defer response.Body.Close()
 
 	responseBody, err := io.ReadAll(response.Body)
 	require.NoError(t, err)
@@ -116,6 +115,7 @@ func TestSaveMetric(t *testing.T) {
 				method = http.MethodPost
 			}
 			response, body := testRequest(t, server, method, path)
+			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
 		})
