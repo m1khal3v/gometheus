@@ -3,6 +3,7 @@ package route
 import (
 	"errors"
 	storages "github.com/m1khal3v/gometheus/internal/storage"
+	"github.com/m1khal3v/gometheus/internal/store"
 	"net/http"
 	"strings"
 )
@@ -13,7 +14,7 @@ func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *h
 	metricName := request.PathValue("name")
 
 	// Проверяем, что тип не пустой
-	if strings.TrimSpace(metricType) == "" {
+	if strings.TrimSpace(metricType) == "" || nil != store.ValidateMetricType(metricType) {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}

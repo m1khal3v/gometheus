@@ -6,11 +6,11 @@ import (
 	"github.com/leosunmo/zapchi"
 	"github.com/m1khal3v/gometheus/internal/logger"
 	"github.com/m1khal3v/gometheus/internal/route"
-	"github.com/m1khal3v/gometheus/internal/storage/memory"
+	storages "github.com/m1khal3v/gometheus/internal/storage"
 )
 
-func NewRouter() chi.Router {
-	routeContainer := route.NewRouteContainer(memory.NewStorage())
+func NewRouter(storage storages.Storage) chi.Router {
+	routeContainer := route.NewRouteContainer(storage)
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RealIP)

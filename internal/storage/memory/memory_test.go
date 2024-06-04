@@ -165,3 +165,40 @@ func TestStorage_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestStorage_GetAll(t *testing.T) {
+	tests := []struct {
+		name   string
+		preset map[string]*store.Metric
+	}{
+		{
+			name:   "empty storage",
+			preset: map[string]*store.Metric{},
+		},
+		{
+			name: "not empty storage",
+			preset: map[string]*store.Metric{
+				"m1": {
+					Name:       "m1",
+					Type:       "gauge",
+					FloatValue: float64(123.123),
+				},
+				"m2": {
+					Name:     "m2",
+					Type:     "counter",
+					IntValue: int64(123),
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := &Storage{
+				Metrics: tt.preset,
+			}
+			metrics, err := storage.GetAll()
+			assert.Nil(t, err)
+			assert.Equal(t, tt.preset, metrics)
+		})
+	}
+}
