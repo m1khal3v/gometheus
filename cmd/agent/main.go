@@ -37,5 +37,5 @@ func main() {
 		logger.Logger.Fatal(err.Error())
 	}
 
-	agent.Start(address, pollInterval, reportInterval)
+	agent.Start(config.Address, config.PollInterval, config.ReportInterval)
 }
