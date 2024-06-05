@@ -130,7 +130,7 @@ func TestStorage_Get(t *testing.T) {
 			},
 			metricName: "m2",
 			want: &_metric.Metric{
-				Type:     "gauge",
+				Type:     "counter",
 				Name:     "m2",
 				IntValue: int64(1),
 			},
