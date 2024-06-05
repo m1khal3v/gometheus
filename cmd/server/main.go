@@ -9,7 +9,7 @@ import (
 var endpoint string
 
 func init() {
-	flag.StringVarP(&endpoint, "endpoint", "e", "localhost:8080", "endpoint of gometheus server")
+	flag.StringVarP(&endpoint, "endpoint", "a", "localhost:8080", "endpoint of gometheus server")
 }
 
 func main() {
