@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/logger"
 	"github.com/m1khal3v/gometheus/internal/store"
 	"reflect"
 	"runtime"
@@ -63,7 +64,7 @@ func (collector *Collector) Collect() ([]*store.Metric, error) {
 func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) *store.Metric {
 	field := reflect.ValueOf(*memStats).FieldByName(name)
 	if !field.IsValid() {
-		panic(fmt.Sprintf("Property '%v' not found in memStats", name))
+		logger.Logger.Panic(fmt.Sprintf("Property '%v' not found in memStats", name))
 	}
 
 	metric, err := store.NewMetric(
@@ -72,7 +73,7 @@ func (collector *Collector) collectMetric(memStats *runtime.MemStats, name strin
 		field.Convert(reflect.TypeOf(float64(0))).Float(),
 	)
 	if err != nil {
-		panic(err)
+		logger.Logger.Panic(err.Error())
 	}
 
 	collector.PollCount = collector.PollCount + 1
@@ -88,7 +89,7 @@ func (collector *Collector) getPollCount() *store.Metric {
 	)
 
 	if err != nil {
-		panic(err)
+		logger.Logger.Panic(err.Error())
 	}
 
 	return metric

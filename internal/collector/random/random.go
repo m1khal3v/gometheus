@@ -2,6 +2,7 @@ package random
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/logger"
 	"github.com/m1khal3v/gometheus/internal/store"
 	"math/rand/v2"
 )
@@ -45,7 +46,7 @@ func (collector *Collector) Collect() ([]*store.Metric, error) {
 		rand.Float64()*(collector.Max-collector.Min)+collector.Min,
 	)
 	if err != nil {
-		panic(err)
+		logger.Logger.Panic(err.Error())
 	}
 
 	return []*store.Metric{metric}, nil

@@ -27,7 +27,7 @@ func collectMetrics(pollInterval uint32) {
 	runtimeCollector := runtime.NewCollector()
 	randomCollector, err := random.NewCollector(0, 512)
 	if err != nil {
-		panic(err)
+		logger.Logger.Panic(err.Error())
 	}
 
 	for range ticker.C {
