@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-func Start() {
-	err := http.ListenAndServe(`:8080`, router.NewRouter(memory.NewStorage()))
+func Start(endpoint string) {
+	err := http.ListenAndServe(endpoint, router.NewRouter(memory.NewStorage()))
 	if err != nil {
 		panic(err)
 	}

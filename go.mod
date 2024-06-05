@@ -6,6 +6,7 @@ require (
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-resty/resty/v2 v2.13.1
 	github.com/leosunmo/zapchi v0.1.1
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.27.0
 )

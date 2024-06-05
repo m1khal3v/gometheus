@@ -7,8 +7,6 @@ import (
 	"net/http"
 )
 
-const baseURL = "http://localhost:8080/"
-
 type Client struct {
 	resty *resty.Client
 }
@@ -27,9 +25,9 @@ func newUnexpectedStatusError(status int) UnexpectedStatusError {
 	}
 }
 
-func NewClient() *Client {
+func NewClient(endpoint string) *Client {
 	return &Client{
-		resty: resty.New().SetBaseURL(baseURL),
+		resty: resty.New().SetBaseURL(fmt.Sprintf("http://%s/", endpoint)),
 	}
 }
 

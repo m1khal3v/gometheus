@@ -11,23 +11,19 @@ import (
 	"time"
 )
 
-const pollInterval = 2 * time.Second
-const reportInterval = 10 * time.Second
-
 var mutex sync.Mutex
 var allMetrics = make([]*store.Metric, 0)
-var apiClient = client.NewClient()
 
-func Start() {
-	go collectMetrics()
-	go sendMetrics()
+func Start(endpoint string, pollInterval uint32, reportInterval uint32) {
+	go collectMetrics(pollInterval)
+	go sendMetrics(endpoint, reportInterval)
 	for {
 		time.Sleep(1 * time.Second)
 	}
 }
 
-func collectMetrics() {
-	ticker := time.NewTicker(pollInterval)
+func collectMetrics(pollInterval uint32) {
+	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	runtimeCollector := runtime.NewCollector()
 	randomCollector, err := random.NewCollector(0, 512)
 	if err != nil {
@@ -48,8 +44,9 @@ func collectMetrics() {
 	}
 }
 
-func sendMetrics() {
-	ticker := time.NewTicker(reportInterval)
+func sendMetrics(endpoint string, reportInterval uint32) {
+	apiClient := client.NewClient(endpoint)
+	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		mutex.Lock()
 		retryMetrics := make([]*store.Metric, 0)
