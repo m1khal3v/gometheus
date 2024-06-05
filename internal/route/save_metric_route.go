@@ -36,8 +36,9 @@ func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *
 	// Сохраняем метрику и обрабатываем ошибки
 	err = routeContainer.Storage.Save(metric)
 	if err != nil {
-		logger.Logger.Fatal(err.Error())
+		logger.Logger.Error(err.Error())
 		writer.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	writer.WriteHeader(http.StatusOK)

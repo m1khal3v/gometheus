@@ -3,6 +3,7 @@ module github.com/m1khal3v/gometheus
 go 1.22.2
 
 require (
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-resty/resty/v2 v2.13.1
 	github.com/leosunmo/zapchi v0.1.1
