@@ -14,12 +14,9 @@ import (
 var mutex sync.Mutex
 var allMetrics = make([]*store.Metric, 0)
 
-func Start(endpoint string, pollInterval uint32, reportInterval uint32) {
+func Start(endpoint string, pollInterval, reportInterval uint32) {
 	go collectMetrics(pollInterval)
-	go sendMetrics(endpoint, reportInterval)
-	for {
-		time.Sleep(1 * time.Second)
-	}
+	sendMetrics(endpoint, reportInterval)
 }
 
 func collectMetrics(pollInterval uint32) {

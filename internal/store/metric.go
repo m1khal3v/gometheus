@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	MetricTypeGauge   string = "gauge"
-	MetricTypeCounter string = "counter"
+	MetricTypeGauge   = "gauge"
+	MetricTypeCounter = "counter"
 )
 
 type Metric struct {
@@ -18,41 +18,41 @@ type Metric struct {
 	IntValue   int64
 }
 
-type UnknownTypeError struct {
+type ErrUnknownType struct {
 	Type string
 }
 
-func (err UnknownTypeError) Error() string {
+func (err ErrUnknownType) Error() string {
 	return fmt.Sprintf("Metric type '%v' is not defined", err.Type)
 }
 
-func newUnknownTypeError(metricType string) UnknownTypeError {
-	return UnknownTypeError{
+func newUnknownTypeError(metricType string) ErrUnknownType {
+	return ErrUnknownType{
 		Type: metricType,
 	}
 }
 
-type InvalidValueError struct {
+type ErrInvalidValue struct {
 	Value string
 }
 
-func (err InvalidValueError) Error() string {
+func (err ErrInvalidValue) Error() string {
 	return fmt.Sprintf("Metric value '%v' is invalid", err.Value)
 }
 
-func newInvalidValueError(value string) InvalidValueError {
-	return InvalidValueError{
+func newInvalidValueError(value string) ErrInvalidValue {
+	return ErrInvalidValue{
 		Value: value,
 	}
 }
 
-type InvalidValueTypeError struct{}
+type ErrInvalidValueType struct{}
 
-func (err InvalidValueTypeError) Error() string {
+func (err ErrInvalidValueType) Error() string {
 	return "Value type is not supported"
 }
 
-func resolveFloat64Value(metricType string, name string, value float64) (*Metric, error) {
+func resolveFloat64Value(metricType, name string, value float64) (*Metric, error) {
 	if metricType != MetricTypeGauge {
 		return nil, newInvalidValueError(strconv.FormatFloat(value, 'f', -1, 64))
 	}
@@ -64,7 +64,7 @@ func resolveFloat64Value(metricType string, name string, value float64) (*Metric
 	}, nil
 }
 
-func resolveInt64Value(metricType string, name string, value int64) (*Metric, error) {
+func resolveInt64Value(metricType, name string, value int64) (*Metric, error) {
 	if metricType != MetricTypeCounter {
 		return nil, newInvalidValueError(strconv.FormatInt(value, 10))
 	}
@@ -76,7 +76,7 @@ func resolveInt64Value(metricType string, name string, value int64) (*Metric, er
 	}, nil
 }
 
-func resolveStringValue(metricType string, name string, value string) (*Metric, error) {
+func resolveStringValue(metricType, name string, value string) (*Metric, error) {
 	if value == "" {
 		return nil, newInvalidValueError(value)
 	}
@@ -109,7 +109,7 @@ func resolveStringValue(metricType string, name string, value string) (*Metric, 
 	}
 }
 
-func NewMetric(metricType string, name string, value any) (*Metric, error) {
+func NewMetric(metricType, name string, value any) (*Metric, error) {
 	err := ValidateMetricType(metricType)
 	if nil != err {
 		return nil, err
@@ -123,7 +123,7 @@ func NewMetric(metricType string, name string, value any) (*Metric, error) {
 	case string:
 		return resolveStringValue(metricType, name, typeValue)
 	default:
-		return nil, InvalidValueTypeError{}
+		return nil, ErrInvalidValueType{}
 	}
 }
 

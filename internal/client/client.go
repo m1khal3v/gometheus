@@ -11,16 +11,16 @@ type Client struct {
 	resty *resty.Client
 }
 
-type UnexpectedStatusError struct {
+type ErrUnexpectedStatus struct {
 	Status int
 }
 
-func (err UnexpectedStatusError) Error() string {
+func (err ErrUnexpectedStatus) Error() string {
 	return fmt.Sprintf("Unexpected status code: %v", err.Status)
 }
 
-func newUnexpectedStatusError(status int) UnexpectedStatusError {
-	return UnexpectedStatusError{
+func newUnexpectedStatusError(status int) ErrUnexpectedStatus {
+	return ErrUnexpectedStatus{
 		Status: status,
 	}
 }

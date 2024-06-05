@@ -132,7 +132,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid metric type",
 				value:      "123",
 			},
-			wantErr: UnknownTypeError{
+			wantErr: ErrUnknownType{
 				Type: "invalid",
 			},
 		},
@@ -143,7 +143,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid gauge value",
 				value:      int64(123),
 			},
-			wantErr: InvalidValueError{
+			wantErr: ErrInvalidValue{
 				Value: "123",
 			},
 		},
@@ -154,7 +154,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid counter value",
 				value:      float64(123.321),
 			},
-			wantErr: InvalidValueError{
+			wantErr: ErrInvalidValue{
 				Value: "123.321",
 			},
 		},
@@ -165,7 +165,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid gauge string value",
 				value:      "1b42",
 			},
-			wantErr: InvalidValueError{
+			wantErr: ErrInvalidValue{
 				Value: "1b42",
 			},
 		},
@@ -176,7 +176,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid counter string value",
 				value:      "123.321",
 			},
-			wantErr: InvalidValueError{
+			wantErr: ErrInvalidValue{
 				Value: "123.321",
 			},
 		},
@@ -187,7 +187,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test empty gauge string value",
 				value:      "",
 			},
-			wantErr: InvalidValueError{
+			wantErr: ErrInvalidValue{
 				Value: "",
 			},
 		},
@@ -198,7 +198,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test empty counter string value",
 				value:      "",
 			},
-			wantErr: InvalidValueError{
+			wantErr: ErrInvalidValue{
 				Value: "",
 			},
 		},
@@ -209,7 +209,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid value type int32",
 				value:      int32(123),
 			},
-			wantErr: InvalidValueTypeError{},
+			wantErr: ErrInvalidValueType{},
 		},
 		{
 			name: "invalid value type float32",
@@ -218,7 +218,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid value type float32",
 				value:      float32(123.321),
 			},
-			wantErr: InvalidValueTypeError{},
+			wantErr: ErrInvalidValueType{},
 		},
 		{
 			name: "invalid value type bool",
@@ -227,7 +227,7 @@ func TestNewMetric(t *testing.T) {
 				name:       "test invalid value type float32",
 				value:      true,
 			},
-			wantErr: InvalidValueTypeError{},
+			wantErr: ErrInvalidValueType{},
 		},
 	}
 	for _, tt := range tests {

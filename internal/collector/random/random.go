@@ -12,23 +12,23 @@ type Collector struct {
 	Max float64
 }
 
-type MinGreaterThanMaxError struct {
+type ErrMinGreaterThanMax struct {
 	Min float64
 	Max float64
 }
 
-func (err MinGreaterThanMaxError) Error() string {
+func (err ErrMinGreaterThanMax) Error() string {
 	return fmt.Sprintf("Min=%v can`t be greater than Max=%v", err.Min, err.Max)
 }
 
-func newMinGreaterThanMaxError(min float64, max float64) MinGreaterThanMaxError {
-	return MinGreaterThanMaxError{
+func newMinGreaterThanMaxError(min, max float64) ErrMinGreaterThanMax {
+	return ErrMinGreaterThanMax{
 		Min: min,
 		Max: max,
 	}
 }
 
-func NewCollector(min float64, max float64) (*Collector, error) {
+func NewCollector(min, max float64) (*Collector, error) {
 	if max < min {
 		return nil, newMinGreaterThanMaxError(min, max)
 	}
@@ -43,6 +43,9 @@ func (collector *Collector) Collect() ([]*store.Metric, error) {
 	metric, err := store.NewMetric(
 		store.MetricTypeGauge,
 		"RandomValue",
+		// так как rand.Float64 возвращает значение от 0 до 1 и не поддерживает Min/Max
+		// исправляем это домножая значение на разницу Max и Min и добавляя к результату Min
+		// итоговое значение будет в диапазоне от Min до Max включая оба значения
 		rand.Float64()*(collector.Max-collector.Min)+collector.Min,
 	)
 	if err != nil {

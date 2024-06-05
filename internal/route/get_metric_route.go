@@ -21,7 +21,7 @@ func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *h
 	metric, err := routeContainer.Storage.Get(metricName)
 	// Проверяем что метрика существует и передан верный тип
 	if err != nil {
-		if errors.As(err, &storages.MetricNotFoundError{}) {
+		if errors.As(err, &storages.ErrMetricNotFound{}) {
 			writer.WriteHeader(http.StatusNotFound)
 		} else {
 			writer.WriteHeader(http.StatusInternalServerError)

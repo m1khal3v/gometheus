@@ -126,9 +126,6 @@ func TestSaveMetric(t *testing.T) {
 }
 
 func TestGetMetric(t *testing.T) {
-	storage := memory.NewStorage()
-	server := httptest.NewServer(router.NewRouter(storage))
-	defer server.Close()
 	tests := []struct {
 		method             string
 		name               string
@@ -250,7 +247,12 @@ func TestGetMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage.Metrics = tt.preset
+			storage := memory.NewStorage()
+			server := httptest.NewServer(router.NewRouter(storage))
+			defer server.Close()
+			for _, metric := range tt.preset {
+				storage.Save(metric)
+			}
 			path := fmt.Sprintf(
 				"/value/%v/%v",
 				tt.metricType,
@@ -269,9 +271,6 @@ func TestGetMetric(t *testing.T) {
 }
 
 func TestGetAllMetrics(t *testing.T) {
-	storage := memory.NewStorage()
-	server := httptest.NewServer(router.NewRouter(storage))
-	defer server.Close()
 	tests := []struct {
 		method             string
 		name               string
@@ -343,7 +342,12 @@ func TestGetAllMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage.Metrics = tt.preset
+			storage := memory.NewStorage()
+			server := httptest.NewServer(router.NewRouter(storage))
+			defer server.Close()
+			for _, metric := range tt.preset {
+				storage.Save(metric)
+			}
 			method := tt.method
 			if method == "" {
 				method = http.MethodGet

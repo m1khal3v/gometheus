@@ -11,23 +11,20 @@ type Config struct {
 	Address string `env:"ADDRESS"`
 }
 
-var address string
-
-func init() {
-	flag.StringVarP(&address, "address", "a", "localhost:8080", "address of gometheus server")
-}
-
-func main() {
-	defer logger.Logger.Sync()
-
+func parseConfig() Config {
+	config := Config{}
+	flag.StringVarP(&config.Address, "address", "a", "localhost:8080", "address of gometheus server")
 	flag.Parse()
-	config := Config{
-		Address: address,
-	}
 	err := env.Parse(&config)
 	if err != nil {
 		logger.Logger.Fatal(err.Error())
 	}
 
+	return config
+}
+
+func main() {
+	defer logger.Logger.Sync()
+	config := parseConfig()
 	server.Start(config.Address)
 }

@@ -13,29 +13,22 @@ type Config struct {
 	ReportInterval uint32 `env:"REPORT_INTERVAL"`
 }
 
-var address string
-var pollInterval uint32
-var reportInterval uint32
-
-func init() {
-	flag.StringVarP(&address, "address", "a", "localhost:8080", "address of gometheus server")
-	flag.Uint32VarP(&pollInterval, "poll-interval", "p", 2, "interval of collecting metrics")
-	flag.Uint32VarP(&reportInterval, "report-interval", "r", 10, "interval of reporting metrics")
-}
-
-func main() {
-	defer logger.Logger.Sync()
-
+func parseConfig() Config {
+	config := Config{}
+	flag.StringVarP(&config.Address, "address", "a", "localhost:8080", "address of gometheus server")
+	flag.Uint32VarP(&config.PollInterval, "poll-interval", "p", 2, "interval of collecting metrics")
+	flag.Uint32VarP(&config.ReportInterval, "report-interval", "r", 10, "interval of reporting metrics")
 	flag.Parse()
-	config := Config{
-		Address:        address,
-		PollInterval:   pollInterval,
-		ReportInterval: reportInterval,
-	}
 	err := env.Parse(&config)
 	if err != nil {
 		logger.Logger.Fatal(err.Error())
 	}
 
+	return config
+}
+
+func main() {
+	defer logger.Logger.Sync()
+	config := parseConfig()
 	agent.Start(config.Address, config.PollInterval, config.ReportInterval)
 }

@@ -64,7 +64,7 @@ func TestNewCollector(t *testing.T) {
 			name: "invalid collector",
 			min:  2,
 			max:  1,
-			wantErr: MinGreaterThanMaxError{
+			wantErr: ErrMinGreaterThanMax{
 				Min: 2,
 				Max: 1,
 			},

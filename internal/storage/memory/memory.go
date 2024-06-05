@@ -6,20 +6,20 @@ import (
 )
 
 type Storage struct {
-	Metrics map[string]*store.Metric
+	metrics map[string]store.Metric
 }
 
 func (storage *Storage) Get(name string) (*store.Metric, error) {
-	value, ok := storage.Metrics[name]
+	value, ok := storage.metrics[name]
 	if !ok {
 		return nil, storages.NewMetricNotFoundError(name)
 	}
 
-	return value, nil
+	return &value, nil
 }
 
-func (storage *Storage) GetAll() (map[string]*store.Metric, error) {
-	return storage.Metrics, nil
+func (storage *Storage) GetAll() (map[string]store.Metric, error) {
+	return storage.metrics, nil
 }
 
 func (storage *Storage) Save(metric *store.Metric) error {
@@ -30,20 +30,19 @@ func (storage *Storage) Save(metric *store.Metric) error {
 
 	switch metric.Type {
 	case store.MetricTypeGauge:
-		storage.Metrics[metric.Name] = metric
+		storage.metrics[metric.Name] = *metric
 	case store.MetricTypeCounter:
-		current, ok := storage.Metrics[metric.Name]
-		// Если счетчик не существует или изменился тип - [пере]записываем
-		if !ok || metric.Type != current.Type {
-			storage.Metrics[metric.Name] = metric
-		} else {
-			current.IntValue += metric.IntValue
+		current, ok := storage.metrics[metric.Name]
+		// Если счетчик существует и тип не изменился складываем значения
+		if ok && metric.Type == current.Type {
+			metric.IntValue += current.IntValue
 		}
+		storage.metrics[metric.Name] = *metric
 	}
 
 	return nil
 }
 
 func NewStorage() *Storage {
-	return &Storage{Metrics: make(map[string]*store.Metric)}
+	return &Storage{metrics: make(map[string]store.Metric)}
 }

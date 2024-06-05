@@ -8,19 +8,19 @@ import (
 type Storage interface {
 	Save(metric *store.Metric) error
 	Get(name string) (*store.Metric, error)
-	GetAll() (map[string]*store.Metric, error)
+	GetAll() (map[string]store.Metric, error)
 }
 
-type MetricNotFoundError struct {
+type ErrMetricNotFound struct {
 	Name string
 }
 
-func (err MetricNotFoundError) Error() string {
+func (err ErrMetricNotFound) Error() string {
 	return fmt.Sprintf("Metric '%v' not found", err.Name)
 }
 
-func NewMetricNotFoundError(name string) MetricNotFoundError {
-	return MetricNotFoundError{
+func NewMetricNotFoundError(name string) ErrMetricNotFound {
+	return ErrMetricNotFound{
 		Name: name,
 	}
 }
