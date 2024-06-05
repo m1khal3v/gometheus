@@ -2,13 +2,13 @@ package storage
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 )
 
 type Storage interface {
-	Save(metric *store.Metric) error
-	Get(name string) (*store.Metric, error)
-	GetAll() (map[string]store.Metric, error)
+	Save(metric *_metric.Metric) error
+	Get(name string) (*_metric.Metric, error)
+	GetAll() (map[string]_metric.Metric, error)
 }
 
 type ErrMetricNotFound struct {

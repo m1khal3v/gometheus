@@ -3,7 +3,7 @@ package random
 import (
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"math/rand/v2"
 )
 
@@ -39,9 +39,9 @@ func NewCollector(min, max float64) (*Collector, error) {
 	}, nil
 }
 
-func (collector *Collector) Collect() ([]*store.Metric, error) {
-	metric, err := store.NewMetric(
-		store.MetricTypeGauge,
+func (collector *Collector) Collect() ([]*_metric.Metric, error) {
+	metric, err := _metric.NewMetric(
+		_metric.TypeGauge,
 		"RandomValue",
 		// так как rand.Float64 возвращает значение от 0 до 1 и не поддерживает Min/Max
 		// исправляем это домножая значение на разницу Max и Min и добавляя к результату Min
@@ -52,5 +52,5 @@ func (collector *Collector) Collect() ([]*store.Metric, error) {
 		logger.Logger.Panic(err.Error())
 	}
 
-	return []*store.Metric{metric}, nil
+	return []*_metric.Metric{metric}, nil
 }

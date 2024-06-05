@@ -2,7 +2,7 @@ package route
 
 import (
 	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"net/http"
 	"strings"
 )
@@ -26,7 +26,7 @@ func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *
 	}
 
 	// Создаем метрику и обрабатываем ошибки
-	metric, err := store.NewMetric(metricType, metricName, metricValue)
+	metric, err := _metric.NewMetric(metricType, metricName, metricValue)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		writer.WriteHeader(http.StatusBadRequest)

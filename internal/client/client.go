@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"net/http"
 )
 
@@ -31,7 +31,7 @@ func NewClient(endpoint string) *Client {
 	}
 }
 
-func (client *Client) SendMetric(metric *store.Metric) error {
+func (client *Client) SendMetric(metric *_metric.Metric) error {
 	response, err := client.resty.R().SetPathParams(map[string]string{
 		"type":  metric.Type,
 		"name":  metric.Name,

@@ -2,8 +2,8 @@ package route
 
 import (
 	"errors"
-	storages "github.com/m1khal3v/gometheus/internal/storage"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
+	_storage "github.com/m1khal3v/gometheus/internal/storage"
 	"net/http"
 )
 
@@ -13,7 +13,7 @@ func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *h
 	metricName := request.PathValue("name")
 
 	// Проверяем, что тип валидный
-	if nil != store.ValidateMetricType(metricType) {
+	if nil != _metric.ValidateMetricType(metricType) {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -21,7 +21,7 @@ func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *h
 	metric, err := routeContainer.Storage.Get(metricName)
 	// Проверяем что метрика существует и передан верный тип
 	if err != nil {
-		if errors.As(err, &storages.ErrMetricNotFound{}) {
+		if errors.As(err, &_storage.ErrMetricNotFound{}) {
 			writer.WriteHeader(http.StatusNotFound)
 		} else {
 			writer.WriteHeader(http.StatusInternalServerError)

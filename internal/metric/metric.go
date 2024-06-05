@@ -1,4 +1,4 @@
-package store
+package metric
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	MetricTypeGauge   = "gauge"
-	MetricTypeCounter = "counter"
+	TypeGauge   = "gauge"
+	TypeCounter = "counter"
 )
 
 type Metric struct {
@@ -53,24 +53,24 @@ func (err ErrInvalidValueType) Error() string {
 }
 
 func resolveFloat64Value(metricType, name string, value float64) (*Metric, error) {
-	if metricType != MetricTypeGauge {
+	if metricType != TypeGauge {
 		return nil, newInvalidValueError(strconv.FormatFloat(value, 'f', -1, 64))
 	}
 
 	return &Metric{
-		Type:       MetricTypeGauge,
+		Type:       TypeGauge,
 		Name:       name,
 		FloatValue: value,
 	}, nil
 }
 
 func resolveInt64Value(metricType, name string, value int64) (*Metric, error) {
-	if metricType != MetricTypeCounter {
+	if metricType != TypeCounter {
 		return nil, newInvalidValueError(strconv.FormatInt(value, 10))
 	}
 
 	return &Metric{
-		Type:     MetricTypeCounter,
+		Type:     TypeCounter,
 		Name:     name,
 		IntValue: value,
 	}, nil
@@ -82,25 +82,25 @@ func resolveStringValue(metricType, name string, value string) (*Metric, error) 
 	}
 
 	switch metricType {
-	case MetricTypeGauge:
+	case TypeGauge:
 		metricConvertedValue, err := strconv.ParseFloat(value, 64)
 		if nil != err {
 			return nil, newInvalidValueError(value)
 		}
 
 		return &Metric{
-			Type:       MetricTypeGauge,
+			Type:       TypeGauge,
 			Name:       name,
 			FloatValue: metricConvertedValue,
 		}, nil
-	case MetricTypeCounter:
+	case TypeCounter:
 		metricConvertedValue, err := strconv.ParseInt(value, 10, 64)
 		if nil != err {
 			return nil, newInvalidValueError(value)
 		}
 
 		return &Metric{
-			Type:     MetricTypeCounter,
+			Type:     TypeCounter,
 			Name:     name,
 			IntValue: metricConvertedValue,
 		}, nil
@@ -129,8 +129,8 @@ func NewMetric(metricType, name string, value any) (*Metric, error) {
 
 func ValidateMetricType(metricType string) error {
 	metricTypes := []string{
-		MetricTypeGauge,
-		MetricTypeCounter,
+		TypeGauge,
+		TypeCounter,
 	}
 
 	if !slices.Contains(metricTypes, metricType) {
@@ -142,9 +142,9 @@ func ValidateMetricType(metricType string) error {
 
 func (metric *Metric) GetValue() any {
 	switch metric.Type {
-	case MetricTypeGauge:
+	case TypeGauge:
 		return metric.FloatValue
-	case MetricTypeCounter:
+	case TypeCounter:
 		return metric.IntValue
 	}
 

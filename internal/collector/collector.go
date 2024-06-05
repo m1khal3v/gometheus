@@ -2,15 +2,15 @@ package collector
 
 import (
 	"errors"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 )
 
 type Collector interface {
-	Collect() ([]*store.Metric, error)
+	Collect() ([]*_metric.Metric, error)
 }
 
-func CollectAll(collectors ...Collector) ([]*store.Metric, error) {
-	var allMetrics = make([]*store.Metric, 0)
+func CollectAll(collectors ...Collector) ([]*_metric.Metric, error) {
+	var allMetrics = make([]*_metric.Metric, 0)
 	var allErrors error = nil
 
 	for _, collector := range collectors {

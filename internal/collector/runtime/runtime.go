@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"reflect"
 	"runtime"
 )
@@ -48,10 +48,10 @@ func NewCollector() *Collector {
 	return &Collector{PollCount: 0}
 }
 
-func (collector *Collector) Collect() ([]*store.Metric, error) {
+func (collector *Collector) Collect() ([]*_metric.Metric, error) {
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
-	metrics := make([]*store.Metric, 0, 28)
+	metrics := make([]*_metric.Metric, 0, 28)
 	for _, name := range getCollectableMemStatsMetrics() {
 		metrics = append(metrics, collector.collectMetric(memStats, name))
 	}
@@ -61,14 +61,14 @@ func (collector *Collector) Collect() ([]*store.Metric, error) {
 	return metrics, nil
 }
 
-func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) *store.Metric {
+func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) *_metric.Metric {
 	field := reflect.ValueOf(*memStats).FieldByName(name)
 	if !field.IsValid() {
 		logger.Logger.Panic(fmt.Sprintf("Property '%v' not found in memStats", name))
 	}
 
-	metric, err := store.NewMetric(
-		store.MetricTypeGauge,
+	metric, err := _metric.NewMetric(
+		_metric.TypeGauge,
 		name,
 		field.Convert(reflect.TypeOf(float64(0))).Float(),
 	)
@@ -81,9 +81,9 @@ func (collector *Collector) collectMetric(memStats *runtime.MemStats, name strin
 	return metric
 }
 
-func (collector *Collector) getPollCount() *store.Metric {
-	metric, err := store.NewMetric(
-		store.MetricTypeCounter,
+func (collector *Collector) getPollCount() *_metric.Metric {
+	metric, err := _metric.NewMetric(
+		_metric.TypeCounter,
 		"PollCount",
 		int64(collector.PollCount),
 	)

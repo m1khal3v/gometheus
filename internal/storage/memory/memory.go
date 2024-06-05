@@ -1,37 +1,37 @@
 package memory
 
 import (
-	storages "github.com/m1khal3v/gometheus/internal/storage"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
+	_storage "github.com/m1khal3v/gometheus/internal/storage"
 )
 
 type Storage struct {
-	metrics map[string]store.Metric
+	metrics map[string]_metric.Metric
 }
 
-func (storage *Storage) Get(name string) (*store.Metric, error) {
+func (storage *Storage) Get(name string) (*_metric.Metric, error) {
 	value, ok := storage.metrics[name]
 	if !ok {
-		return nil, storages.NewMetricNotFoundError(name)
+		return nil, _storage.NewMetricNotFoundError(name)
 	}
 
 	return &value, nil
 }
 
-func (storage *Storage) GetAll() (map[string]store.Metric, error) {
+func (storage *Storage) GetAll() (map[string]_metric.Metric, error) {
 	return storage.metrics, nil
 }
 
-func (storage *Storage) Save(metric *store.Metric) error {
-	err := store.ValidateMetricType(metric.Type)
+func (storage *Storage) Save(metric *_metric.Metric) error {
+	err := _metric.ValidateMetricType(metric.Type)
 	if err != nil {
 		return err
 	}
 
 	switch metric.Type {
-	case store.MetricTypeGauge:
+	case _metric.TypeGauge:
 		storage.metrics[metric.Name] = *metric
-	case store.MetricTypeCounter:
+	case _metric.TypeCounter:
 		current, ok := storage.metrics[metric.Name]
 		// Если счетчик существует и тип не изменился складываем значения
 		if ok && metric.Type == current.Type {
@@ -44,5 +44,5 @@ func (storage *Storage) Save(metric *store.Metric) error {
 }
 
 func NewStorage() *Storage {
-	return &Storage{metrics: make(map[string]store.Metric)}
+	return &Storage{metrics: make(map[string]_metric.Metric)}
 }

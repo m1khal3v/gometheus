@@ -2,9 +2,9 @@ package server
 
 import (
 	"fmt"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/router"
 	"github.com/m1khal3v/gometheus/internal/storage/memory"
-	"github.com/m1khal3v/gometheus/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -129,7 +129,7 @@ func TestGetMetric(t *testing.T) {
 	tests := []struct {
 		method             string
 		name               string
-		preset             map[string]*store.Metric
+		preset             map[string]*_metric.Metric
 		metricType         string
 		metricName         string
 		expectedStatusCode int
@@ -139,7 +139,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "valid gauge",
 			metricType: "gauge",
 			metricName: "test gauge",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test gauge": {
 					Name:       "test gauge",
 					Type:       "gauge",
@@ -153,7 +153,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "valid counter",
 			metricType: "counter",
 			metricName: "test counter",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test counter": {
 					Name:     "test counter",
 					Type:     "counter",
@@ -167,7 +167,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid gauge",
 			metricType: "gauge",
 			metricName: "test invalid gauge",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test gauge": {
 					Name:       "test gauge",
 					Type:       "gauge",
@@ -180,7 +180,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid counter",
 			metricType: "counter",
 			metricName: "test invalid counter",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test counter": {
 					Name:     "test counter",
 					Type:     "counter",
@@ -193,7 +193,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "empty type",
 			metricType: "",
 			metricName: "test empty type",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test empty type": {
 					Name:       "test empty type",
 					Type:       "gauge",
@@ -206,7 +206,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid type",
 			metricType: "test",
 			metricName: "test invalid type",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test invalid type": {
 					Name:       "test invalid type",
 					Type:       "gauge",
@@ -220,7 +220,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "empty name",
 			metricType: "gauge",
 			metricName: "",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test gauge": {
 					Name:       "test gauge",
 					Type:       "gauge",
@@ -235,7 +235,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid method",
 			metricType: "counter",
 			metricName: "test invalid method",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test invalid method": {
 					Name:     "test invalid method",
 					Type:     "counter",
@@ -251,7 +251,7 @@ func TestGetMetric(t *testing.T) {
 			server := httptest.NewServer(router.NewRouter(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				_ = storage.Save(metric)
 			}
 			path := fmt.Sprintf(
 				"/value/%v/%v",
@@ -274,18 +274,18 @@ func TestGetAllMetrics(t *testing.T) {
 	tests := []struct {
 		method             string
 		name               string
-		preset             map[string]*store.Metric
+		preset             map[string]*_metric.Metric
 		expectedStatusCode int
 		expectedBody       string
 	}{
 		{
 			name:               "empty metrics",
-			preset:             map[string]*store.Metric{},
+			preset:             map[string]*_metric.Metric{},
 			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "not empty metrics",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test gauge": {
 					Name:       "test gauge",
 					Type:       "gauge",
@@ -317,7 +317,7 @@ func TestGetAllMetrics(t *testing.T) {
 		},
 		{
 			name: "single metric",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test gauge": {
 					Name:       "test gauge",
 					Type:       "gauge",
@@ -330,7 +330,7 @@ func TestGetAllMetrics(t *testing.T) {
 		{
 			method: http.MethodPost,
 			name:   "invalid method",
-			preset: map[string]*store.Metric{
+			preset: map[string]*_metric.Metric{
 				"test gauge": {
 					Name:       "test gauge",
 					Type:       "gauge",
@@ -346,7 +346,7 @@ func TestGetAllMetrics(t *testing.T) {
 			server := httptest.NewServer(router.NewRouter(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				_ = storage.Save(metric)
 			}
 			method := tt.method
 			if method == "" {

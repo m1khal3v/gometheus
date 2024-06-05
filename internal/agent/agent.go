@@ -6,13 +6,13 @@ import (
 	"github.com/m1khal3v/gometheus/internal/collector/random"
 	"github.com/m1khal3v/gometheus/internal/collector/runtime"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/store"
+	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"sync"
 	"time"
 )
 
 var mutex sync.Mutex
-var allMetrics = make([]*store.Metric, 0)
+var allMetrics = make([]*_metric.Metric, 0)
 
 func Start(endpoint string, pollInterval, reportInterval uint32) {
 	go collectMetrics(pollInterval)
@@ -46,7 +46,7 @@ func sendMetrics(endpoint string, reportInterval uint32) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		mutex.Lock()
-		retryMetrics := make([]*store.Metric, 0)
+		retryMetrics := make([]*_metric.Metric, 0)
 		for _, metric := range allMetrics {
 			err := apiClient.SendMetric(metric)
 			if err != nil {
