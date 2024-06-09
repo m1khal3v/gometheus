@@ -11,7 +11,7 @@ import (
 )
 
 type Collector struct {
-	PollCount uint8
+	pollCount uint8
 }
 
 func getCollectableMemStatsMetrics() []string {
@@ -47,7 +47,7 @@ func getCollectableMemStatsMetrics() []string {
 }
 
 func New() *Collector {
-	return &Collector{PollCount: 0}
+	return &Collector{pollCount: 0}
 }
 
 func (collector *Collector) Collect() ([]_metric.Metric, error) {
@@ -69,7 +69,7 @@ func (collector *Collector) collectMetric(memStats *runtime.MemStats, name strin
 		logger.Logger.Panic(fmt.Sprintf("Property '%v' not found in memStats", name))
 	}
 
-	collector.PollCount = collector.PollCount + 1
+	collector.pollCount = collector.pollCount + 1
 
 	return gauge.New(
 		name,
@@ -80,10 +80,10 @@ func (collector *Collector) collectMetric(memStats *runtime.MemStats, name strin
 func (collector *Collector) getPollCount() _metric.Metric {
 	return counter.New(
 		"PollCount",
-		int64(collector.PollCount),
+		int64(collector.pollCount),
 	)
 }
 
 func (collector *Collector) refreshPollCount() {
-	collector.PollCount = 0
+	collector.pollCount = 0
 }
