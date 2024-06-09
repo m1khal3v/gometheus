@@ -16,7 +16,7 @@ type ErrMetricNotFound struct {
 }
 
 func (err ErrMetricNotFound) Error() string {
-	return fmt.Sprintf("Metric '%v' not found", err.Name)
+	return fmt.Sprintf("Metric '%s' not found", err.Name)
 }
 
 func NewMetricNotFoundError(name string) ErrMetricNotFound {
