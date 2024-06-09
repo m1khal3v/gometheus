@@ -16,7 +16,7 @@ type ErrUnexpectedStatus struct {
 }
 
 func (err ErrUnexpectedStatus) Error() string {
-	return fmt.Sprintf("Unexpected status code: %v", err.Status)
+	return fmt.Sprintf("Unexpected status code: %d", err.Status)
 }
 
 func newUnexpectedStatusError(status int) ErrUnexpectedStatus {

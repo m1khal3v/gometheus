@@ -22,7 +22,7 @@ func (metric *Metric) GetValue() any {
 }
 
 func (metric *Metric) String() string {
-	return fmt.Sprintf("%v", metric.value)
+	return fmt.Sprintf("%f", metric.value)
 }
 
 func New(name string, value float64) *Metric {

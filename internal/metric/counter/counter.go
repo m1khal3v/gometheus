@@ -9,7 +9,7 @@ type ErrNamesDontMatch struct {
 }
 
 func (e ErrNamesDontMatch) Error() string {
-	return fmt.Sprintf("name %s and name %s don't match", e.Name1, e.Name2)
+	return fmt.Sprintf("name '%s' and name '%s' don't match", e.Name1, e.Name2)
 }
 
 func newErrNamesDontMatch(name1, name2 string) error {
@@ -37,7 +37,7 @@ func (metric *Metric) GetValue() any {
 }
 
 func (metric *Metric) String() string {
-	return fmt.Sprintf("%v", metric.value)
+	return fmt.Sprintf("%d", metric.value)
 }
 
 func (metric *Metric) Add(other *Metric) (*Metric, error) {
