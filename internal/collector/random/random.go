@@ -18,7 +18,7 @@ type ErrMinGreaterThanMax struct {
 }
 
 func (err ErrMinGreaterThanMax) Error() string {
-	return fmt.Sprintf("Min=%f can`t be greater than Max=%f", err.Min, err.Max)
+	return fmt.Sprintf("Min=%g can`t be greater than Max=%g", err.Min, err.Max)
 }
 
 func newMinGreaterThanMaxError(min, max float64) ErrMinGreaterThanMax {
