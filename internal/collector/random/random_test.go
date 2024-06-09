@@ -29,13 +29,13 @@ func TestCollector_Collect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector, err := NewCollector(tt.min, tt.max)
+			collector, err := New(tt.min, tt.max)
 			assert.Nil(t, err)
 			metrics, err := collector.Collect()
 			assert.Nil(t, err)
 			assert.Len(t, metrics, 1)
-			assert.Equal(t, "RandomValue", metrics[0].Name)
-			assert.Equal(t, "gauge", metrics[0].Type)
+			assert.Equal(t, "RandomValue", metrics[0].GetName())
+			assert.Equal(t, "gauge", metrics[0].GetType())
 			value := metrics[0].GetValue()
 			assert.GreaterOrEqual(t, value, tt.min)
 			assert.LessOrEqual(t, value, tt.max)
@@ -56,8 +56,8 @@ func TestNewCollector(t *testing.T) {
 			min:  1,
 			max:  2,
 			want: &Collector{
-				Min: 1,
-				Max: 2,
+				min: 1,
+				max: 2,
 			},
 		},
 		{
@@ -72,7 +72,7 @@ func TestNewCollector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collector, err := NewCollector(tt.min, tt.max)
+			collector, err := New(tt.min, tt.max)
 			if tt.wantErr == nil {
 				assert.Equal(t, tt.want, collector)
 			} else {

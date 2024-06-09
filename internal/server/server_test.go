@@ -3,6 +3,8 @@ package server
 import (
 	"fmt"
 	_metric "github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/counter"
+	"github.com/m1khal3v/gometheus/internal/metric/gauge"
 	"github.com/m1khal3v/gometheus/internal/router"
 	"github.com/m1khal3v/gometheus/internal/storage/memory"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +30,7 @@ func testRequest(t *testing.T, server *httptest.Server, method string, path stri
 }
 
 func TestSaveMetric(t *testing.T) {
-	server := httptest.NewServer(router.NewRouter(memory.NewStorage()))
+	server := httptest.NewServer(router.New(memory.New()))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -129,7 +131,7 @@ func TestGetMetric(t *testing.T) {
 	tests := []struct {
 		method             string
 		name               string
-		preset             map[string]*_metric.Metric
+		preset             map[string]_metric.Metric
 		metricType         string
 		metricName         string
 		expectedStatusCode int
@@ -139,12 +141,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "valid gauge",
 			metricType: "gauge",
 			metricName: "test gauge",
-			preset: map[string]*_metric.Metric{
-				"test gauge": {
-					Name:       "test gauge",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedBody:       "123.321",
 			expectedStatusCode: http.StatusOK,
@@ -153,12 +151,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "valid counter",
 			metricType: "counter",
 			metricName: "test counter",
-			preset: map[string]*_metric.Metric{
-				"test counter": {
-					Name:     "test counter",
-					Type:     "counter",
-					IntValue: int64(123),
-				},
+			preset: map[string]_metric.Metric{
+				"test counter": counter.New("test counter", 123),
 			},
 			expectedBody:       "123",
 			expectedStatusCode: http.StatusOK,
@@ -167,12 +161,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid gauge",
 			metricType: "gauge",
 			metricName: "test invalid gauge",
-			preset: map[string]*_metric.Metric{
-				"test gauge": {
-					Name:       "test gauge",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
 		},
@@ -180,12 +170,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid counter",
 			metricType: "counter",
 			metricName: "test invalid counter",
-			preset: map[string]*_metric.Metric{
-				"test counter": {
-					Name:     "test counter",
-					Type:     "counter",
-					IntValue: int64(123),
-				},
+			preset: map[string]_metric.Metric{
+				"test counter": counter.New("test counter", 123),
 			},
 			expectedStatusCode: http.StatusNotFound,
 		},
@@ -193,12 +179,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "empty type",
 			metricType: "",
 			metricName: "test empty type",
-			preset: map[string]*_metric.Metric{
-				"test empty type": {
-					Name:       "test empty type",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test empty type": gauge.New("test empty type", 123.321),
 			},
 			expectedStatusCode: http.StatusBadRequest,
 		},
@@ -206,12 +188,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid type",
 			metricType: "test",
 			metricName: "test invalid type",
-			preset: map[string]*_metric.Metric{
-				"test invalid type": {
-					Name:       "test invalid type",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test invalid type": gauge.New("test invalid type", 123.321),
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedBody:       "",
@@ -220,12 +198,8 @@ func TestGetMetric(t *testing.T) {
 			name:       "empty name",
 			metricType: "gauge",
 			metricName: "",
-			preset: map[string]*_metric.Metric{
-				"test gauge": {
-					Name:       "test gauge",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
 			expectedBody:       "404 page not found\n",
@@ -235,20 +209,16 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid method",
 			metricType: "counter",
 			metricName: "test invalid method",
-			preset: map[string]*_metric.Metric{
-				"test invalid method": {
-					Name:     "test invalid method",
-					Type:     "counter",
-					IntValue: int64(123),
-				},
+			preset: map[string]_metric.Metric{
+				"test invalid method": counter.New("test invalid method", 123),
 			},
 			expectedStatusCode: http.StatusMethodNotAllowed,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := memory.NewStorage()
-			server := httptest.NewServer(router.NewRouter(storage))
+			storage := memory.New()
+			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
 				_ = storage.Save(metric)
@@ -274,55 +244,31 @@ func TestGetAllMetrics(t *testing.T) {
 	tests := []struct {
 		method             string
 		name               string
-		preset             map[string]*_metric.Metric
+		preset             map[string]_metric.Metric
 		expectedStatusCode int
 		expectedBody       string
 	}{
 		{
 			name:               "empty metrics",
-			preset:             map[string]*_metric.Metric{},
+			preset:             map[string]_metric.Metric{},
 			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "not empty metrics",
-			preset: map[string]*_metric.Metric{
-				"test gauge": {
-					Name:       "test gauge",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
-				"test counter": {
-					Name:     "test counter",
-					Type:     "counter",
-					IntValue: int64(123),
-				},
-				"test empty type": {
-					Name:       "test empty type",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
-				"test invalid type": {
-					Name:       "test invalid type",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
-				"test invalid method": {
-					Name:     "test invalid method",
-					Type:     "counter",
-					IntValue: int64(123),
-				},
+			preset: map[string]_metric.Metric{
+				"test gauge":          gauge.New("test gauge", 123.321),
+				"test counter":        counter.New("test counter", 123),
+				"test empty type":     gauge.New("test empty type", 123.321),
+				"test invalid type":   gauge.New("test invalid type", 123.321),
+				"test invalid method": counter.New("test invalid method", 123),
 			},
 			expectedBody:       "test invalid method: 123\ntest gauge: 123.321\ntest counter: 123\ntest empty type: 123.321\ntest invalid type: 123.321\n",
 			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "single metric",
-			preset: map[string]*_metric.Metric{
-				"test gauge": {
-					Name:       "test gauge",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedBody:       "test gauge: 123.321\n",
 			expectedStatusCode: http.StatusOK,
@@ -330,20 +276,16 @@ func TestGetAllMetrics(t *testing.T) {
 		{
 			method: http.MethodPost,
 			name:   "invalid method",
-			preset: map[string]*_metric.Metric{
-				"test gauge": {
-					Name:       "test gauge",
-					Type:       "gauge",
-					FloatValue: float64(123.321),
-				},
+			preset: map[string]_metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusMethodNotAllowed,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storage := memory.NewStorage()
-			server := httptest.NewServer(router.NewRouter(storage))
+			storage := memory.New()
+			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
 				_ = storage.Save(metric)
