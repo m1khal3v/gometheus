@@ -42,7 +42,7 @@ func collectMetrics(pollInterval uint32) {
 }
 
 func sendMetrics(endpoint string, reportInterval uint32) {
-	apiClient := client.NewClient(endpoint)
+	apiClient := client.New(endpoint)
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		mutex.Lock()

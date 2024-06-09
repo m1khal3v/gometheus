@@ -9,8 +9,8 @@ import (
 	_storage "github.com/m1khal3v/gometheus/internal/storage"
 )
 
-func NewRouter(storage _storage.Storage) chi.Router {
-	routeContainer := route.New(storage)
+func New(storage _storage.Storage) chi.Router {
+	routeContainer := route.NewRouteContainer(storage)
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RealIP)
