@@ -10,7 +10,7 @@ import (
 )
 
 func NewRouter(storage _storage.Storage) chi.Router {
-	routeContainer := route.NewRouteContainer(storage)
+	routeContainer := route.New(storage)
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RealIP)

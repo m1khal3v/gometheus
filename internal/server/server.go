@@ -8,7 +8,7 @@ import (
 )
 
 func Start(endpoint string) {
-	err := http.ListenAndServe(endpoint, router.NewRouter(memory.NewStorage()))
+	err := http.ListenAndServe(endpoint, router.NewRouter(memory.New()))
 	if err != nil {
 		logger.Logger.Panic(err.Error())
 	}
