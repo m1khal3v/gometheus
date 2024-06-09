@@ -12,10 +12,9 @@ func (routeContainer Container) GetAllMetrics(writer http.ResponseWriter, reques
 		return
 	}
 
-	// Отдаем значения метрик
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusOK)
 	for _, metric := range metrics {
-		_, _ = writer.Write([]byte(fmt.Sprintf("%v: %v\n", metric.Name, metric.GetValue())))
+		_, _ = writer.Write([]byte(fmt.Sprintf("%v: %v\n", metric.GetName(), metric.GetValue())))
 	}
 }

@@ -2,14 +2,14 @@ package random
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/logger"
 	_metric "github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/gauge"
 	"math/rand/v2"
 )
 
 type Collector struct {
-	Min float64
-	Max float64
+	min float64
+	max float64
 }
 
 type ErrMinGreaterThanMax struct {
@@ -28,29 +28,23 @@ func newMinGreaterThanMaxError(min, max float64) ErrMinGreaterThanMax {
 	}
 }
 
-func NewCollector(min, max float64) (*Collector, error) {
+func New(min, max float64) (*Collector, error) {
 	if max < min {
 		return nil, newMinGreaterThanMaxError(min, max)
 	}
 
 	return &Collector{
-		Min: min,
-		Max: max,
+		min: min,
+		max: max,
 	}, nil
 }
 
-func (collector *Collector) Collect() ([]*_metric.Metric, error) {
-	metric, err := _metric.NewMetric(
-		_metric.TypeGauge,
+func (collector *Collector) Collect() ([]_metric.Metric, error) {
+	return []_metric.Metric{gauge.New(
 		"RandomValue",
-		// так как rand.Float64 возвращает значение от 0 до 1 и не поддерживает Min/Max
-		// исправляем это домножая значение на разницу Max и Min и добавляя к результату Min
-		// итоговое значение будет в диапазоне от Min до Max включая оба значения
-		rand.Float64()*(collector.Max-collector.Min)+collector.Min,
-	)
-	if err != nil {
-		logger.Logger.Panic(err.Error())
-	}
-
-	return []*_metric.Metric{metric}, nil
+		// since rand.Float64 returns a value from 0 to 1 and does not support Min/Max
+		// correct this by multiplying the value by the difference between Max and Min and adding Min to the result
+		// the final value will be in the range from Min to Max including both values
+		rand.Float64()*(collector.max-collector.min)+collector.min,
+	)}, nil
 }

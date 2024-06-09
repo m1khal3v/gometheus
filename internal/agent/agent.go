@@ -12,7 +12,7 @@ import (
 )
 
 var mutex sync.Mutex
-var allMetrics = make([]*_metric.Metric, 0)
+var allMetrics = make([]_metric.Metric, 0)
 
 func Start(endpoint string, pollInterval, reportInterval uint32) {
 	go collectMetrics(pollInterval)
@@ -21,8 +21,8 @@ func Start(endpoint string, pollInterval, reportInterval uint32) {
 
 func collectMetrics(pollInterval uint32) {
 	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
-	runtimeCollector := runtime.NewCollector()
-	randomCollector, err := random.NewCollector(0, 512)
+	runtimeCollector := runtime.New()
+	randomCollector, err := random.New(0, 512)
 	if err != nil {
 		logger.Logger.Panic(err.Error())
 	}
@@ -42,11 +42,11 @@ func collectMetrics(pollInterval uint32) {
 }
 
 func sendMetrics(endpoint string, reportInterval uint32) {
-	apiClient := client.NewClient(endpoint)
+	apiClient := client.New(endpoint)
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		mutex.Lock()
-		retryMetrics := make([]*_metric.Metric, 0)
+		retryMetrics := make([]_metric.Metric, 0)
 		for _, metric := range allMetrics {
 			err := apiClient.SendMetric(metric)
 			if err != nil {

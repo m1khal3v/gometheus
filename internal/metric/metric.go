@@ -2,20 +2,17 @@ package metric
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/metric/counter"
+	"github.com/m1khal3v/gometheus/internal/metric/gauge"
 	"slices"
 	"strconv"
 )
 
-const (
-	TypeGauge   = "gauge"
-	TypeCounter = "counter"
-)
-
-type Metric struct {
-	Type       string
-	Name       string
-	FloatValue float64
-	IntValue   int64
+type Metric interface {
+	fmt.Stringer
+	GetType() string
+	GetName() string
+	GetValue() any
 }
 
 type ErrUnknownType struct {
@@ -46,111 +43,34 @@ func newInvalidValueError(value string) ErrInvalidValue {
 	}
 }
 
-type ErrInvalidValueType struct{}
-
-func (err ErrInvalidValueType) Error() string {
-	return "Value type is not supported"
-}
-
-func resolveFloat64Value(metricType, name string, value float64) (*Metric, error) {
-	if metricType != TypeGauge {
-		return nil, newInvalidValueError(strconv.FormatFloat(value, 'f', -1, 64))
-	}
-
-	return &Metric{
-		Type:       TypeGauge,
-		Name:       name,
-		FloatValue: value,
-	}, nil
-}
-
-func resolveInt64Value(metricType, name string, value int64) (*Metric, error) {
-	if metricType != TypeCounter {
-		return nil, newInvalidValueError(strconv.FormatInt(value, 10))
-	}
-
-	return &Metric{
-		Type:     TypeCounter,
-		Name:     name,
-		IntValue: value,
-	}, nil
-}
-
-func resolveStringValue(metricType, name string, value string) (*Metric, error) {
-	if value == "" {
-		return nil, newInvalidValueError(value)
-	}
-
-	switch metricType {
-	case TypeGauge:
-		metricConvertedValue, err := strconv.ParseFloat(value, 64)
-		if nil != err {
-			return nil, newInvalidValueError(value)
-		}
-
-		return &Metric{
-			Type:       TypeGauge,
-			Name:       name,
-			FloatValue: metricConvertedValue,
-		}, nil
-	case TypeCounter:
-		metricConvertedValue, err := strconv.ParseInt(value, 10, 64)
-		if nil != err {
-			return nil, newInvalidValueError(value)
-		}
-
-		return &Metric{
-			Type:     TypeCounter,
-			Name:     name,
-			IntValue: metricConvertedValue,
-		}, nil
-	default:
-		return nil, nil
-	}
-}
-
-func NewMetric(metricType, name string, value any) (*Metric, error) {
-	err := ValidateMetricType(metricType)
-	if nil != err {
-		return nil, err
-	}
-
-	switch typeValue := value.(type) {
-	case float64:
-		return resolveFloat64Value(metricType, name, typeValue)
-	case int64:
-		return resolveInt64Value(metricType, name, typeValue)
-	case string:
-		return resolveStringValue(metricType, name, typeValue)
-	default:
-		return nil, ErrInvalidValueType{}
-	}
-}
-
 func ValidateMetricType(metricType string) error {
-	metricTypes := []string{
-		TypeGauge,
-		TypeCounter,
-	}
-
-	if !slices.Contains(metricTypes, metricType) {
+	if !slices.Contains([]string{
+		gauge.Type,
+		counter.Type,
+	}, metricType) {
 		return newUnknownTypeError(metricType)
 	}
 
 	return nil
 }
 
-func (metric *Metric) GetValue() any {
-	switch metric.Type {
-	case TypeGauge:
-		return metric.FloatValue
-	case TypeCounter:
-		return metric.IntValue
+func New(metricType, name, value string) (Metric, error) {
+	switch metricType {
+	case gauge.Type:
+		metricConvertedValue, err := strconv.ParseFloat(value, 64)
+		if nil != err {
+			return nil, newInvalidValueError(value)
+		}
+
+		return gauge.New(name, metricConvertedValue), nil
+	case counter.Type:
+		metricConvertedValue, err := strconv.ParseInt(value, 10, 64)
+		if nil != err {
+			return nil, newInvalidValueError(value)
+		}
+
+		return counter.New(name, metricConvertedValue), nil
+	default:
+		return nil, newUnknownTypeError(metricType)
 	}
-
-	return nil
-}
-
-func (metric *Metric) GetStringValue() string {
-	return fmt.Sprintf("%v", metric.GetValue())
 }

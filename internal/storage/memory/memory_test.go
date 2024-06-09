@@ -2,86 +2,59 @@ package memory
 
 import (
 	_metric "github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/counter"
+	"github.com/m1khal3v/gometheus/internal/metric/gauge"
 	_storage "github.com/m1khal3v/gometheus/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestNewStorage(t *testing.T) {
-	assert.Equal(t, NewStorage(), &Storage{metrics: make(map[string]_metric.Metric)})
+	assert.Equal(t, New(), &Storage{metrics: make(map[string]_metric.Metric)})
 }
 
 func TestStorage_Save(t *testing.T) {
 	tests := []struct {
-		name    string
-		preset  map[string]_metric.Metric
-		metric  *_metric.Metric
-		want    any
-		wantErr error
+		name   string
+		preset map[string]_metric.Metric
+		metric _metric.Metric
+		want   any
 	}{
 		{
 			name:   "set gauge",
 			preset: map[string]_metric.Metric{},
-			metric: &_metric.Metric{
-				Type:       "gauge",
-				Name:       "m1",
-				FloatValue: float64(123.321),
-			},
-			want: float64(123.321),
+			metric: gauge.New("m1", 123.321),
+			want:   float64(123.321),
 		},
 		{
 			name:   "set counter",
 			preset: map[string]_metric.Metric{},
-			metric: &_metric.Metric{
-				Type:     "counter",
-				Name:     "m2",
-				IntValue: int64(123),
-			},
-			want: int64(123),
+			metric: counter.New("m2", 123),
+			want:   int64(123),
 		},
 		{
 			name: "update counter",
 			preset: map[string]_metric.Metric{
-				"m3": {
-					Type:     "counter",
-					Name:     "m3",
-					IntValue: int64(123),
-				},
+				"m3": counter.New("m3", 123),
 			},
-			metric: &_metric.Metric{
-				Type:     "counter",
-				Name:     "m3",
-				IntValue: int64(5),
-			},
-			want: int64(128),
+			metric: counter.New("m3", 5),
+			want:   int64(128),
 		},
 		{
 			name: "gauge -> counter",
 			preset: map[string]_metric.Metric{
-				"m4": {
-					Type:       "gauge",
-					Name:       "m4",
-					FloatValue: float64(123.321),
-				},
+				"m4": gauge.New("m4", 123.321),
 			},
-			metric: &_metric.Metric{
-				Type:     "counter",
-				Name:     "m4",
-				IntValue: int64(5),
-			},
-			want: int64(5),
+			metric: counter.New("m4", 5),
+			want:   int64(5),
 		},
 		{
-			name:   "invalid metric type",
-			preset: map[string]_metric.Metric{},
-			metric: &_metric.Metric{
-				Type:     "invalid",
-				Name:     "m5",
-				IntValue: int64(5),
+			name: "counter -> gauge",
+			preset: map[string]_metric.Metric{
+				"m5": counter.New("m5", 123),
 			},
-			wantErr: _metric.ErrUnknownType{
-				Type: "invalid",
-			},
+			metric: gauge.New("m5", 123.321),
+			want:   float64(123.321),
 		},
 	}
 	for _, tt := range tests {
@@ -90,14 +63,10 @@ func TestStorage_Save(t *testing.T) {
 				metrics: tt.preset,
 			}
 			err := storage.Save(tt.metric)
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-				return
-			}
 			assert.Nil(t, err)
-			metric, ok := storage.metrics[tt.metric.Name]
+			metric, ok := storage.metrics[tt.metric.GetName()]
 			assert.True(t, ok)
-			assert.Equal(t, tt.want, (&metric).GetValue())
+			assert.Equal(t, tt.want, metric.GetValue())
 		})
 	}
 }
@@ -107,7 +76,7 @@ func TestStorage_Get(t *testing.T) {
 		name       string
 		preset     map[string]_metric.Metric
 		metricName string
-		want       *_metric.Metric
+		want       _metric.Metric
 		wantErr    error
 	}{
 		{
@@ -115,40 +84,23 @@ func TestStorage_Get(t *testing.T) {
 			preset:     map[string]_metric.Metric{},
 			metricName: "m1",
 			want:       nil,
-			wantErr: _storage.ErrMetricNotFound{
-				Name: "m1",
-			},
+			wantErr:    _storage.NewMetricNotFoundError("m1"),
 		},
 		{
 			name: "defined name",
 			preset: map[string]_metric.Metric{
-				"m2": {
-					Type:     "counter",
-					Name:     "m2",
-					IntValue: int64(1),
-				},
+				"m2": counter.New("m2", 1),
 			},
 			metricName: "m2",
-			want: &_metric.Metric{
-				Type:     "counter",
-				Name:     "m2",
-				IntValue: int64(1),
-			},
+			want:       counter.New("m2", 1),
 		},
 		{
 			name: "undefined name",
 			preset: map[string]_metric.Metric{
-				"m3": {
-					Type:       "gauge",
-					Name:       "m3",
-					FloatValue: float64(1.1),
-				},
+				"m3": gauge.New("m3", 1.1),
 			},
 			metricName: "m4",
-			want:       nil,
-			wantErr: _storage.ErrMetricNotFound{
-				Name: "m4",
-			},
+			wantErr:    _storage.NewMetricNotFoundError("m4"),
 		},
 	}
 	for _, tt := range tests {
@@ -179,16 +131,8 @@ func TestStorage_GetAll(t *testing.T) {
 		{
 			name: "not empty storage",
 			preset: map[string]_metric.Metric{
-				"m1": {
-					Name:       "m1",
-					Type:       "gauge",
-					FloatValue: float64(123.123),
-				},
-				"m2": {
-					Name:     "m2",
-					Type:     "counter",
-					IntValue: int64(123),
-				},
+				"m1": gauge.New("m1", 123.321),
+				"m2": counter.New("m2", 123),
 			},
 		},
 	}

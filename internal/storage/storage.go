@@ -6,8 +6,8 @@ import (
 )
 
 type Storage interface {
-	Save(metric *_metric.Metric) error
-	Get(name string) (*_metric.Metric, error)
+	Save(metric _metric.Metric) error
+	Get(name string) (_metric.Metric, error)
 	GetAll() (map[string]_metric.Metric, error)
 }
 

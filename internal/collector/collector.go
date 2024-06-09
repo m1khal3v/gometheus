@@ -6,11 +6,11 @@ import (
 )
 
 type Collector interface {
-	Collect() ([]*_metric.Metric, error)
+	Collect() ([]_metric.Metric, error)
 }
 
-func CollectAll(collectors ...Collector) ([]*_metric.Metric, error) {
-	var allMetrics = make([]*_metric.Metric, 0)
+func CollectAll(collectors ...Collector) ([]_metric.Metric, error) {
+	var allMetrics = make([]_metric.Metric, 0)
 	var allErrors error = nil
 
 	for _, collector := range collectors {

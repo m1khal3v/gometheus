@@ -6,15 +6,15 @@ import (
 )
 
 func TestCollector_Collect(t *testing.T) {
-	collector := NewCollector()
+	collector := New()
 	metrics, err := collector.Collect()
 	assert.Nil(t, err)
 	assert.Len(t, metrics, 28)
 	for _, metric := range metrics {
-		if metric.Name == "PollCount" {
-			assert.Equal(t, "counter", metric.Type)
+		if metric.GetName() == "PollCount" {
+			assert.Equal(t, "counter", metric.GetType())
 		} else {
-			assert.Equal(t, "gauge", metric.Type)
+			assert.Equal(t, "gauge", metric.GetType())
 		}
 	}
 }

@@ -25,17 +25,17 @@ func newUnexpectedStatusError(status int) ErrUnexpectedStatus {
 	}
 }
 
-func NewClient(endpoint string) *Client {
+func New(endpoint string) *Client {
 	return &Client{
 		resty: resty.New().SetBaseURL(fmt.Sprintf("http://%s/", endpoint)),
 	}
 }
 
-func (client *Client) SendMetric(metric *_metric.Metric) error {
+func (client *Client) SendMetric(metric _metric.Metric) error {
 	response, err := client.resty.R().SetPathParams(map[string]string{
-		"type":  metric.Type,
-		"name":  metric.Name,
-		"value": metric.GetStringValue(),
+		"type":  metric.GetType(),
+		"name":  metric.GetName(),
+		"value": metric.String(),
 	}).Post("update/{type}/{name}/{value}")
 
 	if err != nil {
