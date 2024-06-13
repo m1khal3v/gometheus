@@ -47,7 +47,7 @@ func sendMetrics(client metricSender, reportInterval uint32) {
 		mutex.Lock()
 		retryMetrics := make([]_metric.Metric, 0)
 		for _, metric := range allMetrics {
-			err := client.SendMetric(metric.GetType(), metric.GetName(), metric.String())
+			err := client.SendMetric(metric.GetType(), metric.GetName(), metric.GetValue())
 			if err != nil {
 				logger.Logger.Warn(err.Error())
 				retryMetrics = append(retryMetrics, metric)

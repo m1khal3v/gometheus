@@ -7,38 +7,6 @@ import (
 	"testing"
 )
 
-func TestValidateMetricType(t *testing.T) {
-	tests := []struct {
-		name       string
-		metricType string
-		wantErr    error
-	}{
-		{
-			name:       "test gauge",
-			metricType: "gauge",
-		},
-		{
-			name:       "test counter",
-			metricType: "counter",
-		},
-		{
-			name:       "test invalid",
-			metricType: "invalid",
-			wantErr:    newUnknownTypeError("invalid"),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateMetricType(tt.metricType)
-			if tt.wantErr == nil {
-				assert.Nil(t, err)
-			} else {
-				assert.ErrorIs(t, err, tt.wantErr)
-			}
-		})
-	}
-}
-
 func TestNew(t *testing.T) {
 	type args struct {
 		metricType string

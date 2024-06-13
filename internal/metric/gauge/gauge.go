@@ -17,11 +17,7 @@ func (metric *Metric) GetName() string {
 	return metric.name
 }
 
-func (metric *Metric) GetValue() any {
-	return metric.value
-}
-
-func (metric *Metric) String() string {
+func (metric *Metric) GetValue() string {
 	return fmt.Sprintf("%g", metric.value)
 }
 
