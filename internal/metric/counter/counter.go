@@ -4,21 +4,6 @@ import "fmt"
 
 const Type = "counter"
 
-type ErrNamesDontMatch struct {
-	Name1, Name2 string
-}
-
-func (e ErrNamesDontMatch) Error() string {
-	return fmt.Sprintf("name '%s' and name '%s' don't match", e.Name1, e.Name2)
-}
-
-func newErrNamesDontMatch(name1, name2 string) error {
-	return ErrNamesDontMatch{
-		Name1: name1,
-		Name2: name2,
-	}
-}
-
 type Metric struct {
 	name  string
 	value int64
@@ -36,14 +21,10 @@ func (metric *Metric) GetStringValue() string {
 	return fmt.Sprintf("%d", metric.value)
 }
 
-func (metric *Metric) Add(other *Metric) (*Metric, error) {
-	if metric.name != other.name {
-		return metric, newErrNamesDontMatch(metric.name, other.name)
-	}
-
+func (metric *Metric) Add(other *Metric) *Metric {
 	metric.value += other.value
 
-	return metric, nil
+	return metric
 }
 
 func New(name string, value int64) *Metric {

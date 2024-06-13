@@ -1,8 +1,6 @@
 package route
 
 import (
-	"errors"
-	_storage "github.com/m1khal3v/gometheus/internal/storage"
 	"net/http"
 )
 
@@ -10,16 +8,8 @@ func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *h
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
 
-	metric, err := routeContainer.Storage.Get(metricName)
-	if err != nil {
-		if errors.As(err, &_storage.ErrMetricNotFound{}) {
-			writer.WriteHeader(http.StatusNotFound)
-		} else {
-			writer.WriteHeader(http.StatusInternalServerError)
-		}
-		return
-	}
-	if metric.GetType() != metricType {
+	metric := routeContainer.Storage.Get(metricName)
+	if metric == nil || metric.GetType() != metricType {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}

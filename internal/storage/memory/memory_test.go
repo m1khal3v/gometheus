@@ -4,7 +4,6 @@ import (
 	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/gauge"
-	_storage "github.com/m1khal3v/gometheus/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -62,8 +61,7 @@ func TestStorage_Save(t *testing.T) {
 			storage := &Storage{
 				metrics: tt.preset,
 			}
-			err := storage.Save(tt.metric)
-			assert.Nil(t, err)
+			storage.Save(tt.metric)
 			metric, ok := storage.metrics[tt.metric.GetName()]
 			assert.True(t, ok)
 			assert.Equal(t, tt.want, metric.GetStringValue())
@@ -77,14 +75,12 @@ func TestStorage_Get(t *testing.T) {
 		preset     map[string]_metric.Metric
 		metricName string
 		want       _metric.Metric
-		wantErr    error
 	}{
 		{
 			name:       "empty storage",
 			preset:     map[string]_metric.Metric{},
 			metricName: "m1",
 			want:       nil,
-			wantErr:    _storage.NewMetricNotFoundError("m1"),
 		},
 		{
 			name: "defined name",
@@ -100,7 +96,6 @@ func TestStorage_Get(t *testing.T) {
 				"m3": gauge.New("m3", 1.1),
 			},
 			metricName: "m4",
-			wantErr:    _storage.NewMetricNotFoundError("m4"),
 		},
 	}
 	for _, tt := range tests {
@@ -108,13 +103,7 @@ func TestStorage_Get(t *testing.T) {
 			storage := &Storage{
 				metrics: tt.preset,
 			}
-			value, err := storage.Get(tt.metricName)
-			if tt.wantErr == nil {
-				assert.Nil(t, err)
-			} else {
-				assert.ErrorIs(t, err, tt.wantErr)
-			}
-			assert.Equal(t, tt.want, value)
+			assert.Equal(t, tt.want, storage.Get(tt.metricName))
 		})
 	}
 }
@@ -141,9 +130,7 @@ func TestStorage_GetAll(t *testing.T) {
 			storage := &Storage{
 				metrics: tt.preset,
 			}
-			metrics, err := storage.GetAll()
-			assert.Nil(t, err)
-			assert.Equal(t, tt.preset, metrics)
+			assert.Equal(t, tt.preset, storage.GetAll())
 		})
 	}
 }

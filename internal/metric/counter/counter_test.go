@@ -11,7 +11,6 @@ func TestMetric_Add(t *testing.T) {
 		current *Metric
 		other   *Metric
 		want    *Metric
-		wantErr error
 	}{
 		{
 			name: "add positive value",
@@ -43,27 +42,10 @@ func TestMetric_Add(t *testing.T) {
 				value: -1,
 			},
 		},
-		{
-			name: "add invalid name",
-			current: &Metric{
-				name:  "test",
-				value: 1,
-			},
-			other: &Metric{
-				name:  "invalid",
-				value: 1,
-			},
-			wantErr: newErrNamesDontMatch("test", "invalid"),
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.current.Add(tt.other)
-			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
-			} else {
-				assert.Equal(t, tt.want, got)
-			}
+			assert.Equal(t, tt.want, tt.current.Add(tt.other))
 		})
 	}
 }

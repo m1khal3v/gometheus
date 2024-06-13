@@ -29,12 +29,6 @@ func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *
 		return
 	}
 
-	err = routeContainer.Storage.Save(metric)
-	if err != nil {
-		logger.Logger.Error(err.Error())
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
+	routeContainer.Storage.Save(metric)
 	writer.WriteHeader(http.StatusOK)
 }
