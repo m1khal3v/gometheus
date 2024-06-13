@@ -32,7 +32,11 @@ func (metric *Metric) GetName() string {
 	return metric.name
 }
 
-func (metric *Metric) GetValue() string {
+func (metric *Metric) GetValue() int64 {
+	return metric.value
+}
+
+func (metric *Metric) GetStringValue() string {
 	return fmt.Sprintf("%d", metric.value)
 }
 

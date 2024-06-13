@@ -2,6 +2,7 @@ package random
 
 import (
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -36,7 +37,7 @@ func TestCollector_Collect(t *testing.T) {
 			assert.Len(t, metrics, 1)
 			assert.Equal(t, "RandomValue", metrics[0].GetName())
 			assert.Equal(t, "gauge", metrics[0].GetType())
-			value := metrics[0].GetValue()
+			value, _ := strconv.ParseFloat(metrics[0].GetStringValue(), 64)
 			assert.GreaterOrEqual(t, value, tt.min)
 			assert.LessOrEqual(t, value, tt.max)
 		})

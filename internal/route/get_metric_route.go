@@ -26,5 +26,5 @@ func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *h
 
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.WriteHeader(http.StatusOK)
-	_, _ = writer.Write([]byte(metric.GetValue()))
+	_, _ = writer.Write([]byte(metric.GetStringValue()))
 }

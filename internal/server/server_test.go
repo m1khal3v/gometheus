@@ -182,7 +182,7 @@ func TestGetMetric(t *testing.T) {
 			preset: map[string]_metric.Metric{
 				"test empty type": gauge.New("test empty type", 123.321),
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedStatusCode: http.StatusNotFound,
 		},
 		{
 			name:       "invalid type",
@@ -191,7 +191,7 @@ func TestGetMetric(t *testing.T) {
 			preset: map[string]_metric.Metric{
 				"test invalid type": gauge.New("test invalid type", 123.321),
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedStatusCode: http.StatusNotFound,
 			expectedBody:       "",
 		},
 		{

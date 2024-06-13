@@ -24,13 +24,13 @@ func TestStorage_Save(t *testing.T) {
 			name:   "set gauge",
 			preset: map[string]_metric.Metric{},
 			metric: gauge.New("m1", 123.321),
-			want:   float64(123.321),
+			want:   "123.321",
 		},
 		{
 			name:   "set counter",
 			preset: map[string]_metric.Metric{},
 			metric: counter.New("m2", 123),
-			want:   int64(123),
+			want:   "123",
 		},
 		{
 			name: "update counter",
@@ -38,7 +38,7 @@ func TestStorage_Save(t *testing.T) {
 				"m3": counter.New("m3", 123),
 			},
 			metric: counter.New("m3", 5),
-			want:   int64(128),
+			want:   "128",
 		},
 		{
 			name: "gauge -> counter",
@@ -46,7 +46,7 @@ func TestStorage_Save(t *testing.T) {
 				"m4": gauge.New("m4", 123.321),
 			},
 			metric: counter.New("m4", 5),
-			want:   int64(5),
+			want:   "5",
 		},
 		{
 			name: "counter -> gauge",
@@ -54,7 +54,7 @@ func TestStorage_Save(t *testing.T) {
 				"m5": counter.New("m5", 123),
 			},
 			metric: gauge.New("m5", 123.321),
-			want:   float64(123.321),
+			want:   "123.321",
 		},
 	}
 	for _, tt := range tests {
@@ -66,7 +66,7 @@ func TestStorage_Save(t *testing.T) {
 			assert.Nil(t, err)
 			metric, ok := storage.metrics[tt.metric.GetName()]
 			assert.True(t, ok)
-			assert.Equal(t, tt.want, metric.GetValue())
+			assert.Equal(t, tt.want, metric.GetStringValue())
 		})
 	}
 }
