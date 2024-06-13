@@ -40,6 +40,7 @@ func TestSaveMetric(t *testing.T) {
 		metricName         string
 		metricValue        string
 		previousValue      string
+		expectedValue      string
 		expectedStatusCode int
 		expectedBody       string
 	}{
@@ -85,6 +86,7 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test update counter",
 			metricValue:        "123",
 			previousValue:      "321",
+			expectedValue:      "444",
 			expectedStatusCode: http.StatusOK,
 		},
 		{
@@ -145,6 +147,13 @@ func TestSaveMetric(t *testing.T) {
 			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
+			if tt.expectedStatusCode == http.StatusOK {
+				if tt.expectedValue != "" {
+					assert.Equal(t, tt.expectedValue, storage.Get(tt.metricName).GetStringValue())
+				} else {
+					assert.Equal(t, tt.metricValue, storage.Get(tt.metricName).GetStringValue())
+				}
+			}
 		})
 	}
 }
