@@ -221,7 +221,7 @@ func TestGetMetric(t *testing.T) {
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
-				_ = storage.Save(metric)
+				storage.Save(metric)
 			}
 			path := fmt.Sprintf(
 				"/value/%v/%v",
@@ -288,7 +288,7 @@ func TestGetAllMetrics(t *testing.T) {
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
-				_ = storage.Save(metric)
+				storage.Save(metric)
 			}
 			method := tt.method
 			if method == "" {
