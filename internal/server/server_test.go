@@ -2,11 +2,12 @@ package server
 
 import (
 	"fmt"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
-	"github.com/m1khal3v/gometheus/internal/metric/counter"
-	"github.com/m1khal3v/gometheus/internal/metric/gauge"
-	"github.com/m1khal3v/gometheus/internal/router"
-	"github.com/m1khal3v/gometheus/internal/storage/memory"
+	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/factory"
+	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
+	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/internal/server/router"
+	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -30,7 +31,8 @@ func testRequest(t *testing.T, server *httptest.Server, method string, path stri
 }
 
 func TestSaveMetric(t *testing.T) {
-	server := httptest.NewServer(router.New(memory.New()))
+	storage := memory.New()
+	server := httptest.NewServer(router.New(storage))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -38,6 +40,8 @@ func TestSaveMetric(t *testing.T) {
 		metricType         string
 		metricName         string
 		metricValue        string
+		previousValue      string
+		expectedValue      string
 		expectedStatusCode int
 		expectedBody       string
 	}{
@@ -68,6 +72,23 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test invalid counter",
 			metricValue:        "123.321",
 			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:               "update gauge",
+			metricType:         "gauge",
+			metricName:         "test update gauge",
+			metricValue:        "123.321",
+			previousValue:      "456.654",
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "update counter",
+			metricType:         "counter",
+			metricName:         "test update counter",
+			metricValue:        "123",
+			previousValue:      "321",
+			expectedValue:      "444",
+			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name:               "empty type",
@@ -119,10 +140,21 @@ func TestSaveMetric(t *testing.T) {
 			if method == "" {
 				method = http.MethodPost
 			}
+			if tt.previousValue != "" {
+				previousMetric, _ := factory.New(tt.metricType, tt.metricName, tt.previousValue)
+				storage.Save(previousMetric)
+			}
 			response, body := testRequest(t, server, method, path)
 			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
+			if tt.expectedStatusCode == http.StatusOK {
+				if tt.expectedValue != "" {
+					assert.Equal(t, tt.expectedValue, storage.Get(tt.metricName).GetStringValue())
+				} else {
+					assert.Equal(t, tt.metricValue, storage.Get(tt.metricName).GetStringValue())
+				}
+			}
 		})
 	}
 }
@@ -131,7 +163,7 @@ func TestGetMetric(t *testing.T) {
 	tests := []struct {
 		method             string
 		name               string
-		preset             map[string]_metric.Metric
+		preset             map[string]metric.Metric
 		metricType         string
 		metricName         string
 		expectedStatusCode int
@@ -141,7 +173,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "valid gauge",
 			metricType: "gauge",
 			metricName: "test gauge",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedBody:       "123.321",
@@ -151,7 +183,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "valid counter",
 			metricType: "counter",
 			metricName: "test counter",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test counter": counter.New("test counter", 123),
 			},
 			expectedBody:       "123",
@@ -161,7 +193,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid gauge",
 			metricType: "gauge",
 			metricName: "test invalid gauge",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
@@ -170,7 +202,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid counter",
 			metricType: "counter",
 			metricName: "test invalid counter",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test counter": counter.New("test counter", 123),
 			},
 			expectedStatusCode: http.StatusNotFound,
@@ -179,26 +211,26 @@ func TestGetMetric(t *testing.T) {
 			name:       "empty type",
 			metricType: "",
 			metricName: "test empty type",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test empty type": gauge.New("test empty type", 123.321),
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedStatusCode: http.StatusNotFound,
 		},
 		{
 			name:       "invalid type",
 			metricType: "test",
 			metricName: "test invalid type",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test invalid type": gauge.New("test invalid type", 123.321),
 			},
-			expectedStatusCode: http.StatusBadRequest,
+			expectedStatusCode: http.StatusNotFound,
 			expectedBody:       "",
 		},
 		{
 			name:       "empty name",
 			metricType: "gauge",
 			metricName: "",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
@@ -209,7 +241,7 @@ func TestGetMetric(t *testing.T) {
 			name:       "invalid method",
 			metricType: "counter",
 			metricName: "test invalid method",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test invalid method": counter.New("test invalid method", 123),
 			},
 			expectedStatusCode: http.StatusMethodNotAllowed,
@@ -221,7 +253,7 @@ func TestGetMetric(t *testing.T) {
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
-				_ = storage.Save(metric)
+				storage.Save(metric)
 			}
 			path := fmt.Sprintf(
 				"/value/%v/%v",
@@ -244,18 +276,18 @@ func TestGetAllMetrics(t *testing.T) {
 	tests := []struct {
 		method             string
 		name               string
-		preset             map[string]_metric.Metric
+		preset             map[string]metric.Metric
 		expectedStatusCode int
 		expectedBody       string
 	}{
 		{
 			name:               "empty metrics",
-			preset:             map[string]_metric.Metric{},
+			preset:             map[string]metric.Metric{},
 			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name: "not empty metrics",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test gauge":          gauge.New("test gauge", 123.321),
 				"test counter":        counter.New("test counter", 123),
 				"test empty type":     gauge.New("test empty type", 123.321),
@@ -267,7 +299,7 @@ func TestGetAllMetrics(t *testing.T) {
 		},
 		{
 			name: "single metric",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedBody:       "test gauge: 123.321\n",
@@ -276,7 +308,7 @@ func TestGetAllMetrics(t *testing.T) {
 		{
 			method: http.MethodPost,
 			name:   "invalid method",
-			preset: map[string]_metric.Metric{
+			preset: map[string]metric.Metric{
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusMethodNotAllowed,
@@ -288,7 +320,7 @@ func TestGetAllMetrics(t *testing.T) {
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 			for _, metric := range tt.preset {
-				_ = storage.Save(metric)
+				storage.Save(metric)
 			}
 			method := tt.method
 			if method == "" {

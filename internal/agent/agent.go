@@ -1,60 +1,61 @@
 package agent
 
 import (
-	"github.com/m1khal3v/gometheus/internal/client"
-	"github.com/m1khal3v/gometheus/internal/collector"
-	"github.com/m1khal3v/gometheus/internal/collector/random"
-	"github.com/m1khal3v/gometheus/internal/collector/runtime"
+	"github.com/m1khal3v/gometheus/internal/agent/collector"
+	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
+	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
+	"github.com/m1khal3v/gometheus/internal/agent/storage"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
-	"sync"
+	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/pkg/client"
 	"time"
 )
 
-var mutex sync.Mutex
-var allMetrics = make([]_metric.Metric, 0)
-
 func Start(endpoint string, pollInterval, reportInterval uint32) {
-	go collectMetrics(pollInterval)
-	sendMetrics(endpoint, reportInterval)
+	storage := storage.New()
+	go collectMetrics(storage, pollInterval)
+	sendMetrics(storage, client.New(endpoint), reportInterval)
 }
 
-func collectMetrics(pollInterval uint32) {
-	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
+func createCollectors() []collector.Collector {
 	runtimeCollector := runtime.New()
 	randomCollector, err := random.New(0, 512)
 	if err != nil {
 		logger.Logger.Panic(err.Error())
 	}
 
-	for range ticker.C {
-		metrics, err := collector.CollectAll(
-			runtimeCollector,
-			randomCollector,
-		)
-		if err != nil {
-			logger.Logger.Warn(err.Error())
-		}
-		mutex.Lock()
-		allMetrics = append(allMetrics, metrics...)
-		mutex.Unlock()
+	return []collector.Collector{
+		runtimeCollector,
+		randomCollector,
 	}
 }
 
-func sendMetrics(endpoint string, reportInterval uint32) {
-	apiClient := client.New(endpoint)
+func collectMetrics(storage *storage.Storage, pollInterval uint32) {
+	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
+	collectors := createCollectors()
+
+	for range ticker.C {
+		for _, collector := range collectors {
+			storage.Append(collector.Collect())
+		}
+	}
+}
+
+type metricSender interface {
+	SendMetric(metricType, metricName, metricValue string) error
+}
+
+func sendMetrics(storage *storage.Storage, client metricSender, reportInterval uint32) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
-		mutex.Lock()
-		retryMetrics := make([]_metric.Metric, 0)
-		for _, metric := range allMetrics {
-			err := apiClient.SendMetric(metric)
+		storage.Remove(func(metric metric.Metric) bool {
+			err := client.SendMetric(metric.GetType(), metric.GetName(), metric.GetStringValue())
 			if err != nil {
 				logger.Logger.Warn(err.Error())
-				retryMetrics = append(retryMetrics, metric)
+				return false
 			}
-		}
-		allMetrics = retryMetrics
-		mutex.Unlock()
+
+			return true
+		})
 	}
 }
