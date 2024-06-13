@@ -30,7 +30,8 @@ func testRequest(t *testing.T, server *httptest.Server, method string, path stri
 }
 
 func TestSaveMetric(t *testing.T) {
-	server := httptest.NewServer(router.New(memory.New()))
+	storage := memory.New()
+	server := httptest.NewServer(router.New(storage))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -38,6 +39,7 @@ func TestSaveMetric(t *testing.T) {
 		metricType         string
 		metricName         string
 		metricValue        string
+		previousValue      string
 		expectedStatusCode int
 		expectedBody       string
 	}{
@@ -68,6 +70,22 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test invalid counter",
 			metricValue:        "123.321",
 			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name:               "update gauge",
+			metricType:         "gauge",
+			metricName:         "test update gauge",
+			metricValue:        "123.321",
+			previousValue:      "456.654",
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name:               "update counter",
+			metricType:         "counter",
+			metricName:         "test update counter",
+			metricValue:        "123",
+			previousValue:      "321",
+			expectedStatusCode: http.StatusOK,
 		},
 		{
 			name:               "empty type",
@@ -118,6 +136,10 @@ func TestSaveMetric(t *testing.T) {
 			method := tt.method
 			if method == "" {
 				method = http.MethodPost
+			}
+			if tt.previousValue != "" {
+				previousMetric, _ := _metric.New(tt.metricType, tt.metricName, tt.previousValue)
+				storage.Save(previousMetric)
 			}
 			response, body := testRequest(t, server, method, path)
 			_ = response.Body.Close()
