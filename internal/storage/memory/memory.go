@@ -17,12 +17,7 @@ func (storage *Storage) GetAll() map[string]_metric.Metric {
 }
 
 func (storage *Storage) Save(metric _metric.Metric) {
-	current, ok := storage.metrics[metric.GetName()]
-	if !ok {
-		storage.metrics[metric.GetName()] = metric
-	} else {
-		storage.metrics[metric.GetName()] = _metric.Combine(current, metric)
-	}
+	storage.metrics[metric.GetName()] = metric
 }
 
 func New() *Storage {

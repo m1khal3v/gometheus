@@ -29,6 +29,11 @@ func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *
 		return
 	}
 
-	routeContainer.Storage.Save(metric)
+	current := routeContainer.Storage.Get(metricName)
+	if current != nil {
+		routeContainer.Storage.Save(_metric.Combine(current, metric))
+	} else {
+		routeContainer.Storage.Save(metric)
+	}
 	writer.WriteHeader(http.StatusOK)
 }
