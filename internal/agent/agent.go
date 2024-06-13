@@ -1,12 +1,12 @@
 package agent
 
 import (
-	"github.com/m1khal3v/gometheus/internal/client"
 	"github.com/m1khal3v/gometheus/internal/collector"
 	"github.com/m1khal3v/gometheus/internal/collector/random"
 	"github.com/m1khal3v/gometheus/internal/collector/runtime"
 	"github.com/m1khal3v/gometheus/internal/logger"
 	_metric "github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/pkg/client"
 	"sync"
 	"time"
 )
@@ -16,7 +16,7 @@ var allMetrics = make([]_metric.Metric, 0)
 
 func Start(endpoint string, pollInterval, reportInterval uint32) {
 	go collectMetrics(pollInterval)
-	sendMetrics(endpoint, reportInterval)
+	sendMetrics(client.New(endpoint), reportInterval)
 }
 
 func collectMetrics(pollInterval uint32) {
@@ -41,14 +41,13 @@ func collectMetrics(pollInterval uint32) {
 	}
 }
 
-func sendMetrics(endpoint string, reportInterval uint32) {
-	apiClient := client.New(endpoint)
+func sendMetrics(apiClient apiClient, reportInterval uint32) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		mutex.Lock()
 		retryMetrics := make([]_metric.Metric, 0)
 		for _, metric := range allMetrics {
-			err := apiClient.SendMetric(metric)
+			err := apiClient.SendMetric(metric.GetType(), metric.GetName(), metric.String())
 			if err != nil {
 				logger.Logger.Warn(err.Error())
 				retryMetrics = append(retryMetrics, metric)

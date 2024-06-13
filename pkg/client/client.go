@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"net/http"
 )
 
@@ -31,11 +30,11 @@ func New(endpoint string) *Client {
 	}
 }
 
-func (client *Client) SendMetric(metric _metric.Metric) error {
+func (client *Client) SendMetric(metricType, metricName, metricValue string) error {
 	response, err := client.resty.R().SetPathParams(map[string]string{
-		"type":  metric.GetType(),
-		"name":  metric.GetName(),
-		"value": metric.String(),
+		"type":  metricType,
+		"name":  metricName,
+		"value": metricValue,
 	}).Post("update/{type}/{name}/{value}")
 
 	if err != nil {
