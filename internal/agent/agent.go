@@ -41,13 +41,13 @@ func collectMetrics(pollInterval uint32) {
 	}
 }
 
-func sendMetrics(apiClient apiClient, reportInterval uint32) {
+func sendMetrics(client metricSender, reportInterval uint32) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		mutex.Lock()
 		retryMetrics := make([]_metric.Metric, 0)
 		for _, metric := range allMetrics {
-			err := apiClient.SendMetric(metric.GetType(), metric.GetName(), metric.String())
+			err := client.SendMetric(metric.GetType(), metric.GetName(), metric.String())
 			if err != nil {
 				logger.Logger.Warn(err.Error())
 				retryMetrics = append(retryMetrics, metric)

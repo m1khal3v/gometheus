@@ -1,5 +1,5 @@
 package agent
 
-type apiClient interface {
+type metricSender interface {
 	SendMetric(metricType, metricName, metricValue string) error
 }
