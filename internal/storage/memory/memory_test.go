@@ -37,7 +37,7 @@ func TestStorage_Save(t *testing.T) {
 				"m3": counter.New("m3", 123),
 			},
 			metric: counter.New("m3", 5),
-			want:   "128",
+			want:   "5", // because the storage should not know about business logic
 		},
 		{
 			name: "gauge -> counter",
