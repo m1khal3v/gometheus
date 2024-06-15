@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/gauge"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Metric
+		want    metric.Metric
 		wantErr error
 	}{
 		{

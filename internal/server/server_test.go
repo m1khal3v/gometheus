@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/factory/metric"
 	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/gauge"
@@ -140,7 +141,7 @@ func TestSaveMetric(t *testing.T) {
 				method = http.MethodPost
 			}
 			if tt.previousValue != "" {
-				previousMetric, _ := _metric.New(tt.metricType, tt.metricName, tt.previousValue)
+				previousMetric, _ := metric.New(tt.metricType, tt.metricName, tt.previousValue)
 				storage.Save(previousMetric)
 			}
 			response, body := testRequest(t, server, method, path)

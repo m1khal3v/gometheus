@@ -50,7 +50,7 @@ func New() *Collector {
 	return &Collector{pollCount: 0}
 }
 
-func (collector *Collector) Collect() ([]_metric.Metric, error) {
+func (collector *Collector) Collect() []_metric.Metric {
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
 	metrics := make([]_metric.Metric, 0, 28)
@@ -60,7 +60,7 @@ func (collector *Collector) Collect() ([]_metric.Metric, error) {
 	metrics = append(metrics, collector.getPollCount())
 	collector.refreshPollCount()
 
-	return metrics, nil
+	return metrics
 }
 
 func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) _metric.Metric {

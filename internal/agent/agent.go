@@ -28,13 +28,10 @@ func collectMetrics(pollInterval uint32) {
 	}
 
 	for range ticker.C {
-		metrics, err := collector.CollectAll(
+		metrics := collector.CollectAll(
 			runtimeCollector,
 			randomCollector,
 		)
-		if err != nil {
-			logger.Logger.Warn(err.Error())
-		}
 		mutex.Lock()
 		allMetrics = append(allMetrics, metrics...)
 		mutex.Unlock()

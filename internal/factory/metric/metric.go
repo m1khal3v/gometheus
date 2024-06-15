@@ -2,6 +2,7 @@ package metric
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/gauge"
 	"strconv"
@@ -35,7 +36,7 @@ func newInvalidValueError(value string) ErrInvalidValue {
 	}
 }
 
-func New(metricType, name, value string) (Metric, error) {
+func New(metricType, name, value string) (metric.Metric, error) {
 	switch metricType {
 	case gauge.Type:
 		metricConvertedValue, err := strconv.ParseFloat(value, 64)

@@ -1,13 +1,13 @@
-package route
+package api
 
 import (
+	_metric "github.com/m1khal3v/gometheus/internal/factory/metric"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
 	"net/http"
 	"strings"
 )
 
-func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *http.Request) {
+func (container Container) SaveMetric(writer http.ResponseWriter, request *http.Request) {
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
 	metricValue := request.PathValue("value")
@@ -29,11 +29,11 @@ func (routeContainer Container) SaveMetric(writer http.ResponseWriter, request *
 		return
 	}
 
-	current := routeContainer.Storage.Get(metricName)
+	current := container.storage.Get(metricName)
 	if current != nil {
-		routeContainer.Storage.Save(_metric.Combine(current, metric))
+		container.storage.Save(current.Replace(metric))
 	} else {
-		routeContainer.Storage.Save(metric)
+		container.storage.Save(metric)
 	}
 	writer.WriteHeader(http.StatusOK)
 }

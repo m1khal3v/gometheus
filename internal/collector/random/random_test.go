@@ -32,8 +32,7 @@ func TestCollector_Collect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			collector, err := New(tt.min, tt.max)
 			assert.Nil(t, err)
-			metrics, err := collector.Collect()
-			assert.Nil(t, err)
+			metrics := collector.Collect()
 			assert.Len(t, metrics, 1)
 			assert.Equal(t, "RandomValue", metrics[0].GetName())
 			assert.Equal(t, "gauge", metrics[0].GetType())

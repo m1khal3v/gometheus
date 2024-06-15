@@ -1,14 +1,14 @@
-package route
+package api
 
 import (
 	"net/http"
 )
 
-func (routeContainer Container) GetMetric(writer http.ResponseWriter, request *http.Request) {
+func (container Container) GetMetric(writer http.ResponseWriter, request *http.Request) {
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
 
-	metric := routeContainer.Storage.Get(metricName)
+	metric := container.storage.Get(metricName)
 	if metric == nil || metric.GetType() != metricType {
 		writer.WriteHeader(http.StatusNotFound)
 		return

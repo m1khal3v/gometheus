@@ -7,8 +7,7 @@ import (
 
 func TestCollector_Collect(t *testing.T) {
 	collector := New()
-	metrics, err := collector.Collect()
-	assert.Nil(t, err)
+	metrics := collector.Collect()
 	assert.Len(t, metrics, 28)
 	for _, metric := range metrics {
 		if metric.GetName() == "PollCount" {

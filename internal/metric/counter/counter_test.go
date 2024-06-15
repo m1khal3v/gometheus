@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestMetric_Add(t *testing.T) {
+func TestMetric_Replace(t *testing.T) {
 	tests := []struct {
 		name    string
 		current *Metric
@@ -45,7 +45,7 @@ func TestMetric_Add(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, tt.current.Add(tt.other))
+			assert.Equal(t, tt.want, tt.current.Replace(tt.other))
 		})
 	}
 }

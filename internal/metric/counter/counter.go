@@ -1,6 +1,9 @@
 package counter
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/m1khal3v/gometheus/internal/metric"
+)
 
 const Type = "counter"
 
@@ -21,10 +24,12 @@ func (metric *Metric) GetStringValue() string {
 	return fmt.Sprintf("%d", metric.value)
 }
 
-func (metric *Metric) Add(other *Metric) *Metric {
-	metric.value += other.value
+func (metric *Metric) Replace(newMetric metric.Metric) metric.Metric {
+	if metric.GetType() == newMetric.GetType() {
+		newMetric.(*Metric).value += metric.value
+	}
 
-	return metric
+	return newMetric
 }
 
 func New(name string, value int64) *Metric {
