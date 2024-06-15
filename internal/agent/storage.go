@@ -25,7 +25,7 @@ func (storage *storage) appendMetrics(metrics []_metric.Metric) {
 }
 
 // removeMetrics applies the filter function to all metrics,
-// removes from the storage metrics for which the function returned true
+// removes metrics from the storage for which the function returned true
 func (storage *storage) removeMetrics(filter filter) {
 	storage.mutex.Lock()
 	saved := make([]_metric.Metric, 0)
