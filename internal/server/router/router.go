@@ -4,9 +4,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/leosunmo/zapchi"
-	"github.com/m1khal3v/gometheus/internal/api"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	_storage "github.com/m1khal3v/gometheus/internal/storage"
+	"github.com/m1khal3v/gometheus/internal/server/api"
+	_storage "github.com/m1khal3v/gometheus/internal/server/storage"
 )
 
 func New(storage _storage.Storage) chi.Router {

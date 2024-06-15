@@ -2,8 +2,8 @@ package random
 
 import (
 	"fmt"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
-	"github.com/m1khal3v/gometheus/internal/metric/gauge"
+	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
 	"math/rand/v2"
 )
 
@@ -39,8 +39,8 @@ func New(min, max float64) (*Collector, error) {
 	}, nil
 }
 
-func (collector *Collector) Collect() []_metric.Metric {
-	return []_metric.Metric{gauge.New(
+func (collector *Collector) Collect() []metric.Metric {
+	return []metric.Metric{gauge.New(
 		"RandomValue",
 		// since rand.Float64 returns a value from 0 to 1 and does not support Min/Max
 		// correct this by multiplying the value by the difference between Max and Min and adding Min to the result

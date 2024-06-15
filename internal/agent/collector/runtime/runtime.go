@@ -3,9 +3,9 @@ package runtime
 import (
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/logger"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
-	"github.com/m1khal3v/gometheus/internal/metric/counter"
-	"github.com/m1khal3v/gometheus/internal/metric/gauge"
+	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
+	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
 	"reflect"
 	"runtime"
 )
@@ -50,10 +50,10 @@ func New() *Collector {
 	return &Collector{pollCount: 0}
 }
 
-func (collector *Collector) Collect() []_metric.Metric {
+func (collector *Collector) Collect() []metric.Metric {
 	memStats := &runtime.MemStats{}
 	runtime.ReadMemStats(memStats)
-	metrics := make([]_metric.Metric, 0, 28)
+	metrics := make([]metric.Metric, 0, 28)
 	for _, name := range getCollectableMemStatsMetrics() {
 		metrics = append(metrics, collector.collectMetric(memStats, name))
 	}
@@ -63,7 +63,7 @@ func (collector *Collector) Collect() []_metric.Metric {
 	return metrics
 }
 
-func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) _metric.Metric {
+func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) metric.Metric {
 	field := reflect.ValueOf(*memStats).FieldByName(name)
 	if !field.IsValid() {
 		logger.Logger.Panic(fmt.Sprintf("Property '%s' not found in memStats", name))
@@ -77,7 +77,7 @@ func (collector *Collector) collectMetric(memStats *runtime.MemStats, name strin
 	)
 }
 
-func (collector *Collector) getPollCount() _metric.Metric {
+func (collector *Collector) getPollCount() metric.Metric {
 	return counter.New(
 		"PollCount",
 		int64(collector.pollCount),

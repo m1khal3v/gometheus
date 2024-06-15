@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/m1khal3v/gometheus/internal/storage"
+	"github.com/m1khal3v/gometheus/internal/server/storage"
 )
 
 type Container struct {
