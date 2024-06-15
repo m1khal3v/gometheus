@@ -2,8 +2,7 @@ package server
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/factory/metric"
-	metric "github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/factory"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
