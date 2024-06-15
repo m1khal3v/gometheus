@@ -6,10 +6,10 @@ import (
 	"github.com/leosunmo/zapchi"
 	"github.com/m1khal3v/gometheus/internal/logger"
 	"github.com/m1khal3v/gometheus/internal/server/api"
-	_storage "github.com/m1khal3v/gometheus/internal/server/storage"
+	"github.com/m1khal3v/gometheus/internal/server/storage"
 )
 
-func New(storage _storage.Storage) chi.Router {
+func New(storage storage.Storage) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)

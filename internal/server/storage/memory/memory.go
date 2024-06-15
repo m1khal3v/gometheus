@@ -1,7 +1,7 @@
 package memory
 
 import (
-	metric "github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric"
 )
 
 type Storage struct {

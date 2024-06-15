@@ -2,7 +2,7 @@ package api
 
 import (
 	"github.com/m1khal3v/gometheus/internal/logger"
-	metric "github.com/m1khal3v/gometheus/internal/metric/factory"
+	"github.com/m1khal3v/gometheus/internal/metric/factory"
 	"net/http"
 	"strings"
 )
@@ -22,7 +22,7 @@ func (container Container) SaveMetric(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	metric, err := metric.New(metricType, metricName, metricValue)
+	metric, err := factory.New(metricType, metricName, metricValue)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		writer.WriteHeader(http.StatusBadRequest)
