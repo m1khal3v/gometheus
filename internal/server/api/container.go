@@ -1,15 +1,16 @@
 package api
 
 import (
+	"github.com/m1khal3v/gometheus/internal/server/metric"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 )
 
 type Container struct {
-	storage storage.Storage
+	manager *metric.Manager
 }
 
 func New(storage storage.Storage) *Container {
 	return &Container{
-		storage: storage,
+		manager: metric.NewManager(storage),
 	}
 }

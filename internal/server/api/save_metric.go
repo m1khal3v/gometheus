@@ -29,11 +29,6 @@ func (container Container) SaveMetric(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	current := container.storage.Get(metricName)
-	if current != nil {
-		container.storage.Save(current.Replace(metric))
-	} else {
-		container.storage.Save(metric)
-	}
+	container.manager.Save(metric)
 	writer.WriteHeader(http.StatusOK)
 }
