@@ -1,4 +1,4 @@
-package metric
+package manager
 
 import (
 	"github.com/m1khal3v/gometheus/internal/metric"
@@ -11,7 +11,7 @@ type Manager struct {
 	storage storage.Storage
 }
 
-func NewManager(storage storage.Storage) *Manager {
+func New(storage storage.Storage) *Manager {
 	return &Manager{
 		storage: storage,
 	}
