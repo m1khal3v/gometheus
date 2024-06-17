@@ -39,5 +39,5 @@ func (manager *Manager) saveCounter(metric *counter.Metric) {
 	if previous != nil && previous.GetType() == metric.GetType() {
 		metric.Add(previous.(*counter.Metric).GetValue())
 	}
-	manager.storage.Save(previous)
+	manager.storage.Save(metric)
 }
