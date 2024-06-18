@@ -134,3 +134,13 @@ func TestStorage_GetAll(t *testing.T) {
 		})
 	}
 }
+
+func TestStorage_SaveGet(t *testing.T) {
+	storage := New()
+	metric := counter.New("m1", 123)
+	storage.Save(metric)
+	assert.Equal(t, metric, storage.Get("m1"))
+	assert.NotSame(t, metric, storage.Get("m1"))
+	assert.Equal(t, metric, storage.GetAll()["m1"])
+	assert.NotSame(t, metric, storage.GetAll()["m1"])
+}

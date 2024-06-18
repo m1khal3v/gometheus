@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"fmt"
+	"github.com/m1khal3v/gometheus/internal/logger"
 	"github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
@@ -31,6 +33,8 @@ func (manager *Manager) Save(metric metric.Metric) {
 		manager.storage.Save(metric)
 	case counter.Type:
 		manager.saveCounter(metric.(*counter.Metric))
+	default:
+		logger.Logger.Panic(fmt.Sprintf("Unsupported metric type %s", metric.GetType()))
 	}
 }
 
