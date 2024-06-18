@@ -24,6 +24,10 @@ func (metric *Metric) GetStringValue() string {
 	return fmt.Sprintf("%g", metric.value)
 }
 
+func (metric *Metric) GetValue() float64 {
+	return metric.value
+}
+
 func (metric *Metric) Clone() metric.Metric {
 	clone := *metric
 	return &clone

@@ -1,8 +1,8 @@
 package random
 
 import (
+	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"testing"
 )
 
@@ -36,7 +36,7 @@ func TestCollector_Collect(t *testing.T) {
 			assert.Len(t, metrics, 1)
 			assert.Equal(t, "RandomValue", metrics[0].GetName())
 			assert.Equal(t, "gauge", metrics[0].GetType())
-			value, _ := strconv.ParseFloat(metrics[0].GetStringValue(), 64)
+			value := metrics[0].(*gauge.Metric).GetValue()
 			assert.GreaterOrEqual(t, value, tt.min)
 			assert.LessOrEqual(t, value, tt.max)
 		})
