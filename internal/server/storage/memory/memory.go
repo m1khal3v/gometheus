@@ -9,15 +9,25 @@ type Storage struct {
 }
 
 func (storage *Storage) Get(name string) metric.Metric {
-	return storage.metrics[name]
+	metric, ok := storage.metrics[name]
+	if !ok {
+		return nil
+	}
+
+	return metric.Clone()
 }
 
 func (storage *Storage) GetAll() map[string]metric.Metric {
-	return storage.metrics
+	clone := make(map[string]metric.Metric)
+	for name, metric := range storage.metrics {
+		clone[name] = metric.Clone()
+	}
+
+	return clone
 }
 
 func (storage *Storage) Save(metric metric.Metric) {
-	storage.metrics[metric.GetName()] = metric
+	storage.metrics[metric.GetName()] = metric.Clone()
 }
 
 func New() *Storage {

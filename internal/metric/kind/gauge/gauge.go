@@ -2,6 +2,7 @@ package gauge
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/metric"
 )
 
 const Type = "gauge"
@@ -21,6 +22,11 @@ func (metric *Metric) GetName() string {
 
 func (metric *Metric) GetStringValue() string {
 	return fmt.Sprintf("%g", metric.value)
+}
+
+func (metric *Metric) Clone() metric.Metric {
+	clone := *metric
+	return &clone
 }
 
 func New(name string, value float64) *Metric {
