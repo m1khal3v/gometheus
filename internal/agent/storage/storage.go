@@ -21,6 +21,7 @@ func New() *Storage {
 func (storage *Storage) Append(metrics []metric.Metric) {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
+
 	for _, metric := range metrics {
 		storage.metrics = append(storage.metrics, metric.Clone())
 	}
@@ -31,6 +32,7 @@ func (storage *Storage) Append(metrics []metric.Metric) {
 func (storage *Storage) Remove(filter filter) {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
+
 	saved := make([]metric.Metric, 0)
 	for _, metric := range storage.metrics {
 		if !filter(metric) {
