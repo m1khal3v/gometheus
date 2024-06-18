@@ -4,12 +4,16 @@ import (
 	"github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/internal/server/mutex"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestNewStorage(t *testing.T) {
-	assert.Equal(t, New(), &Storage{metrics: make(map[string]metric.Metric)})
+	assert.Equal(t, New(), &Storage{
+		mutex:   mutex.NewNamedMutex(),
+		metrics: make(map[string]metric.Metric),
+	})
 }
 
 func TestStorage_Save(t *testing.T) {
@@ -59,6 +63,7 @@ func TestStorage_Save(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := &Storage{
+				mutex:   mutex.NewNamedMutex(),
 				metrics: tt.preset,
 			}
 			storage.Save(tt.metric)
@@ -101,6 +106,7 @@ func TestStorage_Get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := &Storage{
+				mutex:   mutex.NewNamedMutex(),
 				metrics: tt.preset,
 			}
 			assert.Equal(t, tt.want, storage.Get(tt.metricName))
@@ -128,6 +134,7 @@ func TestStorage_GetAll(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := &Storage{
+				mutex:   mutex.NewNamedMutex(),
 				metrics: tt.preset,
 			}
 			assert.Equal(t, tt.preset, storage.GetAll())
