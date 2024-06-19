@@ -18,7 +18,9 @@ func New(storage storage.Storage) chi.Router {
 	router.Use(_middleware.ZapLogger(logger.Logger, "http"))
 	router.Get("/", routes.GetAllMetrics)
 	router.Post("/update/{type}/{name}/{value}", routes.SaveMetric)
+	router.Post("/update", routes.JSONSaveMetric)
 	router.Get("/value/{type}/{name}", routes.GetMetric)
+	router.Post("/value", routes.JSONGetMetric)
 
 	return router
 }

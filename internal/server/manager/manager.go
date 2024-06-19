@@ -27,7 +27,7 @@ func (manager *Manager) GetAll() map[string]metric.Metric {
 	return manager.storage.GetAll()
 }
 
-func (manager *Manager) Save(metric metric.Metric) {
+func (manager *Manager) Save(metric metric.Metric) metric.Metric {
 	switch metric.GetType() {
 	case gauge.Type:
 		manager.storage.Save(metric)
@@ -36,6 +36,8 @@ func (manager *Manager) Save(metric metric.Metric) {
 	default:
 		logger.Logger.Panic(fmt.Sprintf("Unsupported metric type %s", metric.GetType()))
 	}
+
+	return metric
 }
 
 func (manager *Manager) saveCounter(metric *counter.Metric) {

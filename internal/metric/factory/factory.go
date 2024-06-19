@@ -5,6 +5,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/metric"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/pkg/request"
 	"strconv"
 )
 
@@ -54,5 +55,24 @@ func New(metricType, name, value string) (metric.Metric, error) {
 		return counter.New(name, metricConvertedValue), nil
 	default:
 		return nil, newUnknownTypeError(metricType)
+	}
+}
+
+func NewFromRequest(request request.SaveMetricRequest) (metric.Metric, error) {
+	switch request.MetricType {
+	case gauge.Type:
+		if nil == request.Value {
+			return nil, newInvalidValueError("nil")
+		}
+
+		return gauge.New(request.MetricName, *request.Value), nil
+	case counter.Type:
+		if nil == request.Delta {
+			return nil, newInvalidValueError("nil")
+		}
+
+		return counter.New(request.MetricName, *request.Delta), nil
+	default:
+		return nil, newUnknownTypeError(request.MetricType)
 	}
 }
