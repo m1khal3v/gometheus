@@ -7,14 +7,17 @@ import (
 	"github.com/m1khal3v/gometheus/internal/agent/storage"
 	"github.com/m1khal3v/gometheus/internal/logger"
 	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/metric/transformer"
 	"github.com/m1khal3v/gometheus/pkg/client"
+	"github.com/m1khal3v/gometheus/pkg/request"
+	"github.com/m1khal3v/gometheus/pkg/response"
 	"time"
 )
 
 func Start(endpoint string, pollInterval, reportInterval uint32) {
 	storage := storage.New()
 	go collectMetrics(storage, pollInterval)
-	sendMetrics(storage, client.New(endpoint), reportInterval)
+	saveMetrics(storage, client.New(endpoint), reportInterval)
 }
 
 func createCollectors() []collector.Collector {
@@ -41,15 +44,21 @@ func collectMetrics(storage *storage.Storage, pollInterval uint32) {
 	}
 }
 
-type metricSender interface {
-	SendMetric(metricType, metricName, metricValue string) error
+type apiClient interface {
+	SaveMetricAsJson(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error)
 }
 
-func sendMetrics(storage *storage.Storage, client metricSender, reportInterval uint32) {
+func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint32) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
 		storage.Remove(func(metric metric.Metric) bool {
-			err := client.SendMetric(metric.GetType(), metric.GetName(), metric.GetStringValue())
+			request, err := transformer.TransformToSaveRequest(metric)
+			if err != nil {
+				logger.Logger.Error(err.Error())
+				return false
+			}
+
+			_, err = client.SaveMetricAsJson(request)
 			if err != nil {
 				logger.Logger.Warn(err.Error())
 				return false

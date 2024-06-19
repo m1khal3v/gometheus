@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/m1khal3v/gometheus/pkg/request"
+	"github.com/m1khal3v/gometheus/pkg/response"
 	"net/http"
 )
 
@@ -30,20 +32,32 @@ func New(endpoint string) *Client {
 	}
 }
 
-func (client *Client) SendMetric(metricType, metricName, metricValue string) error {
-	response, err := client.resty.R().SetPathParams(map[string]string{
+func (client *Client) SaveMetric(metricType, metricName, metricValue string) error {
+	result, err := client.resty.R().SetPathParams(map[string]string{
 		"type":  metricType,
 		"name":  metricName,
 		"value": metricValue,
 	}).Post("update/{type}/{name}/{value}")
-
 	if err != nil {
 		return err
 	}
 
-	if response.StatusCode() != http.StatusOK {
-		return newUnexpectedStatusError(response.StatusCode())
+	if result.StatusCode() != http.StatusOK {
+		return newUnexpectedStatusError(result.StatusCode())
 	}
 
 	return nil
+}
+
+func (client *Client) SaveMetricAsJson(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error) {
+	result, err := client.resty.R().SetBody(request).SetResult(&response.SaveMetricResponse{}).Post("update")
+	if err != nil {
+		return nil, err
+	}
+
+	if result.StatusCode() != http.StatusOK {
+		return nil, newUnexpectedStatusError(result.StatusCode())
+	}
+
+	return result.Result().(*response.SaveMetricResponse), nil
 }

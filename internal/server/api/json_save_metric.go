@@ -1,0 +1,52 @@
+package api
+
+import (
+	"encoding/json"
+	"github.com/asaskevich/govalidator"
+	"github.com/m1khal3v/gometheus/internal/logger"
+	"github.com/m1khal3v/gometheus/internal/metric/factory"
+	"github.com/m1khal3v/gometheus/internal/metric/transformer"
+	_request "github.com/m1khal3v/gometheus/pkg/request"
+	"net/http"
+)
+
+func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *http.Request) {
+	saveMetricRequest := _request.SaveMetricRequest{}
+	err := json.NewDecoder(request.Body).Decode(&saveMetricRequest)
+	if err != nil {
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	_, err = govalidator.ValidateStruct(saveMetricRequest)
+	if err != nil {
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	metric, err := factory.NewFromRequest(saveMetricRequest)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	metric = container.manager.Save(metric)
+	response, err := transformer.TransformToSaveResponse(metric)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse, err := json.Marshal(response)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write(jsonResponse)
+}
