@@ -49,7 +49,7 @@ func (client *Client) SaveMetric(metricType, metricName, metricValue string) err
 	return nil
 }
 
-func (client *Client) SaveMetricAsJson(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error) {
+func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error) {
 	result, err := client.resty.R().SetBody(request).SetResult(&response.SaveMetricResponse{}).Post("update")
 	if err != nil {
 		return nil, err

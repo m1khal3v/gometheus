@@ -45,7 +45,7 @@ func collectMetrics(storage *storage.Storage, pollInterval uint32) {
 }
 
 type apiClient interface {
-	SaveMetricAsJson(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error)
+	SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error)
 }
 
 func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint32) {
@@ -58,7 +58,7 @@ func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint
 				return false
 			}
 
-			_, err = client.SaveMetricAsJson(request)
+			_, err = client.SaveMetricAsJSON(request)
 			if err != nil {
 				logger.Logger.Warn(err.Error())
 				return false

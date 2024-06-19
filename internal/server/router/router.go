@@ -17,10 +17,14 @@ func New(storage storage.Storage) chi.Router {
 	router.Use(middleware.Compress(5))
 	router.Use(_middleware.ZapLogger(logger.Logger, "http"))
 	router.Get("/", routes.GetAllMetrics)
-	router.Post("/update/{type}/{name}/{value}", routes.SaveMetric)
-	router.Post("/update", routes.JSONSaveMetric)
-	router.Get("/value/{type}/{name}", routes.GetMetric)
-	router.Post("/value", routes.JSONGetMetric)
+	router.Route("/update", func(router chi.Router) {
+		router.Post("/{type}/{name}/{value}", routes.SaveMetric)
+		router.Post("/", routes.JSONSaveMetric)
+	})
+	router.Route("/value", func(router chi.Router) {
+		router.Get("/{type}/{name}", routes.GetMetric)
+		router.Post("/", routes.JSONGetMetric)
+	})
 
 	return router
 }

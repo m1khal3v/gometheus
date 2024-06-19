@@ -46,16 +46,18 @@ func TransformToSaveRequest(metric metric.Metric) (*request.SaveMetricRequest, e
 func TransformToSaveResponse(metric metric.Metric) (*response.SaveMetricResponse, error) {
 	switch metric.GetType() {
 	case gauge.Type:
+		value := metric.(*gauge.Metric).GetValue()
 		return &response.SaveMetricResponse{
 			MetricType: metric.GetType(),
 			MetricName: metric.GetName(),
-			Value:      metric.(*gauge.Metric).GetValue(),
+			Value:      &value,
 		}, nil
 	case counter.Type:
+		value := metric.(*counter.Metric).GetValue()
 		return &response.SaveMetricResponse{
 			MetricType: metric.GetType(),
 			MetricName: metric.GetName(),
-			Delta:      metric.(*counter.Metric).GetValue(),
+			Delta:      &value,
 		}, nil
 	}
 	return nil, newUnknownTypeError(metric.GetType())
@@ -64,16 +66,18 @@ func TransformToSaveResponse(metric metric.Metric) (*response.SaveMetricResponse
 func TransformToGetResponse(metric metric.Metric) (*response.GetMetricResponse, error) {
 	switch metric.GetType() {
 	case gauge.Type:
+		value := metric.(*gauge.Metric).GetValue()
 		return &response.GetMetricResponse{
 			MetricType: metric.GetType(),
 			MetricName: metric.GetName(),
-			Value:      metric.(*gauge.Metric).GetValue(),
+			Value:      &value,
 		}, nil
 	case counter.Type:
+		value := metric.(*counter.Metric).GetValue()
 		return &response.GetMetricResponse{
 			MetricType: metric.GetType(),
 			MetricName: metric.GetName(),
-			Delta:      metric.(*counter.Metric).GetValue(),
+			Delta:      &value,
 		}, nil
 	}
 	return nil, newUnknownTypeError(metric.GetType())
