@@ -20,7 +20,6 @@ type encoderPool struct {
 
 type compressedResponseWriter struct {
 	http.ResponseWriter
-	responseWriter http.ResponseWriter
 	encoder        io.Writer
 	writer         io.Writer
 	encoding       string
@@ -87,7 +86,7 @@ func Compress(level uint8, types ...string) func(next http.Handler) http.Handler
 			defer restore()
 
 			next.ServeHTTP(&compressedResponseWriter{
-				responseWriter: writer,
+				ResponseWriter: writer,
 				encoder:        encoder,
 				encoding:       encoding,
 				supportedTypes: types,
@@ -124,13 +123,13 @@ func (compressor encoderPool) getEncoder(header http.Header, writer http.Respons
 
 func (writer *compressedResponseWriter) WriteHeader(code int) {
 	if writer.wroteHeader {
-		writer.responseWriter.WriteHeader(code)
+		writer.ResponseWriter.WriteHeader(code)
 		return
 	}
 
-	defer writer.responseWriter.WriteHeader(code)
+	defer writer.ResponseWriter.WriteHeader(code)
 	writer.wroteHeader = true
-	writer.writer = writer.responseWriter
+	writer.writer = writer.ResponseWriter
 
 	if writer.Header().Get("Content-Encoding") != "" {
 		return
@@ -165,7 +164,7 @@ func (writer *compressedResponseWriter) Flush() {
 		_ = flusher.Flush()
 	}
 
-	if flusher, ok := writer.responseWriter.(http.Flusher); ok {
+	if flusher, ok := writer.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()
 	}
 }
@@ -192,5 +191,5 @@ func (writer *compressedResponseWriter) Close() error {
 }
 
 func (writer *compressedResponseWriter) Unwrap() http.ResponseWriter {
-	return writer.responseWriter
+	return writer.ResponseWriter
 }
