@@ -28,7 +28,10 @@ func newUnexpectedStatusError(status int) ErrUnexpectedStatus {
 
 func New(endpoint string) *Client {
 	return &Client{
-		resty: resty.New().SetBaseURL(fmt.Sprintf("http://%s/", endpoint)),
+		resty: resty.
+			New().
+			SetBaseURL(fmt.Sprintf("http://%s/", endpoint)).
+			SetHeader("Accept-Encoding", "gzip"),
 	}
 }
 

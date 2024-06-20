@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
@@ -294,7 +293,6 @@ func TestGetAllMetrics(t *testing.T) {
 				"test invalid type":   gauge.New("test invalid type", 123.321),
 				"test invalid method": counter.New("test invalid method", 123),
 			},
-			expectedBody:       "test invalid method: 123\ntest gauge: 123.321\ntest counter: 123\ntest empty type: 123.321\ntest invalid type: 123.321\n",
 			expectedStatusCode: http.StatusOK,
 		},
 		{
@@ -302,7 +300,6 @@ func TestGetAllMetrics(t *testing.T) {
 			preset: map[string]metric.Metric{
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
-			expectedBody:       "test gauge: 123.321\n",
 			expectedStatusCode: http.StatusOK,
 		},
 		{
@@ -329,11 +326,14 @@ func TestGetAllMetrics(t *testing.T) {
 			response, body := testRequest(t, server, method, "/")
 			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
-			if !strings.Contains(tt.expectedBody, "\n") {
-				assert.Equal(t, tt.expectedBody, body)
-			} else {
-				for _, part := range strings.Split(tt.expectedBody, "\n") {
-					assert.Contains(t, body, part)
+			if tt.expectedStatusCode == http.StatusOK {
+				for _, metric := range tt.preset {
+					assert.Contains(t, body, fmt.Sprintf(
+						"        <tr>\n            <td>%s</td>\n            <td>%s</td>\n            <td>%s</td>\n        </tr>",
+						metric.GetName(),
+						metric.GetType(),
+						metric.GetStringValue(),
+					))
 				}
 			}
 		})

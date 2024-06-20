@@ -20,11 +20,10 @@ type encoderPool struct {
 
 type compressedResponseWriter struct {
 	http.ResponseWriter
-	responseWriter http.ResponseWriter
 	encoder        io.Writer
 	writer         io.Writer
 	encoding       string
-	types          []string
+	supportedTypes []string
 	wroteHeader    bool
 }
 
@@ -84,14 +83,18 @@ func Compress(level uint8, types ...string) func(next http.Handler) http.Handler
 				next.ServeHTTP(writer, request)
 				return
 			}
-			defer restore()
 
-			next.ServeHTTP(&compressedResponseWriter{
-				responseWriter: writer,
+			compressedWriter := &compressedResponseWriter{
+				ResponseWriter: writer,
 				encoder:        encoder,
 				encoding:       encoding,
-				types:          types,
-			}, request)
+				supportedTypes: types,
+			}
+
+			defer restore()
+			defer compressedWriter.Close()
+
+			next.ServeHTTP(compressedWriter, request)
 		})
 	}
 }
@@ -106,7 +109,7 @@ func (compressor encoderPool) getEncoder(header http.Header, writer http.Respons
 	acceptedEncodings := strings.Split(strings.ToLower(acceptEncoding), ",")
 	for _, encoding := range compressor.encoderOrder {
 		for _, acceptedEncoding := range acceptedEncodings {
-			if strings.Contains(acceptedEncoding, encoding) {
+			if strings.HasPrefix(strings.TrimLeft(acceptedEncoding, " "), encoding) {
 				pool := compressor.encoderPool[encoding]
 				encoder := pool.Get().(resettableWriter)
 				restore := func() {
@@ -124,11 +127,13 @@ func (compressor encoderPool) getEncoder(header http.Header, writer http.Respons
 
 func (writer *compressedResponseWriter) WriteHeader(code int) {
 	if writer.wroteHeader {
-		writer.WriteHeader(code) // Allow multiple calls to propagate.
+		writer.ResponseWriter.WriteHeader(code)
 		return
 	}
+
+	defer writer.ResponseWriter.WriteHeader(code)
 	writer.wroteHeader = true
-	defer writer.WriteHeader(code)
+	writer.writer = writer.ResponseWriter
 
 	if writer.Header().Get("Content-Encoding") != "" {
 		return
@@ -136,8 +141,7 @@ func (writer *compressedResponseWriter) WriteHeader(code int) {
 
 	contentType := writer.Header().Get("Content-Type")
 	contentType, _, _ = strings.Cut(contentType, ";")
-	if !slices.Contains(writer.types, contentType) {
-		writer.writer = writer.responseWriter
+	if !slices.Contains(writer.supportedTypes, contentType) {
 		return
 	}
 
@@ -164,7 +168,7 @@ func (writer *compressedResponseWriter) Flush() {
 		_ = flusher.Flush()
 	}
 
-	if flusher, ok := writer.responseWriter.(http.Flusher); ok {
+	if flusher, ok := writer.ResponseWriter.(http.Flusher); ok {
 		flusher.Flush()
 	}
 }
@@ -191,5 +195,5 @@ func (writer *compressedResponseWriter) Close() error {
 }
 
 func (writer *compressedResponseWriter) Unwrap() http.ResponseWriter {
-	return writer.responseWriter
+	return writer.ResponseWriter
 }
