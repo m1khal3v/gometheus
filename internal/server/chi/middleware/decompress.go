@@ -18,14 +18,7 @@ func newDecoderPool() *decoderPool {
 		pool: map[string]*sync.Pool{
 			"gzip": {
 				New: func() any {
-					// If you pass a valid gzip stream to gzip.NewReader(), the returned gzip.Reader will not be nil
-					reader, err := gzip.NewReader(bytes.NewReader([]byte{31, 139, 8, 0, 0, 0, 0, 0, 0,
-						255, 203, 72, 205, 201, 201, 7, 0, 134, 166, 16, 54, 5, 0, 0, 0}))
-					if err != nil {
-						return nil
-					}
-
-					return reader
+					return new(gzip.Reader)
 				},
 			},
 			"deflate": {
@@ -56,7 +49,7 @@ func Decompress() func(next http.Handler) http.Handler {
 }
 
 type gzipResetter interface {
-	Reset(r io.ReadCloser) error
+	Reset(r io.Reader) error
 }
 
 func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser, func()) {
@@ -70,22 +63,19 @@ func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser,
 	restore := func() {
 		pool.Put(decoder)
 	}
-	if gzipReader, ok := decoder.(gzipResetter); ok {
-		err := gzipReader.Reset(request.Body)
+
+	switch encoding {
+	case "gzip":
+		err := decoder.(gzipResetter).Reset(request.Body)
 		if err != nil {
 			return nil, nil
 		}
-
-		return gzipReader.(io.ReadCloser), restore
-	}
-	if deflateReader, ok := decoder.(flate.Resetter); ok {
-		err := deflateReader.Reset(request.Body, nil)
+	case "deflate":
+		err := decoder.(flate.Resetter).Reset(request.Body, nil)
 		if err != nil {
 			return nil, nil
 		}
-
-		return deflateReader.(io.ReadCloser), restore
 	}
 
-	return nil, nil
+	return decoder.(io.ReadCloser), restore
 }
