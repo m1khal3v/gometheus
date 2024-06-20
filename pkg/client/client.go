@@ -37,14 +37,19 @@ func New(endpoint string, compress bool) *Client {
 	if compress {
 		client.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
 			pipeReader, pipeWriter := io.Pipe()
-			writer := gzip.NewWriter(pipeWriter)
-			_, err := io.Copy(writer, request.Body)
+			writer, err := gzip.NewWriterLevel(pipeWriter, 5)
+			if err != nil {
+				return err
+			}
+
+			_, err = io.Copy(writer, request.Body)
 			if err != nil {
 				return err
 			}
 
 			request.Body = pipeReader
 			request.Header.Set("Content-Encoding", "gzip")
+			request.Header.Del("Content-Length")
 
 			return nil
 		})
