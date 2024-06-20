@@ -1,11 +1,11 @@
 package middleware
 
 import (
+	"bytes"
 	"compress/flate"
 	"compress/gzip"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -18,7 +18,7 @@ func newDecoderPool() *decoderPool {
 		pool: map[string]*sync.Pool{
 			"gzip": {
 				New: func() any {
-					reader, err := gzip.NewReader(strings.NewReader(""))
+					reader, err := gzip.NewReader(bytes.NewReader(nil))
 					if err != nil {
 						return nil
 					}
@@ -28,7 +28,7 @@ func newDecoderPool() *decoderPool {
 			},
 			"deflate": {
 				New: func() any {
-					return flate.NewReader(strings.NewReader(""))
+					return flate.NewReader(bytes.NewReader(nil))
 				},
 			},
 		},
