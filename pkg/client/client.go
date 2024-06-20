@@ -6,6 +6,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"io"
 	"net/http"
 )
 
@@ -35,12 +36,16 @@ func New(endpoint string, compress bool) *Client {
 
 	if compress {
 		client.SetPreRequestHook(func(client *resty.Client, request *http.Request) error {
-			reader, err := gzip.NewReader(request.Body)
+			pipeReader, pipeWriter := io.Pipe()
+			writer := gzip.NewWriter(pipeWriter)
+			_, err := io.Copy(writer, request.Body)
 			if err != nil {
 				return err
 			}
 
-			request.Body = reader
+			request.Body = pipeReader
+			request.Header.Set("Content-Encoding", "gzip")
+
 			return nil
 		})
 	}
