@@ -124,11 +124,11 @@ func (compressor encoderPool) getEncoder(header http.Header, writer http.Respons
 
 func (writer *compressedResponseWriter) WriteHeader(code int) {
 	if writer.wroteHeader {
-		writer.WriteHeader(code)
+		writer.responseWriter.WriteHeader(code)
 		return
 	}
 
-	defer writer.WriteHeader(code)
+	defer writer.responseWriter.WriteHeader(code)
 	writer.wroteHeader = true
 	writer.writer = writer.responseWriter
 
