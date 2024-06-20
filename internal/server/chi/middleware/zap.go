@@ -8,7 +8,7 @@ import (
 )
 
 func ZapLogger(logger *zap.Logger, name string) func(next http.Handler) http.Handler {
-	logger = logger.Named(name).WithOptions(zap.AddCallerSkip(1))
+	logger = logger.Named(name)
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
