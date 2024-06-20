@@ -36,13 +36,17 @@ func New(endpoint string, compress bool) *Client {
 		SetHeader("Accept-Encoding", "gzip")
 
 	if compress {
-		client.SetPreRequestHook(compressRequest)
+		client.SetPreRequestHook(compressRequestBody)
 	}
 
 	return &Client{resty: client}
 }
 
-func compressRequest(client *resty.Client, request *http.Request) error {
+func compressRequestBody(client *resty.Client, request *http.Request) error {
+	if request.ContentLength == 0 || request.Body == nil {
+		return nil
+	}
+
 	buffer := new(bytes.Buffer)
 	writer, err := gzip.NewWriterLevel(buffer, 5)
 	if err != nil {
