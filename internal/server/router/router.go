@@ -14,7 +14,7 @@ func New(storage storage.Storage) chi.Router {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	router.Use(middleware.RealIP)
-	router.Use(middleware.Compress(5))
+	router.Use(_middleware.Compress(5))
 	router.Use(_middleware.ZapLogger(logger.Logger, "http"))
 	router.Get("/", routes.GetAllMetrics)
 	router.Route("/update", func(router chi.Router) {
