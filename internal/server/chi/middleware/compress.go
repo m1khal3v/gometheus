@@ -106,7 +106,7 @@ func (compressor encoderPool) getEncoder(header http.Header, writer http.Respons
 	acceptedEncodings := strings.Split(strings.ToLower(acceptEncoding), ",")
 	for _, encoding := range compressor.encoderOrder {
 		for _, acceptedEncoding := range acceptedEncodings {
-			if strings.Contains(acceptedEncoding, encoding) {
+			if strings.HasPrefix(strings.TrimLeft(acceptedEncoding, " "), encoding) {
 				pool := compressor.encoderPool[encoding]
 				encoder := pool.Get().(resettableWriter)
 				restore := func() {
