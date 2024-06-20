@@ -1,11 +1,11 @@
 package middleware
 
 import (
+	"bytes"
 	"compress/flate"
 	"compress/gzip"
 	"io"
 	"net/http"
-	"strings"
 	"sync"
 )
 
@@ -18,17 +18,12 @@ func newDecoderPool() *decoderPool {
 		pool: map[string]*sync.Pool{
 			"gzip": {
 				New: func() any {
-					reader, err := gzip.NewReader(strings.NewReader(""))
-					if err != nil {
-						return nil
-					}
-
-					return reader
+					return new(gzip.Reader)
 				},
 			},
 			"deflate": {
 				New: func() any {
-					return flate.NewReader(strings.NewReader(""))
+					return flate.NewReader(bytes.NewReader(nil))
 				},
 			},
 		},
@@ -54,7 +49,7 @@ func Decompress() func(next http.Handler) http.Handler {
 }
 
 type gzipResetter interface {
-	Reset(r io.ReadCloser) error
+	Reset(r io.Reader) error
 }
 
 func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser, func()) {
@@ -68,14 +63,15 @@ func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser,
 	restore := func() {
 		pool.Put(decoder)
 	}
-	if gzipReader, ok := decoder.(gzipResetter); ok {
-		err := gzipReader.Reset(request.Body)
+
+	switch encoding {
+	case "gzip":
+		err := decoder.(gzipResetter).Reset(request.Body)
 		if err != nil {
 			return nil, nil
 		}
-	}
-	if deflateReader, ok := decoder.(flate.Resetter); ok {
-		err := deflateReader.Reset(request.Body, nil)
+	case "deflate":
+		err := decoder.(flate.Resetter).Reset(request.Body, nil)
 		if err != nil {
 			return nil, nil
 		}
