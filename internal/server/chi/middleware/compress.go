@@ -24,7 +24,7 @@ type compressedResponseWriter struct {
 	encoder        io.Writer
 	writer         io.Writer
 	encoding       string
-	types          []string
+	supportedTypes []string
 	wroteHeader    bool
 }
 
@@ -90,7 +90,7 @@ func Compress(level uint8, types ...string) func(next http.Handler) http.Handler
 				responseWriter: writer,
 				encoder:        encoder,
 				encoding:       encoding,
-				types:          types,
+				supportedTypes: types,
 			}, request)
 		})
 	}
@@ -124,11 +124,13 @@ func (compressor encoderPool) getEncoder(header http.Header, writer http.Respons
 
 func (writer *compressedResponseWriter) WriteHeader(code int) {
 	if writer.wroteHeader {
-		writer.WriteHeader(code) // Allow multiple calls to propagate.
+		writer.WriteHeader(code)
 		return
 	}
-	writer.wroteHeader = true
+
 	defer writer.WriteHeader(code)
+	writer.wroteHeader = true
+	writer.writer = writer.responseWriter
 
 	if writer.Header().Get("Content-Encoding") != "" {
 		return
@@ -136,8 +138,7 @@ func (writer *compressedResponseWriter) WriteHeader(code int) {
 
 	contentType := writer.Header().Get("Content-Type")
 	contentType, _, _ = strings.Cut(contentType, ";")
-	if !slices.Contains(writer.types, contentType) {
-		writer.writer = writer.responseWriter
+	if !slices.Contains(writer.supportedTypes, contentType) {
 		return
 	}
 
