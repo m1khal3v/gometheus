@@ -18,7 +18,8 @@ func newDecoderPool() *decoderPool {
 		pool: map[string]*sync.Pool{
 			"gzip": {
 				New: func() any {
-					reader, err := gzip.NewReader(bytes.NewReader(nil))
+					reader, err := gzip.NewReader(bytes.NewReader([]byte{31, 139, 8, 0, 0, 0, 0, 0, 0,
+						255, 203, 72, 205, 201, 201, 7, 0, 134, 166, 16, 54, 5, 0, 0, 0}))
 					if err != nil {
 						return nil
 					}
