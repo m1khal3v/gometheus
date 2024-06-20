@@ -18,6 +18,7 @@ func newDecoderPool() *decoderPool {
 		pool: map[string]*sync.Pool{
 			"gzip": {
 				New: func() any {
+					// If you pass a valid gzip stream to gzip.NewReader(), the returned gzip.Reader will not be nil
 					reader, err := gzip.NewReader(bytes.NewReader([]byte{31, 139, 8, 0, 0, 0, 0, 0, 0,
 						255, 203, 72, 205, 201, 201, 7, 0, 134, 166, 16, 54, 5, 0, 0, 0}))
 					if err != nil {
@@ -74,13 +75,17 @@ func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser,
 		if err != nil {
 			return nil, nil
 		}
+
+		return gzipReader.(io.ReadCloser), restore
 	}
 	if deflateReader, ok := decoder.(flate.Resetter); ok {
 		err := deflateReader.Reset(request.Body, nil)
 		if err != nil {
 			return nil, nil
 		}
+
+		return deflateReader.(io.ReadCloser), restore
 	}
 
-	return decoder.(io.ReadCloser), restore
+	return nil, nil
 }
