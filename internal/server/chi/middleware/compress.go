@@ -14,8 +14,8 @@ import (
 )
 
 type encoderPool struct {
-	encoderOrder []string
-	encoderPool  map[string]*sync.Pool
+	order []string
+	pool  map[string]*sync.Pool
 }
 
 type compressedResponseWriter struct {
@@ -29,8 +29,8 @@ type compressedResponseWriter struct {
 
 func newEncoderPool(level uint8) *encoderPool {
 	return &encoderPool{
-		encoderOrder: []string{"gzip", "deflate"},
-		encoderPool: map[string]*sync.Pool{
+		order: []string{"gzip", "deflate"},
+		pool: map[string]*sync.Pool{
 			"gzip": {
 				New: func() any {
 					writer, err := gzip.NewWriterLevel(io.Discard, int(level))
@@ -91,8 +91,8 @@ func Compress(level uint8, types ...string) func(next http.Handler) http.Handler
 				supportedTypes: types,
 			}
 
-			defer restore()
 			defer compressedWriter.Close()
+			defer restore()
 
 			next.ServeHTTP(compressedWriter, request)
 		})
@@ -104,13 +104,13 @@ type resettableWriter interface {
 	Reset(w io.Writer)
 }
 
-func (compressor encoderPool) getEncoder(header http.Header, writer http.ResponseWriter) (io.Writer, string, func()) {
+func (encoderPool encoderPool) getEncoder(header http.Header, writer http.ResponseWriter) (io.Writer, string, func()) {
 	acceptEncoding := header.Get("Accept-Encoding")
 	acceptedEncodings := strings.Split(strings.ToLower(acceptEncoding), ",")
-	for _, encoding := range compressor.encoderOrder {
+	for _, encoding := range encoderPool.order {
 		for _, acceptedEncoding := range acceptedEncodings {
 			if strings.HasPrefix(strings.TrimLeft(acceptedEncoding, " "), encoding) {
-				pool := compressor.encoderPool[encoding]
+				pool := encoderPool.pool[encoding]
 				encoder := pool.Get().(resettableWriter)
 				restore := func() {
 					pool.Put(encoder)
