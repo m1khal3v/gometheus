@@ -39,12 +39,7 @@ func New(endpoint string, compress bool) *Client {
 		client.SetPreRequestHook(compressRequest)
 	}
 
-	return &Client{
-		resty: resty.
-			New().
-			SetBaseURL(fmt.Sprintf("http://%s/", endpoint)).
-			SetHeader("Accept-Encoding", "gzip"),
-	}
+	return &Client{resty: client}
 }
 
 func compressRequest(client *resty.Client, request *http.Request) error {
