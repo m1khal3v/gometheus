@@ -83,14 +83,18 @@ func Compress(level uint8, types ...string) func(next http.Handler) http.Handler
 				next.ServeHTTP(writer, request)
 				return
 			}
-			defer restore()
 
-			next.ServeHTTP(&compressedResponseWriter{
+			compressedWriter := &compressedResponseWriter{
 				ResponseWriter: writer,
 				encoder:        encoder,
 				encoding:       encoding,
 				supportedTypes: types,
-			}, request)
+			}
+
+			defer restore()
+			defer compressedWriter.Close()
+
+			next.ServeHTTP(compressedWriter, request)
 		})
 	}
 }
