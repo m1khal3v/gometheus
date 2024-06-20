@@ -17,7 +17,7 @@ import (
 func Start(endpoint string, pollInterval, reportInterval uint32) {
 	storage := storage.New()
 	go collectMetrics(storage, pollInterval)
-	saveMetrics(storage, client.New(endpoint), reportInterval)
+	saveMetrics(storage, client.New(endpoint, true), reportInterval)
 }
 
 func createCollectors() []collector.Collector {
