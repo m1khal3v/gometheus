@@ -75,9 +75,7 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 }
 
 func (client *Client) SaveMetric(metricType, metricName, metricValue string) error {
-	_, err := client.doRequest(client.
-		resty.
-		R().
+	_, err := client.doRequest(client.createRequest().
 		SetHeader("Content-Type", "text/plain").
 		SetPathParams(map[string]string{
 			"type":  metricType,
@@ -94,9 +92,7 @@ func (client *Client) SaveMetric(metricType, metricName, metricValue string) err
 }
 
 func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error) {
-	result, err := client.doRequest(client.
-		resty.
-		R().
+	result, err := client.doRequest(client.createRequest().
 		SetHeader("Content-Type", "application/json").
 		SetBody(request).
 		SetResult(&response.SaveMetricResponse{}),
@@ -107,6 +103,10 @@ func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*res
 	}
 
 	return result.Result().(*response.SaveMetricResponse), nil
+}
+
+func (client *Client) createRequest() *resty.Request {
+	return client.resty.R()
 }
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
