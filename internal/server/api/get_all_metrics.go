@@ -6,16 +6,11 @@ import (
 )
 
 func (container Container) GetAllMetrics(writer http.ResponseWriter, request *http.Request) {
-	template, err := template.New("get_all_metrics").Parse(pageTemplate)
-	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
+	template := template.Must(template.New("get_all_metrics").Parse(pageTemplate))
 	writer.Header().Set("Content-Type", "text/html")
 	writer.WriteHeader(http.StatusOK)
-	err = template.Execute(writer, container.manager.GetAll())
-	if err != nil {
+
+	if err := template.Execute(writer, container.manager.GetAll()); err != nil {
 		writer.WriteHeader(http.StatusInternalServerError)
 		return
 	}
