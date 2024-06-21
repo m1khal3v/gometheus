@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/m1khal3v/gometheus/pkg/request"
@@ -43,7 +44,7 @@ func New(endpoint string, compress bool) *Client {
 }
 
 func compressRequestBody(client *resty.Client, request *http.Request) error {
-	if request.ContentLength == 0 || request.Body == nil {
+	if request.Body == nil {
 		return nil
 	}
 
@@ -54,12 +55,7 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 	}
 
 	_, err = io.Copy(writer, request.Body)
-	if err != nil {
-		return err
-	}
-
-	err = writer.Close()
-	if err != nil {
+	if err = errors.Join(err, writer.Close(), request.Body.Close()); err != nil {
 		return err
 	}
 
