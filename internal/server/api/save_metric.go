@@ -1,8 +1,8 @@
 package api
 
 import (
-	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/metric/factory"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	"net/http"
 	"strings"
 )

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/m1khal3v/gometheus/internal/logger"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 )

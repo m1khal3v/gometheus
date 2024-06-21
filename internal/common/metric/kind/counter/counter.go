@@ -1,15 +1,15 @@
-package gauge
+package counter
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 
-const Type = "gauge"
+const Type = "counter"
 
 type Metric struct {
 	name  string
-	value float64
+	value int64
 }
 
 func (metric *Metric) GetType() string {
@@ -21,11 +21,7 @@ func (metric *Metric) GetName() string {
 }
 
 func (metric *Metric) GetStringValue() string {
-	return fmt.Sprintf("%g", metric.value)
-}
-
-func (metric *Metric) GetValue() float64 {
-	return metric.value
+	return fmt.Sprintf("%d", metric.value)
 }
 
 func (metric *Metric) Clone() metric.Metric {
@@ -33,7 +29,15 @@ func (metric *Metric) Clone() metric.Metric {
 	return &clone
 }
 
-func New(name string, value float64) *Metric {
+func (metric *Metric) GetValue() int64 {
+	return metric.value
+}
+
+func (metric *Metric) Add(value int64) {
+	metric.value += value
+}
+
+func New(name string, value int64) *Metric {
 	return &Metric{
 		name:  name,
 		value: value,

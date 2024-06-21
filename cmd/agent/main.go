@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/m1khal3v/gometheus/internal/agent"
 	"github.com/m1khal3v/gometheus/internal/agent/config"
-	"github.com/m1khal3v/gometheus/internal/logger"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 )
 
 func main() {

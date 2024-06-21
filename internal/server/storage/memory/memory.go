@@ -1,13 +1,20 @@
 package memory
 
 import (
-	"github.com/m1khal3v/gometheus/internal/metric"
+	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/server/mutex"
 )
 
 type Storage struct {
 	mutex   *mutex.NamedMutex
 	metrics map[string]metric.Metric
+}
+
+func New() *Storage {
+	return &Storage{
+		mutex:   mutex.NewNamedMutex(),
+		metrics: make(map[string]metric.Metric),
+	}
 }
 
 func (storage *Storage) Get(name string) metric.Metric {
@@ -39,11 +46,4 @@ func (storage *Storage) Save(metric metric.Metric) {
 	defer storage.mutex.Unlock(metric.GetName())
 
 	storage.metrics[metric.GetName()] = metric.Clone()
-}
-
-func New() *Storage {
-	return &Storage{
-		mutex:   mutex.NewNamedMutex(),
-		metrics: make(map[string]metric.Metric),
-	}
 }

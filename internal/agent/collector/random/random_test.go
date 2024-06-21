@@ -1,7 +1,7 @@
 package random
 
 import (
-	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

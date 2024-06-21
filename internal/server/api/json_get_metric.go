@@ -3,8 +3,8 @@ package api
 import (
 	"encoding/json"
 	"github.com/asaskevich/govalidator"
-	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/metric/transformer"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	_request "github.com/m1khal3v/gometheus/pkg/request"
 	"net/http"
 )

@@ -1,9 +1,9 @@
 package factory
 
 import (
-	"github.com/m1khal3v/gometheus/internal/metric"
-	"github.com/m1khal3v/gometheus/internal/metric/kind/counter"
-	"github.com/m1khal3v/gometheus/internal/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/internal/common/metric"
+	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
+	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

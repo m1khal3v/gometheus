@@ -3,7 +3,7 @@ package router
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/m1khal3v/gometheus/internal/logger"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/api"
 	_middleware "github.com/m1khal3v/gometheus/internal/server/chi/middleware"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
