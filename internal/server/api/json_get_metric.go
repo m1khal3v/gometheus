@@ -11,14 +11,12 @@ import (
 
 func (container Container) JSONGetMetric(writer http.ResponseWriter, request *http.Request) {
 	getMetricRequest := _request.GetMetricRequest{}
-	err := json.NewDecoder(request.Body).Decode(&getMetricRequest)
-	if err != nil {
+	if err := json.NewDecoder(request.Body).Decode(&getMetricRequest); err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	_, err = govalidator.ValidateStruct(getMetricRequest)
-	if err != nil {
+	if _, err := govalidator.ValidateStruct(getMetricRequest); err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}

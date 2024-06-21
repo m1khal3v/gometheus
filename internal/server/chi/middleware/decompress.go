@@ -66,13 +66,11 @@ func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser,
 
 	switch encoding {
 	case "gzip":
-		err := decoder.(gzipResetter).Reset(request.Body)
-		if err != nil {
+		if err := decoder.(gzipResetter).Reset(request.Body); err != nil {
 			return nil, nil
 		}
 	case "deflate":
-		err := decoder.(flate.Resetter).Reset(request.Body, nil)
-		if err != nil {
+		if err := decoder.(flate.Resetter).Reset(request.Body, nil); err != nil {
 			return nil, nil
 		}
 	}

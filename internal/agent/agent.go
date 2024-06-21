@@ -58,8 +58,7 @@ func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint
 				return false
 			}
 
-			_, err = client.SaveMetricAsJSON(request)
-			if err != nil {
+			if _, err = client.SaveMetricAsJSON(request); err != nil {
 				logger.Logger.Warn(err.Error())
 				return false
 			}

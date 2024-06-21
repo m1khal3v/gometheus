@@ -12,14 +12,12 @@ import (
 
 func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *http.Request) {
 	saveMetricRequest := _request.SaveMetricRequest{}
-	err := json.NewDecoder(request.Body).Decode(&saveMetricRequest)
-	if err != nil {
+	if err := json.NewDecoder(request.Body).Decode(&saveMetricRequest); err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	_, err = govalidator.ValidateStruct(saveMetricRequest)
-	if err != nil {
+	if _, err := govalidator.ValidateStruct(saveMetricRequest); err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}

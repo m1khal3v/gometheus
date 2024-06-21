@@ -17,8 +17,7 @@ func parseConfig() Config {
 	flag.StringVarP(&config.Address, "address", "a", "localhost:8080", "address of gometheus server")
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
 	flag.Parse()
-	err := env.Parse(&config)
-	if err != nil {
+	if err := env.Parse(&config); err != nil {
 		panic(err)
 	}
 
@@ -27,8 +26,7 @@ func parseConfig() Config {
 
 func main() {
 	config := parseConfig()
-	err := logger.Init("server", config.LogLevel)
-	if err != nil {
+	if err := logger.Init("server", config.LogLevel); err != nil {
 		panic(err)
 	}
 
