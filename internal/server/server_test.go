@@ -13,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 )
 
@@ -277,7 +278,6 @@ func TestGetAllMetrics(t *testing.T) {
 		name               string
 		preset             map[string]metric.Metric
 		expectedStatusCode int
-		expectedBody       string
 	}{
 		{
 			name:               "empty metrics",
@@ -328,12 +328,12 @@ func TestGetAllMetrics(t *testing.T) {
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
 				for _, metric := range tt.preset {
-					assert.Contains(t, body, fmt.Sprintf(
-						"        <tr>\n            <td>%s</td>\n            <td>%s</td>\n            <td>%s</td>\n        </tr>",
-						metric.GetName(),
-						metric.GetType(),
-						metric.GetStringValue(),
-					))
+					assert.Regexp(t, regexp.MustCompile(fmt.Sprintf(
+						"<tr>\\n +<td>%s<\\/td>\\n +<td>%s<\\/td>\\n +<td>%s<\\/td>\\n +<\\/tr>",
+						regexp.QuoteMeta(metric.GetName()),
+						regexp.QuoteMeta(metric.GetType()),
+						regexp.QuoteMeta(metric.GetStringValue()),
+					)), body)
 				}
 			}
 		})
