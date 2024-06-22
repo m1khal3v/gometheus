@@ -30,8 +30,8 @@ func (storage *Storage) Get(name string) metric.Metric {
 }
 
 func (storage *Storage) GetAll() map[string]metric.Metric {
-	storage.mutex.LockAll()
-	defer storage.mutex.UnlockAll()
+	storage.mutex.GlobalLock()
+	defer storage.mutex.GlobalUnlock()
 
 	clone := make(map[string]metric.Metric)
 	for name, metric := range storage.metrics {

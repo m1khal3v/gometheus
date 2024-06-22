@@ -31,8 +31,8 @@ func TestStorage_Append(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			storage.Append(tt.metrics)
+			assert.Equal(t, tt.metrics, storage.metrics)
 			for index, metric := range tt.metrics {
-				assert.Equal(t, metric, storage.metrics[index])
 				assert.NotSame(t, metric, storage.metrics[index])
 			}
 		})

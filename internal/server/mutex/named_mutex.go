@@ -5,6 +5,7 @@ import "sync"
 type NamedMutex struct {
 	mutexMap map[string]*sync.Mutex
 	mapMutex sync.Mutex
+	locked   bool
 }
 
 func NewNamedMutex() *NamedMutex {
@@ -15,6 +16,19 @@ func (namedMutex *NamedMutex) getLock(name string) *sync.Mutex {
 	namedMutex.mapMutex.Lock()
 	defer namedMutex.mapMutex.Unlock()
 
+	return namedMutex.createOrGetLock(name)
+}
+
+func (namedMutex *NamedMutex) tryGetLock(name string) *sync.Mutex {
+	if locked := namedMutex.mapMutex.TryLock(); locked == false {
+		return nil
+	}
+	defer namedMutex.mapMutex.Unlock()
+
+	return namedMutex.createOrGetLock(name)
+}
+
+func (namedMutex *NamedMutex) createOrGetLock(name string) *sync.Mutex {
 	mutex, ok := namedMutex.mutexMap[name]
 	if !ok {
 		mutex = &sync.Mutex{}
@@ -25,7 +39,12 @@ func (namedMutex *NamedMutex) getLock(name string) *sync.Mutex {
 }
 
 func (namedMutex *NamedMutex) TryLock(name string) bool {
-	return namedMutex.getLock(name).TryLock()
+	lock := namedMutex.tryGetLock(name)
+	if lock == nil {
+		return false
+	}
+
+	return lock.TryLock()
 }
 
 func (namedMutex *NamedMutex) Lock(name string) {
@@ -36,14 +55,14 @@ func (namedMutex *NamedMutex) Unlock(name string) {
 	namedMutex.getLock(name).Unlock()
 }
 
-func (namedMutex *NamedMutex) TryLockAll() bool {
+func (namedMutex *NamedMutex) TryGlobalLock() bool {
 	return namedMutex.mapMutex.TryLock()
 }
 
-func (namedMutex *NamedMutex) LockAll() {
+func (namedMutex *NamedMutex) GlobalLock() {
 	namedMutex.mapMutex.Lock()
 }
 
-func (namedMutex *NamedMutex) UnlockAll() {
+func (namedMutex *NamedMutex) GlobalUnlock() {
 	namedMutex.mapMutex.Unlock()
 }
