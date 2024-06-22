@@ -4,7 +4,9 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/utils/ptr"
 	"testing"
 )
 
@@ -69,6 +71,69 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.metricType, tt.args.name, tt.args.value)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
+			} else {
+				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestNewFromRequest(t *testing.T) {
+	tests := []struct {
+		name    string
+		request request.SaveMetricRequest
+		want    metric.Metric
+		wantErr error
+	}{
+		{
+			name: "test gauge",
+			request: request.SaveMetricRequest{
+				MetricName: "test",
+				MetricType: "gauge",
+				Value:      ptr.To(123.321),
+			},
+			want: gauge.New("test", 123.321),
+		},
+		{
+			name: "test counter",
+			request: request.SaveMetricRequest{
+				MetricName: "test",
+				MetricType: "counter",
+				Delta:      ptr.To(int64(123)),
+			},
+			want: counter.New("test", 123),
+		},
+		{
+			name: "test invalid type",
+			request: request.SaveMetricRequest{
+				MetricName: "test",
+				MetricType: "invalid",
+				Value:      ptr.To(123.321),
+			},
+			wantErr: newUnknownTypeError("invalid"),
+		},
+		{
+			name: "test nil gauge",
+			request: request.SaveMetricRequest{
+				MetricName: "test",
+				MetricType: "gauge",
+			},
+			wantErr: newInvalidValueError("nil"),
+		},
+		{
+			name: "test nil counter",
+			request: request.SaveMetricRequest{
+				MetricName: "test",
+				MetricType: "counter",
+			},
+			wantErr: newInvalidValueError("nil"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewFromRequest(tt.request)
 			if tt.wantErr != nil {
 				assert.ErrorIs(t, err, tt.wantErr)
 			} else {
