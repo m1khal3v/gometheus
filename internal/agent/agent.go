@@ -24,7 +24,7 @@ func createCollectors() []collector.Collector {
 	runtimeCollector := runtime.New()
 	randomCollector, err := random.New(0, 512)
 	if err != nil {
-		logger.Logger.Panic(err.Error())
+		logger.Logger.Fatal(err.Error())
 	}
 
 	return []collector.Collector{

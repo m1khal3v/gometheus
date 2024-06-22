@@ -13,5 +13,5 @@ func main() {
 	}
 
 	defer logger.Logger.Sync()
-	server.Start(config.Address)
+	server.Start(config.Address, config.FileStoragePath, config.StoreInterval, config.Restore)
 }
