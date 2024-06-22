@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool) {
@@ -19,10 +20,10 @@ func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool)
 		storage = dump.New(storage, fileStoragePath, storeInterval, restore)
 
 		signalChannel := make(chan os.Signal, 2)
-		signal.Notify(signalChannel, os.Interrupt, os.Kill)
+		signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
 		go func() {
-			sig := <-signalChannel
-			logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", sig.String()))
+			signal := <-signalChannel
+			logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
 			storage.(*dump.Storage).Dump()
 			os.Exit(0)
 		}()
