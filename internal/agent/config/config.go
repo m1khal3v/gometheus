@@ -19,7 +19,7 @@ func ParseConfig() *Config {
 	flag.Uint32VarP(&config.ReportInterval, "report-interval", "r", 10, "interval of reporting metrics")
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
 	flag.Parse()
-	if err := env.Parse(&config); err != nil {
+	if err := env.Parse(config); err != nil {
 		panic(err)
 	}
 

@@ -1,4 +1,4 @@
-package file_dump
+package dump
 
 import (
 	"bufio"

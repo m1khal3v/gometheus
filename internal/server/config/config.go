@@ -21,7 +21,7 @@ func ParseConfig() *Config {
 	flag.StringVarP(&config.FileStoragePath, "file-storage-path", "f", "/tmp/metrics-db.json", "file storage path")
 	flag.BoolVarP(&config.Restore, "restore", "r", true, "restore metrics from file")
 	flag.Parse()
-	if err := env.Parse(&config); err != nil {
+	if err := env.Parse(config); err != nil {
 		panic(err)
 	}
 
