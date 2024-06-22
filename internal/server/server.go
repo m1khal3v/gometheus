@@ -1,12 +1,15 @@
 package server
 
 import (
+	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/dump"
 	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
 	"net/http"
+	"os"
+	"os/signal"
 )
 
 func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool) {
@@ -14,6 +17,15 @@ func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool)
 
 	if fileStoragePath != "" {
 		storage = dump.New(storage, fileStoragePath, storeInterval, restore)
+
+		signalChannel := make(chan os.Signal, 2)
+		signal.Notify(signalChannel, os.Interrupt, os.Kill)
+		go func() {
+			sig := <-signalChannel
+			logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", sig.String()))
+			storage.(*dump.Storage).Dump()
+			os.Exit(0)
+		}()
 	}
 
 	if err := http.ListenAndServe(endpoint, router.New(storage)); err != nil {
