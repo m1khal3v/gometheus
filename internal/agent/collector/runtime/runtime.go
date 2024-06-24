@@ -66,7 +66,7 @@ func (collector *Collector) Collect() []metric.Metric {
 func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) metric.Metric {
 	field := reflect.ValueOf(*memStats).FieldByName(name)
 	if !field.IsValid() {
-		logger.Logger.Fatal(fmt.Sprintf("Property '%s' not found in memStats", name))
+		logger.Logger.Panic(fmt.Sprintf("Property '%s' not found in memStats", name))
 	}
 
 	collector.pollCount = collector.pollCount + 1

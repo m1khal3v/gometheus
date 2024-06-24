@@ -20,7 +20,7 @@ func (namedMutex *NamedMutex) getLock(name string) *sync.Mutex {
 }
 
 func (namedMutex *NamedMutex) tryGetLock(name string) *sync.Mutex {
-	if locked := namedMutex.mapMutex.TryLock(); locked == false {
+	if locked := namedMutex.mapMutex.TryLock(); !locked {
 		return nil
 	}
 	defer namedMutex.mapMutex.Unlock()

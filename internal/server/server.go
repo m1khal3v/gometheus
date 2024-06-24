@@ -30,6 +30,6 @@ func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool)
 	}
 
 	if err := http.ListenAndServe(endpoint, router.New(storage)); err != nil {
-		logger.Logger.Fatal(err.Error())
+		logger.Logger.Panic(err.Error())
 	}
 }

@@ -22,11 +22,11 @@ type Storage struct {
 
 func New(storage storage.Storage, filepath string, storeInterval uint32, restore bool) *Storage {
 	if storage == nil {
-		logger.Logger.Fatal("Decorated storage cannot be nil")
+		logger.Logger.Panic("Decorated storage cannot be nil")
 	}
 
 	if filepath == "" {
-		logger.Logger.Fatal("Dump file path cannot be empty")
+		logger.Logger.Panic("Dump file path cannot be empty")
 	}
 
 	if restore {
@@ -40,11 +40,11 @@ func New(storage storage.Storage, filepath string, storeInterval uint32, restore
 	}
 
 	if storeInterval > 0 {
-		go func(storage *Storage) {
-			for range time.Tick(time.Duration(storage.storeInterval) * time.Second) {
-				storage.Dump()
+		go func() {
+			for range time.Tick(time.Duration(decorator.storeInterval) * time.Second) {
+				decorator.Dump()
 			}
-		}(decorator)
+		}()
 	}
 
 	return decorator
@@ -101,7 +101,7 @@ func (storage *Storage) Dump() {
 		}
 
 		if _, err := file.WriteString("\n"); err != nil {
-			logger.Logger.Fatal(fmt.Sprintf("Failed to write new line: %s", err.Error()))
+			logger.Logger.Panic(fmt.Sprintf("Failed to write new line: %s", err.Error()))
 			return
 		}
 	}
@@ -117,6 +117,10 @@ func restoreFromFile(storage storage.Storage, filepath string) {
 
 	reader := bufio.NewScanner(file)
 	for reader.Scan() {
+		if reader.Text() == "" {
+			continue
+		}
+
 		anonymousMetric := &anonymousMetric{}
 		if err := json.Unmarshal(reader.Bytes(), anonymousMetric); err != nil {
 			logger.Logger.Warn(fmt.Sprintf("Failed to unmarshal json '%s': %s. Skip", reader.Text(), err.Error()))
