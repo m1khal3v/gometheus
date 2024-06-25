@@ -26,7 +26,7 @@ func (storage *Storage) Get(name string) metric.Metric {
 
 func (storage *Storage) GetAll() map[string]metric.Metric {
 	clone := make(map[string]metric.Metric)
-	storage.metrics.Range(func(key, value interface{}) bool {
+	storage.metrics.Range(func(key, value any) bool {
 		clone[key.(string)] = value.(metric.Metric).Clone()
 		return true
 	})

@@ -16,15 +16,3 @@ func TestNamedMutex_Lock(t *testing.T) {
 	namedMutex.Unlock("test")
 	namedMutex.Unlock("test2")
 }
-
-func TestNamedMutex_GlobalLock(t *testing.T) {
-	namedMutex := NewNamedMutex()
-	namedMutex.GlobalLock()
-	assert.False(t, namedMutex.TryLock("test"))
-	assert.False(t, namedMutex.TryGlobalLock())
-	namedMutex.GlobalUnlock()
-	assert.True(t, namedMutex.TryLock("test"))
-	assert.True(t, namedMutex.TryGlobalLock())
-	namedMutex.GlobalUnlock()
-	namedMutex.Unlock("test")
-}

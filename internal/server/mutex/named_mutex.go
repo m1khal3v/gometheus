@@ -1,68 +1,65 @@
 package mutex
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
+
+const ttl = 5 * time.Minute
+const deleteFrequency = 60 * time.Second
+
+type mutexItem struct {
+	mutex      *sync.Mutex
+	lastAccess time.Time
+}
 
 type NamedMutex struct {
-	mutexMap map[string]*sync.Mutex
-	mapMutex sync.Mutex
-	locked   bool
+	mutexMap *sync.Map
 }
 
 func NewNamedMutex() *NamedMutex {
-	return &NamedMutex{mutexMap: make(map[string]*sync.Mutex)}
-}
+	namedMutex := &NamedMutex{mutexMap: &sync.Map{}}
 
-func (namedMutex *NamedMutex) getLock(name string) *sync.Mutex {
-	namedMutex.mapMutex.Lock()
-	defer namedMutex.mapMutex.Unlock()
+	go func() {
+		ticker := time.NewTicker(deleteFrequency)
+		now := time.Now()
 
-	return namedMutex.createOrGetLock(name)
-}
+		for range ticker.C {
+			namedMutex.mutexMap.Range(func(key, value any) bool {
+				if now.Sub(value.(*mutexItem).lastAccess) > ttl {
+					namedMutex.mutexMap.Delete(key)
+				}
+				return true
+			})
+		}
+	}()
 
-func (namedMutex *NamedMutex) tryGetLock(name string) *sync.Mutex {
-	if locked := namedMutex.mapMutex.TryLock(); !locked {
-		return nil
-	}
-	defer namedMutex.mapMutex.Unlock()
-
-	return namedMutex.createOrGetLock(name)
+	return namedMutex
 }
 
 func (namedMutex *NamedMutex) createOrGetLock(name string) *sync.Mutex {
-	mutex, ok := namedMutex.mutexMap[name]
-	if !ok {
-		mutex = &sync.Mutex{}
-		namedMutex.mutexMap[name] = mutex
+	now := time.Now()
+	actual, exists := namedMutex.mutexMap.LoadOrStore(name, &mutexItem{
+		mutex:      &sync.Mutex{},
+		lastAccess: now,
+	})
+
+	item := actual.(*mutexItem)
+	if exists {
+		item.lastAccess = now
 	}
 
-	return mutex
+	return item.mutex
 }
 
 func (namedMutex *NamedMutex) TryLock(name string) bool {
-	lock := namedMutex.tryGetLock(name)
-	if lock == nil {
-		return false
-	}
-
-	return lock.TryLock()
+	return namedMutex.createOrGetLock(name).TryLock()
 }
 
 func (namedMutex *NamedMutex) Lock(name string) {
-	namedMutex.getLock(name).Lock()
+	namedMutex.createOrGetLock(name).Lock()
 }
 
 func (namedMutex *NamedMutex) Unlock(name string) {
-	namedMutex.getLock(name).Unlock()
-}
-
-func (namedMutex *NamedMutex) TryGlobalLock() bool {
-	return namedMutex.mapMutex.TryLock()
-}
-
-func (namedMutex *NamedMutex) GlobalLock() {
-	namedMutex.mapMutex.Lock()
-}
-
-func (namedMutex *NamedMutex) GlobalUnlock() {
-	namedMutex.mapMutex.Unlock()
+	namedMutex.createOrGetLock(name).Unlock()
 }
