@@ -2,48 +2,38 @@ package memory
 
 import (
 	"github.com/m1khal3v/gometheus/internal/common/metric"
-	"github.com/m1khal3v/gometheus/internal/server/mutex"
+	"sync"
 )
 
 type Storage struct {
-	mutex   *mutex.NamedMutex
-	metrics map[string]metric.Metric
+	metrics *sync.Map
 }
 
 func New() *Storage {
 	return &Storage{
-		mutex:   mutex.NewNamedMutex(),
-		metrics: make(map[string]metric.Metric),
+		metrics: &sync.Map{},
 	}
 }
 
 func (storage *Storage) Get(name string) metric.Metric {
-	storage.mutex.Lock(name)
-	defer storage.mutex.Unlock(name)
-
-	metric, ok := storage.metrics[name]
+	value, ok := storage.metrics.Load(name)
 	if !ok {
 		return nil
 	}
 
-	return metric.Clone()
+	return value.(metric.Metric).Clone()
 }
 
 func (storage *Storage) GetAll() map[string]metric.Metric {
-	storage.mutex.GlobalLock()
-	defer storage.mutex.GlobalUnlock()
-
 	clone := make(map[string]metric.Metric)
-	for name, metric := range storage.metrics {
-		clone[name] = metric.Clone()
-	}
+	storage.metrics.Range(func(key, value interface{}) bool {
+		clone[key.(string)] = value.(metric.Metric).Clone()
+		return true
+	})
 
 	return clone
 }
 
 func (storage *Storage) Save(metric metric.Metric) {
-	storage.mutex.Lock(metric.GetName())
-	defer storage.mutex.Unlock(metric.GetName())
-
-	storage.metrics[metric.GetName()] = metric.Clone()
+	storage.metrics.Store(metric.GetName(), metric.Clone())
 }
