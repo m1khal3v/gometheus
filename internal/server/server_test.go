@@ -459,6 +459,146 @@ func TestGetMetric(t *testing.T) {
 	}
 }
 
+type getMetricRequest struct {
+	MetricName string `json:"id"`
+	MetricType string `json:"type"`
+}
+
+func TestGetMetricJSON(t *testing.T) {
+	tests := []struct {
+		method             string
+		name               string
+		preset             map[string]metric.Metric
+		request            getMetricRequest
+		expectedStatusCode int
+		expected           metric.Metric
+	}{
+		{
+			name: "valid gauge",
+			request: getMetricRequest{
+				MetricName: "test gauge",
+				MetricType: "gauge",
+			},
+			preset: map[string]metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
+			},
+			expected:           gauge.New("test gauge", 123.321),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "valid counter",
+			request: getMetricRequest{
+				MetricName: "test counter",
+				MetricType: "counter",
+			},
+			preset: map[string]metric.Metric{
+				"test counter": counter.New("test counter", 123),
+			},
+			expected:           counter.New("test counter", 123),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "invalid gauge",
+			request: getMetricRequest{
+				MetricName: "test invalid gauge",
+				MetricType: "gauge",
+			},
+			preset: map[string]metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
+			},
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name: "invalid counter",
+			request: getMetricRequest{
+				MetricName: "test invalid counter",
+				MetricType: "counter",
+			},
+			preset: map[string]metric.Metric{
+				"test counter": counter.New("test counter", 123),
+			},
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name: "empty type",
+			request: getMetricRequest{
+				MetricName: "test empty type",
+				MetricType: "",
+			},
+			preset: map[string]metric.Metric{
+				"test empty type": gauge.New("test empty type", 123.321),
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid type",
+			request: getMetricRequest{
+				MetricName: "test invalid type",
+				MetricType: "invalid",
+			},
+			preset: map[string]metric.Metric{
+				"test invalid type": gauge.New("test invalid type", 123.321),
+			},
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			name: "empty name",
+			request: getMetricRequest{
+				MetricName: "",
+				MetricType: "gauge",
+			},
+			preset: map[string]metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			method: http.MethodPut,
+			name:   "invalid method",
+			request: getMetricRequest{
+				MetricName: "test gauge",
+				MetricType: "gauge",
+			},
+			preset: map[string]metric.Metric{
+				"test gauge": gauge.New("test gauge", 123.321),
+			},
+			expectedStatusCode: http.StatusMethodNotAllowed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storage := memory.New()
+			server := httptest.NewServer(router.New(storage))
+			defer server.Close()
+			for _, metric := range tt.preset {
+				storage.Save(metric)
+			}
+			method := tt.method
+			if method == "" {
+				method = http.MethodPost
+			}
+			bytes, err := json.Marshal(tt.request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response, body := testRequest(t, server, method, "/value", bytes)
+			_ = response.Body.Close()
+			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
+			if tt.expectedStatusCode == http.StatusOK {
+				expectedResponse, err := transformer.TransformToGetResponse(tt.expected)
+				if err != nil {
+					t.Fatal(err)
+				}
+				expectedResponseBody, err := json.Marshal(expectedResponse)
+				if err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, string(expectedResponseBody), body)
+			}
+		})
+	}
+}
+
 func TestGetAllMetrics(t *testing.T) {
 	tests := []struct {
 		method             string
