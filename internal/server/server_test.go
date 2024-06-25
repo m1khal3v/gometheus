@@ -147,8 +147,13 @@ func TestSaveMetric(t *testing.T) {
 				previousMetric, _ := factory.New(tt.metricType, tt.metricName, tt.previousValue)
 				storage.Save(previousMetric)
 			}
+
 			response, body := testRequest(t, server, method, path, nil)
-			_ = response.Body.Close()
+			err := response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
 			if tt.expectedStatusCode == http.StatusOK {
@@ -328,7 +333,10 @@ func TestSaveMetricJSON(t *testing.T) {
 				t.Fatal(err)
 			}
 			response, body := testRequest(t, server, method, "/update", bytes)
-			_ = response.Body.Close()
+			err = response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
@@ -439,9 +447,11 @@ func TestGetMetric(t *testing.T) {
 			storage := memory.New()
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
+
 			for _, metric := range tt.preset {
 				storage.Save(metric)
 			}
+
 			path := fmt.Sprintf(
 				"/value/%v/%v",
 				tt.metricType,
@@ -451,8 +461,13 @@ func TestGetMetric(t *testing.T) {
 			if method == "" {
 				method = http.MethodGet
 			}
+
 			response, body := testRequest(t, server, method, path, nil)
-			_ = response.Body.Close()
+			err := response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
 		})
@@ -570,9 +585,11 @@ func TestGetMetricJSON(t *testing.T) {
 			storage := memory.New()
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
+
 			for _, metric := range tt.preset {
 				storage.Save(metric)
 			}
+
 			method := tt.method
 			if method == "" {
 				method = http.MethodPost
@@ -581,8 +598,13 @@ func TestGetMetricJSON(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			response, body := testRequest(t, server, method, "/value", bytes)
-			_ = response.Body.Close()
+			err = response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
 				expectedResponse, err := transformer.TransformToGetResponse(tt.expected)
@@ -643,15 +665,22 @@ func TestGetAllMetrics(t *testing.T) {
 			storage := memory.New()
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
+
 			for _, metric := range tt.preset {
 				storage.Save(metric)
 			}
+
 			method := tt.method
 			if method == "" {
 				method = http.MethodGet
 			}
+
 			response, body := testRequest(t, server, method, "/", nil)
-			_ = response.Body.Close()
+			err := response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
 				for _, metric := range tt.preset {

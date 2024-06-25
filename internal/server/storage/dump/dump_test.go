@@ -148,11 +148,13 @@ func TestStorage_Dump(t *testing.T) {
 				decorator.Save(item)
 			}
 			decorator.Dump()
+
 			assert.FileExists(t, file.Name())
 			all, err := io.ReadAll(file)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			items := strings.Split(strings.TrimRight(string(all), "\n"), "\n")
 			if len(items) == 1 && items[0] == "" {
 				items = []string{}
@@ -364,6 +366,7 @@ func Test_restoreFromFile(t *testing.T) {
 				decorator.Save(item)
 			}
 			decorator.Dump()
+
 			restorage := memory.New()
 			restoreFromFile(restorage, file.Name())
 			assert.Equal(t, tt.wantItems, restorage.GetAll())
