@@ -89,7 +89,7 @@ func TestDecompress(t *testing.T) {
 
 func getBody(t *testing.T, encoding string) io.Reader {
 	var buffer io.Writer = bytes.NewBuffer(nil)
-	var writer = buffer.(io.Writer)
+	writer := buffer
 
 	level := rand.IntN(3) + 3
 	switch encoding {
