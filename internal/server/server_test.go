@@ -1,11 +1,14 @@
 package server
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
 	"github.com/stretchr/testify/assert"
@@ -17,8 +20,8 @@ import (
 	"testing"
 )
 
-func testRequest(t *testing.T, server *httptest.Server, method string, path string) (*http.Response, string) {
-	request, err := http.NewRequest(method, server.URL+path, nil)
+func testRequest(t *testing.T, server *httptest.Server, method string, path string, body []byte) (*http.Response, string) {
+	request, err := http.NewRequest(method, server.URL+path, bytes.NewReader(body))
 	require.NoError(t, err)
 
 	response, err := server.Client().Do(request)
@@ -144,7 +147,7 @@ func TestSaveMetric(t *testing.T) {
 				previousMetric, _ := factory.New(tt.metricType, tt.metricName, tt.previousValue)
 				storage.Save(previousMetric)
 			}
-			response, body := testRequest(t, server, method, path)
+			response, body := testRequest(t, server, method, path, nil)
 			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
@@ -154,6 +157,190 @@ func TestSaveMetric(t *testing.T) {
 				} else {
 					assert.Equal(t, tt.metricValue, storage.Get(tt.metricName).GetStringValue())
 				}
+			}
+		})
+	}
+}
+
+type saveMetricRequest struct {
+	MetricName any `json:"id"`
+	MetricType any `json:"type"`
+	Delta      any `json:"delta"`
+	Value      any `json:"value"`
+}
+
+func TestSaveMetricJSON(t *testing.T) {
+	storage := memory.New()
+	server := httptest.NewServer(router.New(storage))
+	defer server.Close()
+	tests := []struct {
+		method             string
+		name               string
+		request            saveMetricRequest
+		previous           metric.Metric
+		expected           metric.Metric
+		expectedStatusCode int
+	}{
+		{
+			name: "valid gauge",
+			request: saveMetricRequest{
+				MetricName: "gauge",
+				MetricType: "gauge",
+				Value:      123.321,
+			},
+			expected:           gauge.New("gauge", 123.321),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "valid counter",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "counter",
+				Delta:      123,
+			},
+			expected:           counter.New("counter", 123),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "update gauge",
+			request: saveMetricRequest{
+				MetricName: "gauge",
+				MetricType: "gauge",
+				Value:      123.321,
+			},
+			expected:           gauge.New("gauge", 123.321),
+			previous:           gauge.New("gauge", 321.123),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "update counter",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "counter",
+				Delta:      123,
+			},
+			previous:           counter.New("counter", 77),
+			expected:           counter.New("counter", 200),
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "invalid gauge field",
+			request: saveMetricRequest{
+				MetricName: "gauge",
+				MetricType: "gauge",
+				Delta:      123.321,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid counter field",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "counter",
+				Value:      123,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid gauge value",
+			request: saveMetricRequest{
+				MetricName: "gauge",
+				MetricType: "gauge",
+				Value:      "abc",
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid counter value",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "counter",
+				Delta:      123.321,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty gauge value",
+			request: saveMetricRequest{
+				MetricName: "gauge",
+				MetricType: "gauge",
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty counter value",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "counter",
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty type",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "",
+				Delta:      123,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty name",
+			request: saveMetricRequest{
+				MetricName: "",
+				MetricType: "counter",
+				Delta:      123,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid type",
+			request: saveMetricRequest{
+				MetricName: "counter",
+				MetricType: "invalid",
+				Delta:      123,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			method: http.MethodGet,
+			name:   "invalid method",
+			request: saveMetricRequest{
+				MetricName: "gauge",
+				MetricType: "gauge",
+				Value:      123.321,
+			},
+			expectedStatusCode: http.StatusMethodNotAllowed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			method := tt.method
+			if method == "" {
+				method = http.MethodPost
+			}
+			if tt.previous != nil {
+				storage.Save(tt.previous)
+			}
+
+			bytes, err := json.Marshal(tt.request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response, body := testRequest(t, server, method, "/update", bytes)
+			_ = response.Body.Close()
+
+			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
+			if tt.expectedStatusCode == http.StatusOK {
+				expectedResponse, err := transformer.TransformToSaveResponse(tt.expected)
+				if err != nil {
+					t.Fatal(err)
+				}
+				expectedResponseBody, err := json.Marshal(expectedResponse)
+				if err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, string(expectedResponseBody), body)
 			}
 		})
 	}
@@ -264,7 +451,7 @@ func TestGetMetric(t *testing.T) {
 			if method == "" {
 				method = http.MethodGet
 			}
-			response, body := testRequest(t, server, method, path)
+			response, body := testRequest(t, server, method, path, nil)
 			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
@@ -323,7 +510,7 @@ func TestGetAllMetrics(t *testing.T) {
 			if method == "" {
 				method = http.MethodGet
 			}
-			response, body := testRequest(t, server, method, "/")
+			response, body := testRequest(t, server, method, "/", nil)
 			_ = response.Body.Close()
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
