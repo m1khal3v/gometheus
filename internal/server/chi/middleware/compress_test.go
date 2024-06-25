@@ -75,10 +75,9 @@ func TestCompress(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			router := chi.NewRouter()
 			router.Use(Compress(uint8(rand.UintN(3)+3), tt.types...))
-			router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", tt.contentType)
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("Hello World!"))
+			router.Get("/", func(writer http.ResponseWriter, request *http.Request) {
+				writer.Header().Set("Content-Type", tt.contentType)
+				writer.Write([]byte("Hello World!"))
 			})
 			httpServer := httptest.NewServer(router)
 			defer httpServer.Close()

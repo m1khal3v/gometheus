@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"golang.org/x/exp/maps"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -35,14 +37,23 @@ func Decompress() func(next http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			decoder, restore := decoderPool.getDecoder(request)
-			if decoder != nil {
-				defer decoder.Close()
-				defer restore()
-
-				request.Body = decoder
+			writer.Header().Set("Accept-Encoding", strings.Join(maps.Keys(decoderPool.pool), ", "))
+			encoding := request.Header.Get("Content-Encoding")
+			if encoding == "" {
+				next.ServeHTTP(writer, request)
+				return
 			}
 
+			decoder, restore := decoderPool.getDecoder(encoding, request.Body)
+			if decoder == nil {
+				writer.WriteHeader(http.StatusUnsupportedMediaType)
+				return
+			}
+
+			defer decoder.Close()
+			defer restore()
+
+			request.Body = decoder
 			next.ServeHTTP(writer, request)
 		})
 	}
@@ -52,8 +63,7 @@ type gzipResetter interface {
 	Reset(r io.Reader) error
 }
 
-func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser, func()) {
-	encoding := request.Header.Get("Content-Encoding")
+func (decoderPool decoderPool) getDecoder(encoding string, body io.ReadCloser) (io.ReadCloser, func()) {
 	pool, ok := decoderPool.pool[encoding]
 	if !ok {
 		return nil, nil
@@ -66,11 +76,11 @@ func (decoderPool decoderPool) getDecoder(request *http.Request) (io.ReadCloser,
 
 	switch encoding {
 	case "gzip":
-		if err := decoder.(gzipResetter).Reset(request.Body); err != nil {
+		if err := decoder.(gzipResetter).Reset(body); err != nil {
 			return nil, nil
 		}
 	case "deflate":
-		if err := decoder.(flate.Resetter).Reset(request.Body, nil); err != nil {
+		if err := decoder.(flate.Resetter).Reset(body, nil); err != nil {
 			return nil, nil
 		}
 	}
