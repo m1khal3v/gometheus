@@ -19,8 +19,13 @@ func New(storage storage.Storage) *Manager {
 	}
 }
 
-func (manager *Manager) Get(name string) metric.Metric {
-	return manager.storage.Get(name)
+func (manager *Manager) Get(metricType, metricName string) metric.Metric {
+	metric := manager.storage.Get(metricName)
+	if metric != nil && metric.GetType() == metricType {
+		return metric
+	}
+
+	return nil
 }
 
 func (manager *Manager) GetAll() map[string]metric.Metric {

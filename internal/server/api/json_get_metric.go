@@ -21,8 +21,8 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	metric := container.manager.Get(getMetricRequest.MetricName)
-	if metric == nil || metric.GetType() != getMetricRequest.MetricType {
+	metric := container.manager.Get(getMetricRequest.MetricType, getMetricRequest.MetricName)
+	if metric == nil {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}

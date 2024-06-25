@@ -8,8 +8,8 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
 
-	metric := container.manager.Get(metricName)
-	if metric == nil || metric.GetType() != metricType {
+	metric := container.manager.Get(metricType, metricName)
+	if metric == nil {
 		writer.WriteHeader(http.StatusNotFound)
 		return
 	}
