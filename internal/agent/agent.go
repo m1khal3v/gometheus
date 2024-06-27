@@ -1,60 +1,69 @@
 package agent
 
 import (
-	"github.com/m1khal3v/gometheus/internal/client"
-	"github.com/m1khal3v/gometheus/internal/collector"
-	"github.com/m1khal3v/gometheus/internal/collector/random"
-	"github.com/m1khal3v/gometheus/internal/collector/runtime"
-	"github.com/m1khal3v/gometheus/internal/logger"
-	_metric "github.com/m1khal3v/gometheus/internal/metric"
-	"sync"
+	"github.com/m1khal3v/gometheus/internal/agent/collector"
+	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
+	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
+	"github.com/m1khal3v/gometheus/internal/agent/storage"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/common/metric"
+	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
+	"github.com/m1khal3v/gometheus/pkg/client"
+	"github.com/m1khal3v/gometheus/pkg/request"
+	"github.com/m1khal3v/gometheus/pkg/response"
 	"time"
 )
 
-var mutex sync.Mutex
-var allMetrics = make([]*_metric.Metric, 0)
-
 func Start(endpoint string, pollInterval, reportInterval uint32) {
-	go collectMetrics(pollInterval)
-	sendMetrics(endpoint, reportInterval)
+	storage := storage.New()
+	go collectMetrics(storage, pollInterval)
+	saveMetrics(storage, client.New(endpoint, true), reportInterval)
 }
 
-func collectMetrics(pollInterval uint32) {
-	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
-	runtimeCollector := runtime.NewCollector()
-	randomCollector, err := random.NewCollector(0, 512)
+func createCollectors() []collector.Collector {
+	runtimeCollector := runtime.New()
+	randomCollector, err := random.New(0, 512)
 	if err != nil {
 		logger.Logger.Panic(err.Error())
 	}
 
-	for range ticker.C {
-		metrics, err := collector.CollectAll(
-			runtimeCollector,
-			randomCollector,
-		)
-		if err != nil {
-			logger.Logger.Warn(err.Error())
-		}
-		mutex.Lock()
-		allMetrics = append(allMetrics, metrics...)
-		mutex.Unlock()
+	return []collector.Collector{
+		runtimeCollector,
+		randomCollector,
 	}
 }
 
-func sendMetrics(endpoint string, reportInterval uint32) {
-	apiClient := client.NewClient(endpoint)
+func collectMetrics(storage *storage.Storage, pollInterval uint32) {
+	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
+	collectors := createCollectors()
+
+	for range ticker.C {
+		for _, collector := range collectors {
+			storage.Append(collector.Collect())
+		}
+	}
+}
+
+type apiClient interface {
+	SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error)
+}
+
+func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint32) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
-		mutex.Lock()
-		retryMetrics := make([]*_metric.Metric, 0)
-		for _, metric := range allMetrics {
-			err := apiClient.SendMetric(metric)
+		storage.Remove(func(metric metric.Metric) bool {
+			request, err := transformer.TransformToSaveRequest(metric)
 			if err != nil {
-				logger.Logger.Warn(err.Error())
-				retryMetrics = append(retryMetrics, metric)
+				logger.Logger.Error(err.Error())
+				return false
 			}
-		}
-		allMetrics = retryMetrics
-		mutex.Unlock()
+
+			if _, err = client.SaveMetricAsJSON(request); err != nil {
+				logger.Logger.Warn(err.Error())
+				return false
+			}
+
+			return true
+		})
 	}
 }

@@ -1,15 +1,36 @@
 package server
 
 import (
-	"github.com/m1khal3v/gometheus/internal/logger"
-	"github.com/m1khal3v/gometheus/internal/router"
-	"github.com/m1khal3v/gometheus/internal/storage/memory"
+	"errors"
+	"fmt"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/server/chi/router"
+	"github.com/m1khal3v/gometheus/internal/server/storage"
+	"github.com/m1khal3v/gometheus/internal/server/storage/dump"
+	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
-func Start(endpoint string) {
-	err := http.ListenAndServe(endpoint, router.NewRouter(memory.NewStorage()))
-	if err != nil {
+func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool) {
+	var storage storage.Storage = memory.New()
+
+	if fileStoragePath != "" {
+		storage = dump.New(storage, fileStoragePath, storeInterval, restore)
+
+		signalChannel := make(chan os.Signal, 2)
+		signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			signal := <-signalChannel
+			logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
+			storage.(*dump.Storage).Dump()
+			os.Exit(0)
+		}()
+	}
+
+	if err := http.ListenAndServe(endpoint, router.New(storage)); !errors.Is(err, http.ErrServerClosed) {
 		logger.Logger.Panic(err.Error())
 	}
 }

@@ -1,34 +1,15 @@
 package main
 
 import (
-	"github.com/caarlos0/env/v6"
 	"github.com/m1khal3v/gometheus/internal/agent"
-	"github.com/m1khal3v/gometheus/internal/logger"
-	flag "github.com/spf13/pflag"
+	"github.com/m1khal3v/gometheus/internal/agent/config"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 )
 
-type Config struct {
-	Address        string `env:"ADDRESS"`
-	PollInterval   uint32 `env:"POLL_INTERVAL"`
-	ReportInterval uint32 `env:"REPORT_INTERVAL"`
-}
-
-func parseConfig() Config {
-	config := Config{}
-	flag.StringVarP(&config.Address, "address", "a", "localhost:8080", "address of gometheus server")
-	flag.Uint32VarP(&config.PollInterval, "poll-interval", "p", 2, "interval of collecting metrics")
-	flag.Uint32VarP(&config.ReportInterval, "report-interval", "r", 10, "interval of reporting metrics")
-	flag.Parse()
-	err := env.Parse(&config)
-	if err != nil {
-		logger.Logger.Fatal(err.Error())
-	}
-
-	return config
-}
-
 func main() {
+	config := config.ParseConfig()
+	logger.Init("agent", config.LogLevel)
 	defer logger.Logger.Sync()
-	config := parseConfig()
+
 	agent.Start(config.Address, config.PollInterval, config.ReportInterval)
 }
