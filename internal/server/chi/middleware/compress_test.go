@@ -100,6 +100,7 @@ func TestCompress(t *testing.T) {
 }
 
 func decodeResponseBody(t *testing.T, response *http.Response) string {
+	t.Helper()
 	reader := response.Body
 	defer response.Body.Close()
 

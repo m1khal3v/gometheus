@@ -88,6 +88,7 @@ func TestDecompress(t *testing.T) {
 }
 
 func getBody(t *testing.T, encoding string) io.Reader {
+	t.Helper()
 	var buffer io.Writer = bytes.NewBuffer(nil)
 	writer := buffer
 

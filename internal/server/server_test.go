@@ -158,9 +158,9 @@ func TestSaveMetric(t *testing.T) {
 			assert.Equal(t, tt.expectedBody, body)
 			if tt.expectedStatusCode == http.StatusOK {
 				if tt.expectedValue != "" {
-					assert.Equal(t, tt.expectedValue, storage.Get(tt.metricName).GetStringValue())
+					assert.Equal(t, tt.expectedValue, storage.Get(tt.metricName).StringValue())
 				} else {
-					assert.Equal(t, tt.metricValue, storage.Get(tt.metricName).GetStringValue())
+					assert.Equal(t, tt.metricValue, storage.Get(tt.metricName).StringValue())
 				}
 			}
 		})
@@ -686,9 +686,9 @@ func TestGetAllMetrics(t *testing.T) {
 				for _, metric := range tt.preset {
 					assert.Regexp(t, regexp.MustCompile(fmt.Sprintf(
 						"<tr>\\n +<td>%s<\\/td>\\n +<td>%s<\\/td>\\n +<td>%s<\\/td>\\n +<\\/tr>",
-						regexp.QuoteMeta(metric.GetName()),
-						regexp.QuoteMeta(metric.GetType()),
-						regexp.QuoteMeta(metric.GetStringValue()),
+						regexp.QuoteMeta(metric.Name()),
+						regexp.QuoteMeta(metric.Type()),
+						regexp.QuoteMeta(metric.StringValue()),
 					)), body)
 				}
 			}

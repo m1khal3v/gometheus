@@ -35,5 +35,5 @@ func (storage *Storage) GetAll() map[string]metric.Metric {
 }
 
 func (storage *Storage) Save(metric metric.Metric) {
-	storage.metrics.Store(metric.GetName(), metric.Clone())
+	storage.metrics.Store(metric.Name(), metric.Clone())
 }

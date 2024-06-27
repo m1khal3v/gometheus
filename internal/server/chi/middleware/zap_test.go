@@ -77,16 +77,17 @@ func TestZapLogger(t *testing.T) {
 
 			fields := log.Context
 			assert.Len(t, fields, 5)
-			assert.Equal(t, tt.method, fieldByKey(fields, "method").String)
-			assert.Equal(t, tt.path, fieldByKey(fields, "url").String)
-			assert.Equal(t, int64(tt.status), fieldByKey(fields, "status").Integer)
-			assert.Equal(t, int64(len(tt.body)), fieldByKey(fields, "size").Integer)
-			assert.NotZero(t, fieldByKey(fields, "duration").Integer)
+			assert.Equal(t, tt.method, fieldByKey(t, fields, "method").String)
+			assert.Equal(t, tt.path, fieldByKey(t, fields, "url").String)
+			assert.Equal(t, int64(tt.status), fieldByKey(t, fields, "status").Integer)
+			assert.Equal(t, int64(len(tt.body)), fieldByKey(t, fields, "size").Integer)
+			assert.NotZero(t, fieldByKey(t, fields, "duration").Integer)
 		})
 	}
 }
 
-func fieldByKey(fields []zapcore.Field, key string) *zapcore.Field {
+func fieldByKey(t *testing.T, fields []zapcore.Field, key string) *zapcore.Field {
+	t.Helper()
 	for _, field := range fields {
 		if field.Key == key {
 			return &field

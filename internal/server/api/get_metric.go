@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"net/http"
 )
 
@@ -15,6 +16,10 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 	}
 
 	writer.Header().Set("Content-Type", "text/plain")
-	writer.WriteHeader(http.StatusOK)
-	_, _ = writer.Write([]byte(metric.GetStringValue()))
+	_, err := writer.Write([]byte(metric.StringValue()))
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }

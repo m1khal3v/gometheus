@@ -5,12 +5,12 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
-	_request "github.com/m1khal3v/gometheus/pkg/request"
+	requests "github.com/m1khal3v/gometheus/pkg/request"
 	"net/http"
 )
 
 func (container Container) JSONGetMetric(writer http.ResponseWriter, request *http.Request) {
-	getMetricRequest := _request.GetMetricRequest{}
+	getMetricRequest := requests.GetMetricRequest{}
 	if err := json.NewDecoder(request.Body).Decode(&getMetricRequest); err != nil {
 		writer.WriteHeader(http.StatusBadRequest)
 		return
@@ -42,6 +42,10 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	_, _ = writer.Write(jsonResponse)
+	_, err = writer.Write(jsonResponse)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }

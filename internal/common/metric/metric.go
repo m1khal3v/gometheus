@@ -1,8 +1,8 @@
 package metric
 
 type Metric interface {
-	GetType() string
-	GetName() string
-	GetStringValue() string
+	Type() string
+	Name() string
+	StringValue() string
 	Clone() Metric
 }

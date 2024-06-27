@@ -5,22 +5,22 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 
-const Type = "gauge"
+const MetricType = "gauge"
 
 type Metric struct {
 	name  string
 	value float64
 }
 
-func (metric *Metric) GetType() string {
-	return Type
+func (metric *Metric) Type() string {
+	return MetricType
 }
 
-func (metric *Metric) GetName() string {
+func (metric *Metric) Name() string {
 	return metric.name
 }
 
-func (metric *Metric) GetStringValue() string {
+func (metric *Metric) StringValue() string {
 	return fmt.Sprintf("%g", metric.value)
 }
 

@@ -24,7 +24,7 @@ func New(storage storage.Storage) *Manager {
 
 func (manager *Manager) Get(metricType, metricName string) metric.Metric {
 	metric := manager.storage.Get(metricName)
-	if metric != nil && metric.GetType() == metricType {
+	if metric != nil && metric.Type() == metricType {
 		return metric
 	}
 
@@ -36,24 +36,24 @@ func (manager *Manager) GetAll() map[string]metric.Metric {
 }
 
 func (manager *Manager) Save(metric metric.Metric) metric.Metric {
-	switch metric.GetType() {
-	case gauge.Type:
+	manager.mutex.Lock(metric.Name())
+	defer manager.mutex.Unlock(metric.Name())
+
+	switch metric.Type() {
+	case gauge.MetricType:
 		manager.storage.Save(metric)
-	case counter.Type:
+	case counter.MetricType:
 		manager.saveCounter(metric.(*counter.Metric))
 	default:
-		logger.Logger.Panic(fmt.Sprintf("Unsupported metric type %s", metric.GetType()))
+		logger.Logger.Panic(fmt.Sprintf("Unsupported metric type %s", metric.Type()))
 	}
 
 	return metric
 }
 
 func (manager *Manager) saveCounter(metric *counter.Metric) {
-	manager.mutex.Lock(metric.GetName())
-	defer manager.mutex.Unlock(metric.GetName())
-
-	previous := manager.storage.Get(metric.GetName())
-	if previous != nil && previous.GetType() == metric.GetType() {
+	previous := manager.storage.Get(metric.Name())
+	if previous != nil && previous.Type() == metric.Type() {
 		metric.Add(previous.(*counter.Metric).GetValue())
 	}
 	manager.storage.Save(metric)

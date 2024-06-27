@@ -85,9 +85,9 @@ func (storage *Storage) Dump() {
 
 	for _, metric := range storage.storage.GetAll() {
 		anonymousMetric := anonymousMetric{
-			Type:  metric.GetType(),
-			Name:  metric.GetName(),
-			Value: metric.GetStringValue(),
+			Type:  metric.Type(),
+			Name:  metric.Name(),
+			Value: metric.StringValue(),
 		}
 		jsonMetric, err := json.Marshal(anonymousMetric)
 		if err != nil {

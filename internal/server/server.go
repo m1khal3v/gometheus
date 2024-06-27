@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/router"
@@ -29,7 +30,7 @@ func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool)
 		}()
 	}
 
-	if err := http.ListenAndServe(endpoint, router.New(storage)); err != nil {
+	if err := http.ListenAndServe(endpoint, router.New(storage)); !errors.Is(err, http.ErrServerClosed) {
 		logger.Logger.Panic(err.Error())
 	}
 }

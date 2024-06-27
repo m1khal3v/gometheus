@@ -39,14 +39,14 @@ func newInvalidValueError(value string) ErrInvalidValue {
 
 func New(metricType, name, value string) (metric.Metric, error) {
 	switch metricType {
-	case gauge.Type:
+	case gauge.MetricType:
 		metricConvertedValue, err := strconv.ParseFloat(value, 64)
 		if nil != err {
 			return nil, newInvalidValueError(value)
 		}
 
 		return gauge.New(name, metricConvertedValue), nil
-	case counter.Type:
+	case counter.MetricType:
 		metricConvertedValue, err := strconv.ParseInt(value, 10, 64)
 		if nil != err {
 			return nil, newInvalidValueError(value)
@@ -60,13 +60,13 @@ func New(metricType, name, value string) (metric.Metric, error) {
 
 func NewFromRequest(request request.SaveMetricRequest) (metric.Metric, error) {
 	switch request.MetricType {
-	case gauge.Type:
+	case gauge.MetricType:
 		if nil == request.Value {
 			return nil, newInvalidValueError("nil")
 		}
 
 		return gauge.New(request.MetricName, *request.Value), nil
-	case counter.Type:
+	case counter.MetricType:
 		if nil == request.Delta {
 			return nil, newInvalidValueError("nil")
 		}

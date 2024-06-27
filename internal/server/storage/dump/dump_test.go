@@ -167,9 +167,9 @@ func TestStorage_Dump(t *testing.T) {
 			for _, metric := range tt.wantItems {
 				assert.Contains(t, items, fmt.Sprintf(
 					"{\"type\":\"%s\",\"name\":\"%s\",\"value\":\"%s\"}",
-					metric.GetType(),
-					metric.GetName(),
-					metric.GetStringValue(),
+					metric.Type(),
+					metric.Name(),
+					metric.StringValue(),
 				))
 			}
 		})
@@ -303,7 +303,7 @@ func TestStorage_Save(t *testing.T) {
 			storage := memory.New()
 			decorator := New(storage, "/tmp/test", 9999, false)
 			decorator.Save(tt.metric)
-			assert.Equal(t, tt.metric, decorator.Get(tt.metric.GetName()))
+			assert.Equal(t, tt.metric, decorator.Get(tt.metric.Name()))
 		})
 	}
 }

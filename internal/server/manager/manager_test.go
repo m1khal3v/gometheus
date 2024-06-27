@@ -47,7 +47,7 @@ func TestManager_Save(t *testing.T) {
 			}
 			manager := New(storage)
 			manager.Save(tt.metric)
-			assert.Equal(t, tt.want, manager.Get(tt.metric.GetType(), tt.metric.GetName()))
+			assert.Equal(t, tt.want, manager.Get(tt.metric.Type(), tt.metric.Name()))
 		})
 	}
 }

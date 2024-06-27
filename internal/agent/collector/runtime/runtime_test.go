@@ -10,10 +10,10 @@ func TestCollector_Collect(t *testing.T) {
 	metrics := collector.Collect()
 	assert.Len(t, metrics, 28)
 	for _, metric := range metrics {
-		if metric.GetName() == "PollCount" {
-			assert.Equal(t, "counter", metric.GetType())
+		if metric.Name() == "PollCount" {
+			assert.Equal(t, "counter", metric.Type())
 		} else {
-			assert.Equal(t, "gauge", metric.GetType())
+			assert.Equal(t, "gauge", metric.Type())
 		}
 	}
 }

@@ -24,61 +24,61 @@ func newUnknownTypeError(metricType string) ErrUnknownType {
 }
 
 func TransformToSaveRequest(metric metric.Metric) (*request.SaveMetricRequest, error) {
-	switch metric.GetType() {
-	case gauge.Type:
+	switch metric.Type() {
+	case gauge.MetricType:
 		value := metric.(*gauge.Metric).GetValue()
 		return &request.SaveMetricRequest{
-			MetricType: metric.GetType(),
-			MetricName: metric.GetName(),
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
 			Value:      &value,
 		}, nil
-	case counter.Type:
+	case counter.MetricType:
 		value := metric.(*counter.Metric).GetValue()
 		return &request.SaveMetricRequest{
-			MetricType: metric.GetType(),
-			MetricName: metric.GetName(),
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
 			Delta:      &value,
 		}, nil
 	}
-	return nil, newUnknownTypeError(metric.GetType())
+	return nil, newUnknownTypeError(metric.Type())
 }
 
 func TransformToSaveResponse(metric metric.Metric) (*response.SaveMetricResponse, error) {
-	switch metric.GetType() {
-	case gauge.Type:
+	switch metric.Type() {
+	case gauge.MetricType:
 		value := metric.(*gauge.Metric).GetValue()
 		return &response.SaveMetricResponse{
-			MetricType: metric.GetType(),
-			MetricName: metric.GetName(),
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
 			Value:      &value,
 		}, nil
-	case counter.Type:
+	case counter.MetricType:
 		value := metric.(*counter.Metric).GetValue()
 		return &response.SaveMetricResponse{
-			MetricType: metric.GetType(),
-			MetricName: metric.GetName(),
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
 			Delta:      &value,
 		}, nil
 	}
-	return nil, newUnknownTypeError(metric.GetType())
+	return nil, newUnknownTypeError(metric.Type())
 }
 
 func TransformToGetResponse(metric metric.Metric) (*response.GetMetricResponse, error) {
-	switch metric.GetType() {
-	case gauge.Type:
+	switch metric.Type() {
+	case gauge.MetricType:
 		value := metric.(*gauge.Metric).GetValue()
 		return &response.GetMetricResponse{
-			MetricType: metric.GetType(),
-			MetricName: metric.GetName(),
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
 			Value:      &value,
 		}, nil
-	case counter.Type:
+	case counter.MetricType:
 		value := metric.(*counter.Metric).GetValue()
 		return &response.GetMetricResponse{
-			MetricType: metric.GetType(),
-			MetricName: metric.GetName(),
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
 			Delta:      &value,
 		}, nil
 	}
-	return nil, newUnknownTypeError(metric.GetType())
+	return nil, newUnknownTypeError(metric.Type())
 }

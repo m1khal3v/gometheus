@@ -52,7 +52,7 @@ func TestStorage_Remove(t *testing.T) {
 		{
 			name: "remove counters",
 			filter: func(metric metric.Metric) bool {
-				return metric.GetType() == counter.Type
+				return metric.Type() == counter.MetricType
 			},
 			metrics: []metric.Metric{
 				gauge.New("gauge", 123.456),
@@ -61,7 +61,7 @@ func TestStorage_Remove(t *testing.T) {
 		{
 			name: "remove value > 123",
 			filter: func(metric metric.Metric) bool {
-				value, _ := strconv.ParseFloat(metric.GetStringValue(), 64)
+				value, _ := strconv.ParseFloat(metric.StringValue(), 64)
 				return value > 123
 			},
 			metrics: []metric.Metric{
@@ -71,7 +71,7 @@ func TestStorage_Remove(t *testing.T) {
 		{
 			name: "remove name contains u",
 			filter: func(metric metric.Metric) bool {
-				return strings.Contains(metric.GetName(), "u")
+				return strings.Contains(metric.Name(), "u")
 			},
 			metrics: []metric.Metric{},
 		},

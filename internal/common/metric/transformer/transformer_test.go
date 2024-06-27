@@ -22,7 +22,7 @@ func TestTransformToGetResponse(t *testing.T) {
 			name:   "counter",
 			metric: counter.New("test", 123),
 			want: &response.GetMetricResponse{
-				MetricType: counter.Type,
+				MetricType: counter.MetricType,
 				MetricName: "test",
 				Delta:      ptr.To(int64(123)),
 			},
@@ -31,7 +31,7 @@ func TestTransformToGetResponse(t *testing.T) {
 			name:   "gauge",
 			metric: gauge.New("test", 123.321),
 			want: &response.GetMetricResponse{
-				MetricType: gauge.Type,
+				MetricType: gauge.MetricType,
 				MetricName: "test",
 				Value:      ptr.To(123.321),
 			},
@@ -65,7 +65,7 @@ func TestTransformToSaveRequest(t *testing.T) {
 			name:   "counter",
 			metric: counter.New("test", 123),
 			want: &request.SaveMetricRequest{
-				MetricType: counter.Type,
+				MetricType: counter.MetricType,
 				MetricName: "test",
 				Delta:      ptr.To(int64(123)),
 			},
@@ -74,7 +74,7 @@ func TestTransformToSaveRequest(t *testing.T) {
 			name:   "gauge",
 			metric: gauge.New("test", 123.321),
 			want: &request.SaveMetricRequest{
-				MetricType: gauge.Type,
+				MetricType: gauge.MetricType,
 				MetricName: "test",
 				Value:      ptr.To(123.321),
 			},
@@ -108,7 +108,7 @@ func TestTransformToSaveResponse(t *testing.T) {
 			name:   "counter",
 			metric: counter.New("test", 123),
 			want: &response.SaveMetricResponse{
-				MetricType: counter.Type,
+				MetricType: counter.MetricType,
 				MetricName: "test",
 				Delta:      ptr.To(int64(123)),
 			},
@@ -117,7 +117,7 @@ func TestTransformToSaveResponse(t *testing.T) {
 			name:   "gauge",
 			metric: gauge.New("test", 123.321),
 			want: &response.SaveMetricResponse{
-				MetricType: gauge.Type,
+				MetricType: gauge.MetricType,
 				MetricName: "test",
 				Value:      ptr.To(123.321),
 			},
@@ -143,15 +143,15 @@ func TestTransformToSaveResponse(t *testing.T) {
 type invalidMetric struct {
 }
 
-func (metric *invalidMetric) GetName() string {
+func (metric *invalidMetric) Name() string {
 	return "invalid"
 }
 
-func (metric *invalidMetric) GetType() string {
+func (metric *invalidMetric) Type() string {
 	return "invalid"
 }
 
-func (metric *invalidMetric) GetStringValue() string {
+func (metric *invalidMetric) StringValue() string {
 	return "invalid"
 }
 

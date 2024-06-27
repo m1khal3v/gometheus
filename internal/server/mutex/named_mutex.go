@@ -27,7 +27,7 @@ func NewNamedMutex() *NamedMutex {
 		for range ticker.C {
 			namedMutex.mutexMap.Range(func(key, value any) bool {
 				item := value.(*mutexItem)
-				if now.Sub(item.lastAccess) > ttl && item.mutex.TryLock() {
+				if now.After(item.lastAccess.Add(ttl)) && item.mutex.TryLock() {
 					namedMutex.mutexMap.Delete(key)
 					item.mutex.Unlock()
 				}

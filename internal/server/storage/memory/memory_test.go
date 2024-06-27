@@ -66,8 +66,8 @@ func TestStorage_Save(t *testing.T) {
 				storage.Save(metric)
 			}
 			storage.Save(tt.metric)
-			metric := storage.Get(tt.metric.GetName())
-			assert.Equal(t, tt.want, metric.GetStringValue())
+			metric := storage.Get(tt.metric.Name())
+			assert.Equal(t, tt.want, metric.StringValue())
 		})
 	}
 }

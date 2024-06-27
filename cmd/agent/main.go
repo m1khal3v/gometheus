@@ -8,10 +8,8 @@ import (
 
 func main() {
 	config := config.ParseConfig()
-	if err := logger.Init("agent", config.LogLevel); err != nil {
-		panic(err)
-	}
-
+	logger.Init("agent", config.LogLevel)
 	defer logger.Logger.Sync()
+
 	agent.Start(config.Address, config.PollInterval, config.ReportInterval)
 }
