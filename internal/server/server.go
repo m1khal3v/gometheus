@@ -1,10 +1,12 @@
 package server
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/chi/router"
+	"github.com/m1khal3v/gometheus/internal/server/db"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/dump"
 	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
@@ -14,8 +16,18 @@ import (
 	"syscall"
 )
 
-func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool) {
+func Start(endpoint, fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint32, restore bool) {
 	var storage storage.Storage = memory.New()
+	var database *sql.DB = nil
+
+	if databaseDSN != "" && databaseDriver != "" {
+		var err error = nil
+		database, err = db.New(databaseDriver, databaseDSN)
+
+		if err != nil {
+			logger.Logger.Panic(err.Error())
+		}
+	}
 
 	if fileStoragePath != "" {
 		storage = dump.New(storage, fileStoragePath, storeInterval, restore)
@@ -30,7 +42,7 @@ func Start(endpoint, fileStoragePath string, storeInterval uint32, restore bool)
 		}()
 	}
 
-	if err := http.ListenAndServe(endpoint, router.New(storage)); !errors.Is(err, http.ErrServerClosed) {
+	if err := http.ListenAndServe(endpoint, router.New(storage, database)); !errors.Is(err, http.ErrServerClosed) {
 		logger.Logger.Panic(err.Error())
 	}
 }

@@ -11,5 +11,12 @@ func main() {
 	logger.Init("server", config.LogLevel)
 	defer logger.Logger.Sync()
 
-	server.Start(config.Address, config.FileStoragePath, config.StoreInterval, config.Restore)
+	server.Start(
+		config.Address,
+		config.FileStoragePath,
+		config.DatabaseDriver,
+		config.DatabaseDSN,
+		config.StoreInterval,
+		config.Restore,
+	)
 }
