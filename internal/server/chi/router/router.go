@@ -23,6 +23,7 @@ func New(storage storage.Storage) chi.Router {
 		router.Post("/{type}/{name}/{value}", routes.SaveMetric)
 		router.Post("/", routes.JSONSaveMetric)
 	})
+	router.Post("/updates", routes.JSONSaveMetrics)
 	router.Route("/value", func(router chi.Router) {
 		router.Get("/{type}/{name}", routes.GetMetric)
 		router.Post("/", routes.JSONGetMetric)

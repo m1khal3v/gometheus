@@ -101,11 +101,51 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	}
 
 	if _, err := storage.db.Exec(
-		"INSERT INTO metric (type, name, value) VALUES ($1, $2, $3::DOUBLE PRECISION)",
+		`
+		INSERT INTO metric (type, name, value) 
+		VALUES ($1, $2, $3::DOUBLE PRECISION)
+		ON CONFLICT (name) DO UPDATE
+		`,
 		metric.Type(),
 		metric.Name(),
 		metric.StringValue(),
 	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
+	if err := storage.checkStorageClosed(); err != nil {
+		return err
+	}
+
+	transaction, err := storage.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	for _, metric := range metrics {
+		if _, err := transaction.Exec(
+			`
+			INSERT INTO metric (type, name, value) 
+			VALUES ($1, $2, $3::DOUBLE PRECISION)
+			ON CONFLICT (name) DO UPDATE
+			`,
+			metric.Type(),
+			metric.Name(),
+			metric.StringValue(),
+		); err != nil {
+			if err := transaction.Rollback(); err != nil {
+				return err
+			}
+
+			return err
+		}
+	}
+
+	if err := transaction.Commit(); err != nil {
 		return err
 	}
 

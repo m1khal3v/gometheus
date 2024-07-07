@@ -57,6 +57,18 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	return nil
 }
 
+func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
+	if err := storage.checkStorageClosed(); err != nil {
+		return err
+	}
+
+	for _, metric := range metrics {
+		storage.metrics.Store(metric.Name(), metric.Clone())
+	}
+
+	return nil
+}
+
 func (storage *Storage) Ok() bool {
 	return !storage.closed
 }

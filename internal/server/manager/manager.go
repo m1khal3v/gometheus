@@ -7,6 +7,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/mutex"
+	"golang.org/x/exp/maps"
 )
 
 type ErrMetricNotFound struct {
@@ -73,32 +74,65 @@ func (manager *Manager) Save(metric metric.Metric) (metric.Metric, error) {
 
 	switch metric.Type() {
 	case gauge.MetricType:
-		if err := manager.storage.Save(metric); err != nil {
-			return nil, err
-		}
+		break
 	case counter.MetricType:
-		if err := manager.saveCounter(metric.(*counter.Metric)); err != nil {
+		if err := manager.prepareCounter(metric.(*counter.Metric), nil); err != nil {
 			return nil, err
 		}
 	default:
 		return nil, newErrUnknownMetricType(metric.Type())
 	}
 
+	if err := manager.storage.Save(metric); err != nil {
+		return nil, err
+	}
+
 	return metric, nil
 }
 
-func (manager *Manager) saveCounter(metric *counter.Metric) error {
-	previous, err := manager.storage.Get(metric.Name())
-	if err != nil {
-		return err
+func (manager *Manager) SaveBatch(metrics []metric.Metric) ([]metric.Metric, error) {
+	processed := map[string]metric.Metric{}
+
+	for _, metric := range metrics {
+		previous, ok := processed[metric.Name()]
+		if !ok {
+			manager.mutex.Lock(metric.Name())
+			defer manager.mutex.Unlock(metric.Name())
+		}
+
+		switch metric.Type() {
+		case gauge.MetricType:
+			break
+		case counter.MetricType:
+			if err := manager.prepareCounter(metric.(*counter.Metric), previous); err != nil {
+				return nil, err
+			}
+		default:
+			return nil, newErrUnknownMetricType(metric.Type())
+		}
+
+		processed[metric.Name()] = metric
+	}
+
+	metrics = maps.Values(processed)
+	if err := manager.storage.SaveBatch(metrics); err != nil {
+		return nil, err
+	}
+
+	return metrics, nil
+}
+
+func (manager *Manager) prepareCounter(metric *counter.Metric, previous metric.Metric) error {
+	if previous == nil {
+		var err error
+		previous, err = manager.storage.Get(metric.Name())
+		if err != nil {
+			return err
+		}
 	}
 
 	if previous != nil && previous.Type() == metric.Type() {
 		metric.Add(previous.(*counter.Metric).GetValue())
-	}
-
-	if err := manager.storage.Save(metric); err != nil {
-		return err
 	}
 
 	return nil

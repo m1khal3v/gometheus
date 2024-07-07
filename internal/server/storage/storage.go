@@ -9,6 +9,7 @@ var ErrStorageClosed = errors.New("storage closed")
 
 type Storage interface {
 	Save(metric metric.Metric) error
+	SaveBatch(metrics []metric.Metric) error
 	Get(name string) (metric.Metric, error)
 	GetAll() (<-chan metric.Metric, error)
 	Ok() bool

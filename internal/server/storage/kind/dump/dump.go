@@ -74,6 +74,20 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	return nil
 }
 
+func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
+	if err := storage.storage.SaveBatch(metrics); err != nil {
+		return err
+	}
+
+	if storage.sync {
+		if err := storage.Dump(); err != nil {
+			panic(err)
+		}
+	}
+
+	return nil
+}
+
 func (storage *Storage) Ok() bool {
 	return storage.storage.Ok()
 }
