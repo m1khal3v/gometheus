@@ -2,13 +2,42 @@ package manager
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
-	"github.com/m1khal3v/gometheus/internal/server/mutex"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
+	"github.com/m1khal3v/gometheus/pkg/mutex"
 )
+
+type ErrMetricNotFound struct {
+	MetricType string
+	MetricName string
+}
+
+func (err ErrMetricNotFound) Error() string {
+	return fmt.Sprintf("metric '%s' with type '%s' not found", err.MetricName, err.MetricType)
+}
+
+func newErrMetricNotFound(metricType string, metricName string) error {
+	return ErrMetricNotFound{
+		MetricType: metricType,
+		MetricName: metricName,
+	}
+}
+
+type ErrUnknownMetricType struct {
+	MetricType string
+}
+
+func (err ErrUnknownMetricType) Error() string {
+	return fmt.Sprintf("unsupported metric type: %s", err.MetricType)
+}
+
+func newErrUnknownMetricType(metricType string) error {
+	return ErrUnknownMetricType{
+		MetricType: metricType,
+	}
+}
 
 type Manager struct {
 	mutex   *mutex.NamedMutex
@@ -22,39 +51,59 @@ func New(storage storage.Storage) *Manager {
 	}
 }
 
-func (manager *Manager) Get(metricType, metricName string) metric.Metric {
-	metric := manager.storage.Get(metricName)
-	if metric != nil && metric.Type() == metricType {
-		return metric
+func (manager *Manager) Get(metricType, metricName string) (metric.Metric, error) {
+	metric, err := manager.storage.Get(metricName)
+	if err != nil {
+		return nil, err
+	}
+	if metric == nil || metric.Type() != metricType {
+		return nil, newErrMetricNotFound(metricType, metricName)
 	}
 
-	return nil
+	return metric, nil
 }
 
-func (manager *Manager) GetAll() map[string]metric.Metric {
+func (manager *Manager) GetAll() (<-chan metric.Metric, error) {
 	return manager.storage.GetAll()
 }
 
-func (manager *Manager) Save(metric metric.Metric) metric.Metric {
+func (manager *Manager) Save(metric metric.Metric) (metric.Metric, error) {
 	manager.mutex.Lock(metric.Name())
 	defer manager.mutex.Unlock(metric.Name())
 
 	switch metric.Type() {
 	case gauge.MetricType:
-		manager.storage.Save(metric)
+		if err := manager.storage.Save(metric); err != nil {
+			return nil, err
+		}
 	case counter.MetricType:
-		manager.saveCounter(metric.(*counter.Metric))
+		if err := manager.saveCounter(metric.(*counter.Metric)); err != nil {
+			return nil, err
+		}
 	default:
-		logger.Logger.Panic(fmt.Sprintf("Unsupported metric type %s", metric.Type()))
+		return nil, newErrUnknownMetricType(metric.Type())
 	}
 
-	return metric
+	return metric, nil
 }
 
-func (manager *Manager) saveCounter(metric *counter.Metric) {
-	previous := manager.storage.Get(metric.Name())
+func (manager *Manager) saveCounter(metric *counter.Metric) error {
+	previous, err := manager.storage.Get(metric.Name())
+	if err != nil {
+		return err
+	}
+
 	if previous != nil && previous.Type() == metric.Type() {
 		metric.Add(previous.(*counter.Metric).GetValue())
 	}
-	manager.storage.Save(metric)
+
+	if err := manager.storage.Save(metric); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (manager *Manager) IsStorageOk() bool {
+	return manager.storage.Ok()
 }

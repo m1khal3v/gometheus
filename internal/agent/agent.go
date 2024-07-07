@@ -14,29 +14,67 @@ import (
 	"time"
 )
 
-func Start(endpoint string, pollInterval, reportInterval uint32) {
-	storage := storage.New()
-	go collectMetrics(storage, pollInterval)
-	saveMetrics(storage, client.New(endpoint, true), reportInterval)
-}
+func createCollectors() ([]collector.Collector, error) {
+	runtimeCollector, err := runtime.New([]string{
+		"Alloc",
+		"BuckHashSys",
+		"Frees",
+		"GCCPUFraction",
+		"GCSys",
+		"HeapAlloc",
+		"HeapIdle",
+		"HeapInuse",
+		"HeapObjects",
+		"HeapReleased",
+		"HeapSys",
+		"LastGC",
+		"Lookups",
+		"MCacheInuse",
+		"MCacheSys",
+		"MSpanInuse",
+		"MSpanSys",
+		"Mallocs",
+		"NextGC",
+		"NumForcedGC",
+		"NumGC",
+		"OtherSys",
+		"PauseTotalNs",
+		"StackInuse",
+		"StackSys",
+		"Sys",
+		"TotalAlloc",
+	})
+	if err != nil {
+		return nil, err
+	}
 
-func createCollectors() []collector.Collector {
-	runtimeCollector := runtime.New()
 	randomCollector, err := random.New(0, 512)
 	if err != nil {
-		logger.Logger.Panic(err.Error())
+		return nil, err
 	}
 
 	return []collector.Collector{
 		runtimeCollector,
 		randomCollector,
-	}
+	}, nil
 }
 
-func collectMetrics(storage *storage.Storage, pollInterval uint32) {
-	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
-	collectors := createCollectors()
+func Start(endpoint string, pollInterval, reportInterval uint32) error {
+	storage := storage.New()
+	client := client.New(endpoint, true)
+	collectors, err := createCollectors()
+	if err != nil {
+		return err
+	}
 
+	go collectMetrics(storage, collectors, pollInterval)
+	saveMetrics(storage, client, reportInterval)
+
+	return nil
+}
+
+func collectMetrics(storage *storage.Storage, collectors []collector.Collector, pollInterval uint32) {
+	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	for range ticker.C {
 		for _, collector := range collectors {
 			storage.Append(collector.Collect())
@@ -55,7 +93,7 @@ func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint
 			request, err := transformer.TransformToSaveRequest(metric)
 			if err != nil {
 				logger.Logger.Error(err.Error())
-				return false
+				return true
 			}
 
 			if _, err = client.SaveMetricAsJSON(request); err != nil {

@@ -29,6 +29,11 @@ func (container Container) SaveMetric(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	container.manager.Save(metric)
+	if _, err := container.manager.Save(metric); err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	writer.WriteHeader(http.StatusOK)
 }

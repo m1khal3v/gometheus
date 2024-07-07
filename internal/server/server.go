@@ -1,48 +1,61 @@
 package server
 
 import (
-	"database/sql"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/chi/router"
-	"github.com/m1khal3v/gometheus/internal/server/db"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
-	"github.com/m1khal3v/gometheus/internal/server/storage/dump"
-	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
+	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-func Start(endpoint, fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint32, restore bool) {
-	var storage storage.Storage = memory.New()
-	var database *sql.DB = nil
+func Start(endpoint, fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint32, restore bool) error {
+	ctx := context.Background()
+	storage, err := factory.New(fileStoragePath, databaseDriver, databaseDSN, storeInterval, restore)
+	if err != nil {
+		return err
+	}
 
-	if databaseDSN != "" && databaseDriver != "" {
-		var err error = nil
-		database, err = db.New(databaseDriver, databaseDSN)
+	server := &http.Server{Addr: endpoint, Handler: router.New(storage)}
+	suspended := hookSuspendSignals(ctx, storage, server)
 
-		if err != nil {
-			logger.Logger.Panic(err.Error())
+	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	<-suspended
+
+	return nil
+}
+
+func hookSuspendSignals(ctx context.Context, storage storage.Storage, server *http.Server) <-chan struct{} {
+	ctx, cancel := context.WithCancel(ctx)
+
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		signal := <-signalChannel
+		logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
+
+		if err := storage.Close(); err != nil {
+			logger.Logger.Error(err.Error())
+		} else {
+			logger.Logger.Info("Storage was closed successfully")
 		}
-	}
 
-	if fileStoragePath != "" {
-		storage = dump.New(storage, fileStoragePath, storeInterval, restore)
+		if err := server.Shutdown(ctx); err != nil {
+			logger.Logger.Error(err.Error())
+		} else {
+			logger.Logger.Info("Server shutdown successfully")
+		}
 
-		signalChannel := make(chan os.Signal, 2)
-		signal.Notify(signalChannel, syscall.SIGINT, syscall.SIGTERM)
-		go func() {
-			signal := <-signalChannel
-			logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
-			storage.(*dump.Storage).Dump()
-			os.Exit(0)
-		}()
-	}
+		cancel()
+	}()
 
-	if err := http.ListenAndServe(endpoint, router.New(storage, database)); !errors.Is(err, http.ErrServerClosed) {
-		logger.Logger.Panic(err.Error())
-	}
+	return ctx.Done()
 }

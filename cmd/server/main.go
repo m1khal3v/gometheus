@@ -10,13 +10,16 @@ func main() {
 	config := config.ParseConfig()
 	logger.Init("server", config.LogLevel)
 	defer logger.Logger.Sync()
+	defer logger.RecoverAndPanic()
 
-	server.Start(
+	if err := server.Start(
 		config.Address,
 		config.FileStoragePath,
 		config.DatabaseDriver,
 		config.DatabaseDSN,
 		config.StoreInterval,
 		config.Restore,
-	)
+	); err != nil {
+		logger.Logger.Fatal(err.Error())
+	}
 }

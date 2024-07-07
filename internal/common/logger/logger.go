@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"go.uber.org/zap"
 	"sync"
 )
@@ -24,4 +25,10 @@ func Init(name, level string) {
 
 		Logger = logger.Named(name)
 	})
+}
+
+func RecoverAndPanic() {
+	if recovered := recover(); recovered != nil {
+		Logger.Panic(fmt.Sprintf("%v", recovered))
+	}
 }

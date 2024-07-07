@@ -10,7 +10,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	"github.com/m1khal3v/gometheus/internal/server/chi/router"
-	"github.com/m1khal3v/gometheus/internal/server/storage/memory"
+	"github.com/m1khal3v/gometheus/internal/server/storage/kind/memory"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -35,7 +35,7 @@ func testRequest(t *testing.T, server *httptest.Server, method string, path stri
 
 func TestSaveMetric(t *testing.T) {
 	storage := memory.New()
-	server := httptest.NewServer(router.New(storage, nil))
+	server := httptest.NewServer(router.New(storage))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -176,7 +176,7 @@ type saveMetricRequest struct {
 
 func TestSaveMetricJSON(t *testing.T) {
 	storage := memory.New()
-	server := httptest.NewServer(router.New(storage, nil))
+	server := httptest.NewServer(router.New(storage))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -445,7 +445,7 @@ func TestGetMetric(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := memory.New()
-			server := httptest.NewServer(router.New(storage, nil))
+			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
@@ -583,7 +583,7 @@ func TestGetMetricJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := memory.New()
-			server := httptest.NewServer(router.New(storage, nil))
+			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
@@ -663,7 +663,7 @@ func TestGetAllMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := memory.New()
-			server := httptest.NewServer(router.New(storage, nil))
+			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 
 			for _, metric := range tt.preset {

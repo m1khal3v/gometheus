@@ -29,7 +29,13 @@ func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *h
 		return
 	}
 
-	metric = container.manager.Save(metric)
+	metric, err = container.manager.Save(metric)
+	if err != nil {
+		logger.Logger.Error(err.Error())
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	response, err := transformer.TransformToSaveResponse(metric)
 	if err != nil {
 		logger.Logger.Error(err.Error())
