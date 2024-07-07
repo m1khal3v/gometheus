@@ -20,7 +20,7 @@ type Storage struct {
 	closed bool
 }
 
-//go:embed migrations/*.go
+//go:embed migrations/*.sql
 var embedMigrations embed.FS
 
 func New(databaseDSN string) *Storage {
