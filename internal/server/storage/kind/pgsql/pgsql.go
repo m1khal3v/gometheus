@@ -2,6 +2,7 @@ package pgsql
 
 import (
 	"database/sql"
+	"embed"
 	"errors"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
@@ -9,6 +10,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	store "github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/generator"
+	"github.com/pressly/goose/v3"
 	"sync"
 )
 
@@ -18,9 +20,17 @@ type Storage struct {
 	closed bool
 }
 
+//go:embed migrations/*.go
+var embedMigrations embed.FS
+
 func New(databaseDSN string) *Storage {
-	db, err := sql.Open("pgx", databaseDSN)
+	db, err := goose.OpenDBWithDriver("pgx", databaseDSN)
 	if err != nil {
+		panic(err)
+	}
+
+	goose.SetBaseFS(embedMigrations)
+	if err := goose.Up(db, "migrations"); err != nil {
 		panic(err)
 	}
 
