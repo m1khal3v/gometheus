@@ -101,7 +101,7 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	}
 
 	if _, err := storage.db.Exec(
-		"INSERT INTO metric (type, name, value) VALUES ($1, $2, $3::DECIMAL)",
+		"INSERT INTO metric (type, name, value) VALUES ($1, $2, $3::DOUBLE PRECISION)",
 		metric.Type(),
 		metric.Name(),
 		metric.StringValue(),
