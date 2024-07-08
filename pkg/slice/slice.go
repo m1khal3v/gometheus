@@ -1,5 +1,12 @@
 package slice
 
+// Chunk returns an iterator over consecutive sub-slices of up to n elements of s.
+// All but the last sub-slice will have size n.
+// All sub-slices are clipped to have no capacity beyond the length.
+// If s is empty, the sequence is empty: there is no empty slice in the sequence.
+// Chunk panics if n is less than 1.
+//
+// Based on Go 1.23 source code
 func Chunk[T any](slice []T, n uint64) <-chan []T {
 	if n == 0 {
 		panic("n can`t be less than 1")
