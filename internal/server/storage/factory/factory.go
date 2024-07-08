@@ -13,7 +13,7 @@ type ErrUnknownDriver struct {
 }
 
 func (err ErrUnknownDriver) Error() string {
-	return fmt.Sprintf("Driver '%s' is not defined", err.Driver)
+	return fmt.Sprintf("driver '%s' is not defined", err.Driver)
 }
 
 func newErrUnknownDriver(driver string) error {

@@ -14,7 +14,7 @@ type ErrUnknownType struct {
 }
 
 func (err ErrUnknownType) Error() string {
-	return fmt.Sprintf("Metric type '%s' is not defined", err.Type)
+	return fmt.Sprintf("metric type '%s' is not defined", err.Type)
 }
 
 func newErrUnknownType(metricType string) error {
@@ -28,7 +28,7 @@ type ErrInvalidValue struct {
 }
 
 func (err ErrInvalidValue) Error() string {
-	return fmt.Sprintf("Metric value '%s' is invalid", err.Value)
+	return fmt.Sprintf("metric value '%s' is invalid", err.Value)
 }
 
 func newErrInvalidValue(value string) error {
