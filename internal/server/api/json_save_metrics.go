@@ -19,6 +19,11 @@ func (container Container) JSONSaveMetrics(writer http.ResponseWriter, request *
 		return
 	}
 
+	if len(saveMetricsRequest) == 0 {
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	metrics := []metric.Metric{}
 	for _, saveMetricRequest := range saveMetricsRequest {
 		if _, err := govalidator.ValidateStruct(saveMetricRequest); err != nil {
