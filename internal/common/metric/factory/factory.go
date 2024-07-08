@@ -17,8 +17,8 @@ func (err ErrUnknownType) Error() string {
 	return fmt.Sprintf("Metric type '%s' is not defined", err.Type)
 }
 
-func newUnknownTypeError(metricType string) ErrUnknownType {
-	return ErrUnknownType{
+func newErrUnknownType(metricType string) error {
+	return &ErrUnknownType{
 		Type: metricType,
 	}
 }
@@ -31,8 +31,8 @@ func (err ErrInvalidValue) Error() string {
 	return fmt.Sprintf("Metric value '%s' is invalid", err.Value)
 }
 
-func newInvalidValueError(value string) ErrInvalidValue {
-	return ErrInvalidValue{
+func newErrInvalidValue(value string) error {
+	return &ErrInvalidValue{
 		Value: value,
 	}
 }
@@ -42,19 +42,19 @@ func New(metricType, name, value string) (metric.Metric, error) {
 	case gauge.MetricType:
 		metricConvertedValue, err := strconv.ParseFloat(value, 64)
 		if nil != err {
-			return nil, newInvalidValueError(value)
+			return nil, newErrInvalidValue(value)
 		}
 
 		return gauge.New(name, metricConvertedValue), nil
 	case counter.MetricType:
 		metricConvertedValue, err := strconv.ParseInt(value, 10, 64)
 		if nil != err {
-			return nil, newInvalidValueError(value)
+			return nil, newErrInvalidValue(value)
 		}
 
 		return counter.New(name, metricConvertedValue), nil
 	default:
-		return nil, newUnknownTypeError(metricType)
+		return nil, newErrUnknownType(metricType)
 	}
 }
 
@@ -62,17 +62,17 @@ func NewFromRequest(request request.SaveMetricRequest) (metric.Metric, error) {
 	switch request.MetricType {
 	case gauge.MetricType:
 		if nil == request.Value {
-			return nil, newInvalidValueError("nil")
+			return nil, newErrInvalidValue("nil")
 		}
 
 		return gauge.New(request.MetricName, *request.Value), nil
 	case counter.MetricType:
 		if nil == request.Delta {
-			return nil, newInvalidValueError("nil")
+			return nil, newErrInvalidValue("nil")
 		}
 
 		return counter.New(request.MetricName, *request.Delta), nil
 	default:
-		return nil, newUnknownTypeError(request.MetricType)
+		return nil, newErrUnknownType(request.MetricType)
 	}
 }

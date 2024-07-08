@@ -69,8 +69,8 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) Ok() bool {
-	return !storage.closed
+func (storage *Storage) Ping() error {
+	return storage.checkStorageClosed()
 }
 
 func (storage *Storage) Close() error {

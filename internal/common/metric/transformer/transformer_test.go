@@ -39,7 +39,7 @@ func TestTransformToGetResponse(t *testing.T) {
 		{
 			name:    "invalid",
 			metric:  &invalidMetric{},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 	}
 	for _, tt := range tests {
@@ -82,7 +82,7 @@ func TestTransformToSaveRequest(t *testing.T) {
 		{
 			name:    "invalid",
 			metric:  &invalidMetric{},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 	}
 	for _, tt := range tests {
@@ -125,7 +125,7 @@ func TestTransformToSaveResponse(t *testing.T) {
 		{
 			name:    "invalid",
 			metric:  &invalidMetric{},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 	}
 	for _, tt := range tests {

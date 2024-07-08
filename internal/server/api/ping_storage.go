@@ -5,9 +5,9 @@ import (
 )
 
 func (container Container) PingStorage(writer http.ResponseWriter, request *http.Request) {
-	if container.manager.IsStorageOk() {
+	if err := container.manager.PingStorage(); err == nil {
 		writer.WriteHeader(http.StatusOK)
 	} else {
-		writer.WriteHeader(http.StatusInternalServerError)
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Storage unavailable", err)
 	}
 }

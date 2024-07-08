@@ -24,7 +24,7 @@ func (err ErrInvalidMetricName) Error() string {
 	return fmt.Sprintf("invalid metric name: %s", err.Name)
 }
 
-func newInvalidMetricName(name string) error {
+func newErrInvalidMetricName(name string) error {
 	return &ErrInvalidMetricName{
 		Name: name,
 	}
@@ -49,7 +49,7 @@ func (collector *Collector) validateMetricNames() error {
 
 	for _, name := range collector.metrics {
 		if !reflect.ValueOf(*collector.memStats).FieldByName(name).IsValid() {
-			err = errors.Join(err, newInvalidMetricName(name))
+			err = errors.Join(err, newErrInvalidMetricName(name))
 		}
 	}
 

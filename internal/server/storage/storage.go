@@ -12,7 +12,7 @@ type Storage interface {
 	SaveBatch(metrics []metric.Metric) error
 	Get(name string) (metric.Metric, error)
 	GetAll() (<-chan metric.Metric, error)
-	Ok() bool
+	Ping() error
 	Close() error
 	Reset() error
 }

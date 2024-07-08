@@ -47,7 +47,7 @@ func TestNew(t *testing.T) {
 				name:       "test",
 				value:      "123.321",
 			},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 		{
 			name: "test invalid gauge",
@@ -56,7 +56,7 @@ func TestNew(t *testing.T) {
 				name:       "test",
 				value:      "abc123.321",
 			},
-			wantErr: newInvalidValueError("abc123.321"),
+			wantErr: newErrInvalidValue("abc123.321"),
 		},
 		{
 			name: "test invalid counter",
@@ -65,7 +65,7 @@ func TestNew(t *testing.T) {
 				name:       "test",
 				value:      "123.321",
 			},
-			wantErr: newInvalidValueError("123.321"),
+			wantErr: newErrInvalidValue("123.321"),
 		},
 	}
 	for _, tt := range tests {
@@ -112,7 +112,7 @@ func TestNewFromRequest(t *testing.T) {
 				MetricType: "invalid",
 				Value:      ptr.To(123.321),
 			},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 		{
 			name: "test nil gauge",
@@ -120,7 +120,7 @@ func TestNewFromRequest(t *testing.T) {
 				MetricName: "test",
 				MetricType: "gauge",
 			},
-			wantErr: newInvalidValueError("nil"),
+			wantErr: newErrInvalidValue("nil"),
 		},
 		{
 			name: "test nil counter",
@@ -128,7 +128,7 @@ func TestNewFromRequest(t *testing.T) {
 				MetricName: "test",
 				MetricType: "counter",
 			},
-			wantErr: newInvalidValueError("nil"),
+			wantErr: newErrInvalidValue("nil"),
 		},
 	}
 	for _, tt := range tests {

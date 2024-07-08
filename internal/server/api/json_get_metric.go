@@ -2,11 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/asaskevich/govalidator"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
-	"github.com/m1khal3v/gometheus/internal/server/manager"
 	requests "github.com/m1khal3v/gometheus/pkg/request"
 	"net/http"
 )
@@ -14,45 +11,40 @@ import (
 func (container Container) JSONGetMetric(writer http.ResponseWriter, request *http.Request) {
 	getMetricRequest := requests.GetMetricRequest{}
 	if err := json.NewDecoder(request.Body).Decode(&getMetricRequest); err != nil {
-		writer.WriteHeader(http.StatusBadRequest)
+		container.writeErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
 		return
 	}
 
 	if _, err := govalidator.ValidateStruct(getMetricRequest); err != nil {
-		writer.WriteHeader(http.StatusBadRequest)
+		container.writeErrorResponse(http.StatusBadRequest, writer, "Invalid request received", err)
 		return
 	}
 
 	metric, err := container.manager.Get(getMetricRequest.MetricType, getMetricRequest.MetricName)
 	if err != nil {
-		if errors.As(err, &manager.ErrMetricNotFound{}) {
-			writer.WriteHeader(http.StatusNotFound)
-		} else {
-			logger.Logger.Error(err.Error())
-			writer.WriteHeader(http.StatusInternalServerError)
-		}
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
+		return
+	}
+	if metric == nil {
+		container.writeErrorResponse(http.StatusNotFound, writer, "Metric not found", nil)
 		return
 	}
 
 	response, err := transformer.TransformToGetResponse(metric)
 	if err != nil {
-		logger.Logger.Error(err.Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
 		return
 	}
 
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		logger.Logger.Error(err.Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t encode response", err)
 		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	_, err = writer.Write(jsonResponse)
-	if err != nil {
-		logger.Logger.Error(err.Error())
-		writer.WriteHeader(http.StatusInternalServerError)
+	if _, err = writer.Write(jsonResponse); err != nil {
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t write response", err)
 		return
 	}
 }

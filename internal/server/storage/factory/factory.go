@@ -16,8 +16,8 @@ func (err ErrUnknownDriver) Error() string {
 	return fmt.Sprintf("Driver '%s' is not defined", err.Driver)
 }
 
-func newUnknownDriverError(driver string) ErrUnknownDriver {
-	return ErrUnknownDriver{
+func newErrUnknownDriver(driver string) error {
+	return &ErrUnknownDriver{
 		Driver: driver,
 	}
 }
@@ -49,6 +49,6 @@ func newDBStorage(databaseDriver, databaseDSN string) (storage.Storage, error) {
 	case "pgx":
 		return pgsql.New(databaseDSN), nil
 	default:
-		return nil, newUnknownDriverError(databaseDriver)
+		return nil, newErrUnknownDriver(databaseDriver)
 	}
 }

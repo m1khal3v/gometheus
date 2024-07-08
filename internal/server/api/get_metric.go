@@ -1,9 +1,6 @@
 package api
 
 import (
-	"errors"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
-	"github.com/m1khal3v/gometheus/internal/server/manager"
 	"net/http"
 )
 
@@ -13,18 +10,17 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 
 	metric, err := container.manager.Get(metricType, metricName)
 	if err != nil {
-		if errors.As(err, &manager.ErrMetricNotFound{}) {
-			writer.WriteHeader(http.StatusNotFound)
-		} else {
-			logger.Logger.Error(err.Error())
-			writer.WriteHeader(http.StatusInternalServerError)
-		}
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
+		return
+	}
+	if metric == nil {
+		container.writeErrorResponse(http.StatusNotFound, writer, "Metric not found", nil)
 		return
 	}
 
 	writer.Header().Set("Content-Type", "text/plain")
 	if _, err := writer.Write([]byte(metric.StringValue())); err != nil {
-		writer.WriteHeader(http.StatusBadRequest)
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t write response", err)
 		return
 	}
 }

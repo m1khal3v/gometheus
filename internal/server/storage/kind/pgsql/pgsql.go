@@ -153,8 +153,16 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) Ok() bool {
-	return !storage.closed && storage.db.Ping() == nil
+func (storage *Storage) Ping() error {
+	if err := storage.checkStorageClosed(); err != nil {
+		return err
+	}
+
+	if err := storage.db.Ping(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (storage *Storage) Close() error {

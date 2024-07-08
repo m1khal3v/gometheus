@@ -9,12 +9,12 @@ func (container Container) GetAllMetrics(writer http.ResponseWriter, request *ht
 
 	metrics, err := container.manager.GetAll()
 	if err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t get metrics", err)
 		return
 	}
 
-	if err := container.templates.GetAllMetricsTemplate().Execute(writer, metrics); err != nil {
-		writer.WriteHeader(http.StatusInternalServerError)
+	if err := container.templates.ExecuteAllMetricsTemplate(writer, metrics); err != nil {
+		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t use page template", err)
 		return
 	}
 }

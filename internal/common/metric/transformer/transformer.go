@@ -17,8 +17,8 @@ func (err ErrUnknownType) Error() string {
 	return fmt.Sprintf("Metric type '%s' is not defined", err.Type)
 }
 
-func newUnknownTypeError(metricType string) ErrUnknownType {
-	return ErrUnknownType{
+func newErrUnknownType(metricType string) error {
+	return &ErrUnknownType{
 		Type: metricType,
 	}
 }
@@ -40,7 +40,7 @@ func TransformToSaveRequest(metric metric.Metric) (*request.SaveMetricRequest, e
 			Delta:      &value,
 		}, nil
 	}
-	return nil, newUnknownTypeError(metric.Type())
+	return nil, newErrUnknownType(metric.Type())
 }
 
 func TransformToSaveResponse(metric metric.Metric) (*response.SaveMetricResponse, error) {
@@ -60,7 +60,7 @@ func TransformToSaveResponse(metric metric.Metric) (*response.SaveMetricResponse
 			Delta:      &value,
 		}, nil
 	}
-	return nil, newUnknownTypeError(metric.Type())
+	return nil, newErrUnknownType(metric.Type())
 }
 
 func TransformToGetResponse(metric metric.Metric) (*response.GetMetricResponse, error) {
@@ -80,5 +80,5 @@ func TransformToGetResponse(metric metric.Metric) (*response.GetMetricResponse, 
 			Delta:      &value,
 		}, nil
 	}
-	return nil, newUnknownTypeError(metric.Type())
+	return nil, newErrUnknownType(metric.Type())
 }

@@ -46,7 +46,7 @@ func TestZapLogger(t *testing.T) {
 			router := chi.NewRouter()
 			core, logs := observer.New(zapcore.InfoLevel)
 			logger := zap.New(core)
-			router.Use(ZapLogger(logger, tt.name))
+			router.Use(ZapLogRequest(logger, tt.name))
 			router.MethodFunc(tt.method, tt.path, func(writer http.ResponseWriter, request *http.Request) {
 				writer.WriteHeader(tt.status)
 				writer.Write([]byte(tt.body))

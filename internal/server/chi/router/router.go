@@ -12,11 +12,11 @@ import (
 func New(storage storage.Storage) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
-	router.Use(middleware.Recoverer)
+	router.Use(_middleware.ZapLogPanic(logger.Logger, "http-panic"))
+	router.Use(_middleware.ZapLogRequest(logger.Logger, "http-request"))
 	router.Use(middleware.RealIP)
 	router.Use(_middleware.Decompress())
 	router.Use(_middleware.Compress(5, "text/html", "application/json"))
-	router.Use(_middleware.ZapLogger(logger.Logger, "http"))
 	router.Get("/", routes.GetAllMetrics)
 	router.Route("/ping", func(router chi.Router) {
 		router.Get("/", routes.PingStorage)

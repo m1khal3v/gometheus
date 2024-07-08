@@ -10,22 +10,6 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type ErrMetricNotFound struct {
-	MetricType string
-	MetricName string
-}
-
-func (err ErrMetricNotFound) Error() string {
-	return fmt.Sprintf("metric '%s' with type '%s' not found", err.MetricName, err.MetricType)
-}
-
-func newErrMetricNotFound(metricType string, metricName string) error {
-	return ErrMetricNotFound{
-		MetricType: metricType,
-		MetricName: metricName,
-	}
-}
-
 type ErrUnknownMetricType struct {
 	MetricType string
 }
@@ -35,7 +19,7 @@ func (err ErrUnknownMetricType) Error() string {
 }
 
 func newErrUnknownMetricType(metricType string) error {
-	return ErrUnknownMetricType{
+	return &ErrUnknownMetricType{
 		MetricType: metricType,
 	}
 }
@@ -58,7 +42,7 @@ func (manager *Manager) Get(metricType, metricName string) (metric.Metric, error
 		return nil, err
 	}
 	if metric == nil || metric.Type() != metricType {
-		return nil, newErrMetricNotFound(metricType, metricName)
+		return nil, nil
 	}
 
 	return metric, nil
@@ -138,6 +122,6 @@ func (manager *Manager) prepareCounter(metric *counter.Metric, previous metric.M
 	return nil
 }
 
-func (manager *Manager) IsStorageOk() bool {
-	return manager.storage.Ok()
+func (manager *Manager) PingStorage() error {
+	return manager.storage.Ping()
 }
