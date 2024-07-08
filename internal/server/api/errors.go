@@ -6,6 +6,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"net/http"
+	"slices"
 	"strings"
 )
 
@@ -13,7 +14,7 @@ func (container Container) writeErrorResponse(status int, writer http.ResponseWr
 	response := response.ApiError{
 		Code:    status,
 		Message: message,
-		Details: container.errorsToStrings(container.unwrapErrors(responseError)),
+		Details: container.errorsToUniqueStrings(container.unwrapErrors(responseError)),
 	}
 
 	if status >= 500 {
@@ -77,11 +78,12 @@ func (container Container) unwrapErrors(err error) []error {
 	return []error{err}
 }
 
-func (container Container) errorsToStrings(errs []error) []string {
+func (container Container) errorsToUniqueStrings(errs []error) []string {
 	messages := make([]string, 0, len(errs))
 	for _, err := range errs {
 		messages = append(messages, err.Error())
 	}
 
-	return messages
+	slices.Sort(messages)
+	return slices.Compact(messages)
 }

@@ -29,13 +29,13 @@ func (container Container) JSONSaveMetrics(writer http.ResponseWriter, request *
 	for _, saveMetricRequest := range saveMetricsRequest {
 		if _, err := govalidator.ValidateStruct(saveMetricRequest); err != nil {
 			errs = append(errs, err)
-			return
+			continue
 		}
 
 		metric, err := factory.NewFromRequest(saveMetricRequest)
 		if err != nil {
 			errs = append(errs, err)
-			return
+			continue
 		}
 
 		metrics = append(metrics, metric)
