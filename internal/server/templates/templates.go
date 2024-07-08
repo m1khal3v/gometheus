@@ -2,6 +2,7 @@ package templates
 
 import (
 	"embed"
+	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"html/template"
 	"io"
@@ -22,12 +23,7 @@ func New() *Storage {
 }
 
 func (storage *Storage) ExecuteAllMetricsTemplate(writer io.Writer, metrics <-chan metric.Metric) error {
-	content, err := embedTemplates.ReadFile("get_all_metrics.gohtml")
-	if err != nil {
-		return err
-	}
-
-	template, err := storage.getTemplate("get_all_metrics", string(content))
+	template, err := storage.getTemplate("get_all_metrics")
 	if err != nil {
 		return err
 	}
@@ -35,11 +31,15 @@ func (storage *Storage) ExecuteAllMetricsTemplate(writer io.Writer, metrics <-ch
 	return template.Execute(writer, metrics)
 }
 
-func (storage *Storage) getTemplate(name, content string) (*template.Template, error) {
+func (storage *Storage) getTemplate(name string) (*template.Template, error) {
 	value, ok := storage.templateMap.Load(name)
 	if !ok {
-		var err error
-		value, err = template.New(name).Parse(content)
+		content, err := embedTemplates.ReadFile(fmt.Sprintf("%s.gohtml", name))
+		if err != nil {
+			return nil, err
+		}
+
+		value, err = template.New(name).Parse(string(content))
 		if err != nil {
 			return nil, err
 		}

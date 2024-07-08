@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-type modifier[K comparable, T any] func(key K, value T) (K, T)
+type keyValueModifier[K comparable, T any] func(key K, value T) (K, T)
 type valueModifier[T any] func(value T) T
 
 func NewFromFunction[T any](generate func() (T, bool)) <-chan T {
@@ -45,14 +45,14 @@ type mapItem[K comparable, T any] struct {
 	Value T
 }
 
-func NewFromMap[K comparable, T any](source map[K]T, modify modifier[K, T]) <-chan mapItem[K, T] {
+func NewFromMap[K comparable, T any](source map[K]T, modify keyValueModifier[K, T]) <-chan mapItem[K, T] {
 	return NewFromMapWithContext[K, T](context.Background(), source, modify)
 }
 
 func NewFromMapWithContext[K comparable, T any](
 	ctx context.Context,
 	source map[K]T,
-	modify modifier[K, T],
+	modify keyValueModifier[K, T],
 ) <-chan mapItem[K, T] {
 	channel := make(chan mapItem[K, T], 1)
 
@@ -80,14 +80,14 @@ func NewFromMapWithContext[K comparable, T any](
 	return channel
 }
 
-func NewFromSyncMap[K comparable, T any](source *sync.Map, modify modifier[K, T]) <-chan mapItem[K, T] {
+func NewFromSyncMap[K comparable, T any](source *sync.Map, modify keyValueModifier[K, T]) <-chan mapItem[K, T] {
 	return NewFromSyncMapWithContext[K, T](context.Background(), source, modify)
 }
 
 func NewFromSyncMapWithContext[K comparable, T any](
 	ctx context.Context,
 	source *sync.Map,
-	modify modifier[K, T],
+	modify keyValueModifier[K, T],
 ) <-chan mapItem[K, T] {
 	channel := make(chan mapItem[K, T], 1)
 
