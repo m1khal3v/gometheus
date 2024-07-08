@@ -37,12 +37,13 @@ func (container Container) unwrapErrors(err error) []error {
 	if err == nil {
 		return []error{}
 	}
-	errs := []error{err}
+	var errs []error
 
 	wrappedError, ok := err.(interface {
 		Unwrap() error
 	})
 	if ok {
+		errs = append(errs, err)
 		unwrappedErrors := container.unwrapErrors(wrappedError.Unwrap())
 		errs = append(errs, unwrappedErrors...)
 
@@ -73,11 +74,11 @@ func (container Container) unwrapErrors(err error) []error {
 		return errs
 	}
 
-	return errs
+	return []error{err}
 }
 
 func (container Container) errorsToStrings(errs []error) []string {
-	messages := make([]string, len(errs))
+	messages := make([]string, 0, len(errs))
 	for _, err := range errs {
 		messages = append(messages, err.Error())
 	}
