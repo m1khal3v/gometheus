@@ -43,7 +43,7 @@ func New(databaseDSN string) *Storage {
 
 func (storage *Storage) Get(name string) (metric.Metric, error) {
 	var metricType, metricValue string
-	row := storage.db.QueryRow("SELECT type, value FROM metric WHERE name = $1", name)
+	row := storage.db.QueryRow("SELECT type, value::VARCHAR FROM metric WHERE name = $1", name)
 	if err := row.Scan(&metricType, &metricValue); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -65,7 +65,7 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 		return nil, err
 	}
 
-	rows, err := storage.db.Query("SELECT type, name, value FROM metric")
+	rows, err := storage.db.Query("SELECT type, name, value::VARCHAR FROM metric")
 	if err != nil {
 		return nil, err
 	}
