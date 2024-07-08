@@ -44,7 +44,6 @@ func New(databaseDSN string) *Storage {
 func (storage *Storage) Get(name string) (metric.Metric, error) {
 	var metricType, metricValue string
 	row := storage.db.QueryRow("SELECT type, value FROM metric WHERE name = $1", name)
-	err := row.Scan(&metricType, &metricValue)
 	if err := row.Scan(&metricType, &metricValue); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
