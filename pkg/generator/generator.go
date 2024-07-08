@@ -6,20 +6,21 @@ import (
 )
 
 type modifier[K comparable, T any] func(key K, value T) (K, T)
+type valueModifier[T any] func(value T) T
 
-func New[T any](generate func() (T, bool)) <-chan T {
-	return NewWithContext[T](context.Background(), generate)
+func NewFromFunction[T any](generate func() (T, bool)) <-chan T {
+	return NewFromFunctionWithContext[T](context.Background(), generate)
 }
 
-func NewWithContext[T any](ctx context.Context, generate func() (T, bool)) <-chan T {
+func NewFromFunctionWithContext[T any](ctx context.Context, generate func() (T, bool)) <-chan T {
 	if generate == nil {
 		panic("generate function cannot be nil")
 	}
 
-	ch := make(chan T, 1)
+	channel := make(chan T, 1)
 
 	go func() {
-		defer close(ch)
+		defer close(channel)
 
 		for {
 			select {
@@ -31,15 +32,20 @@ func NewWithContext[T any](ctx context.Context, generate func() (T, bool)) <-cha
 					return
 				}
 
-				ch <- value
+				channel <- value
 			}
 		}
 	}()
 
-	return ch
+	return channel
 }
 
-func NewFromMap[K comparable, T any](source map[K]T, modify modifier[K, T]) (<-chan K, <-chan T) {
+type mapItem[K comparable, T any] struct {
+	Key   K
+	Value T
+}
+
+func NewFromMap[K comparable, T any](source map[K]T, modify modifier[K, T]) <-chan mapItem[K, T] {
 	return NewFromMapWithContext[K, T](context.Background(), source, modify)
 }
 
@@ -47,13 +53,11 @@ func NewFromMapWithContext[K comparable, T any](
 	ctx context.Context,
 	source map[K]T,
 	modify modifier[K, T],
-) (<-chan K, <-chan T) {
-	chK := make(chan K, 1)
-	chT := make(chan T, 1)
+) <-chan mapItem[K, T] {
+	channel := make(chan mapItem[K, T], 1)
 
 	go func() {
-		defer close(chK)
-		defer close(chT)
+		defer close(channel)
 
 		for key, value := range source {
 			select {
@@ -68,16 +72,15 @@ func NewFromMapWithContext[K comparable, T any](
 					}
 				}
 
-				chK <- key
-				chT <- value
+				channel <- mapItem[K, T]{key, value}
 			}
 		}
 	}()
 
-	return chK, chT
+	return channel
 }
 
-func NewFromSyncMap[K comparable, T any](source *sync.Map, modify modifier[K, T]) (<-chan K, <-chan T) {
+func NewFromSyncMap[K comparable, T any](source *sync.Map, modify modifier[K, T]) <-chan mapItem[K, T] {
 	return NewFromSyncMapWithContext[K, T](context.Background(), source, modify)
 }
 
@@ -85,13 +88,11 @@ func NewFromSyncMapWithContext[K comparable, T any](
 	ctx context.Context,
 	source *sync.Map,
 	modify modifier[K, T],
-) (<-chan K, <-chan T) {
-	chK := make(chan K, 1)
-	chT := make(chan T, 1)
+) <-chan mapItem[K, T] {
+	channel := make(chan mapItem[K, T], 1)
 
 	go func() {
-		defer close(chK)
-		defer close(chT)
+		defer close(channel)
 
 		source.Range(func(key, value any) bool {
 			select {
@@ -101,18 +102,89 @@ func NewFromSyncMapWithContext[K comparable, T any](
 				keyK, valueT := key.(K), value.(T)
 				if modify != nil {
 					var err error
-					key, value = modify(keyK, valueT)
+					keyK, valueT = modify(keyK, valueT)
 					if err != nil {
 						return false
 					}
 				}
 
-				chK <- keyK
-				chT <- valueT
+				channel <- mapItem[K, T]{keyK, valueT}
 				return true
 			}
 		})
 	}()
 
-	return chK, chT
+	return channel
+}
+
+func NewFromMapOnlyValue[K comparable, T any](source map[K]T, modify valueModifier[T]) <-chan T {
+	return NewFromMapOnlyValueWithContext[K, T](context.Background(), source, modify)
+}
+
+func NewFromMapOnlyValueWithContext[K comparable, T any](
+	ctx context.Context,
+	source map[K]T,
+	modify valueModifier[T],
+) <-chan T {
+	channel := make(chan T, 1)
+
+	go func() {
+		defer close(channel)
+
+		for _, value := range source {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if modify != nil {
+					var err error
+					value = modify(value)
+					if err != nil {
+						return
+					}
+				}
+
+				channel <- value
+			}
+		}
+	}()
+
+	return channel
+}
+
+func NewFromSyncMapOnlyValue[T any](source *sync.Map, modify valueModifier[T]) <-chan T {
+	return NewFromSyncMapOnlyValueWithContext[T](context.Background(), source, modify)
+}
+
+func NewFromSyncMapOnlyValueWithContext[T any](
+	ctx context.Context,
+	source *sync.Map,
+	modify valueModifier[T],
+) <-chan T {
+	channel := make(chan T, 1)
+
+	go func() {
+		defer close(channel)
+
+		source.Range(func(_, value any) bool {
+			select {
+			case <-ctx.Done():
+				return false
+			default:
+				valueT := value.(T)
+				if modify != nil {
+					var err error
+					valueT = modify(valueT)
+					if err != nil {
+						return false
+					}
+				}
+
+				channel <- valueT
+				return true
+			}
+		})
+	}()
+
+	return channel
 }

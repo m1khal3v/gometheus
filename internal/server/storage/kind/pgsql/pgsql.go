@@ -72,7 +72,7 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 	}
 	defer rows.Close()
 
-	return generator.New(func() (metric.Metric, bool) {
+	return generator.NewFromFunction(func() (metric.Metric, bool) {
 		if !rows.Next() {
 			return nil, false
 		}

@@ -36,11 +36,11 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 		return nil, err
 	}
 
-	_, values := generator.NewFromSyncMapWithContext(
+	values := generator.NewFromSyncMapOnlyValueWithContext(
 		context.TODO(),
 		storage.metrics,
-		func(key string, value metric.Metric) (string, metric.Metric) {
-			return key, value.Clone()
+		func(value metric.Metric) metric.Metric {
+			return value.Clone()
 		},
 	)
 
