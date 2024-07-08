@@ -12,7 +12,7 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 
 	metric, err := container.manager.Get(metricType, metricName)
 	if err != nil {
-		if errors.As(err, manager.ErrMetricNotFound{}) {
+		if errors.As(err, &manager.ErrMetricNotFound{}) {
 			writer.WriteHeader(http.StatusNotFound)
 		} else {
 			writer.WriteHeader(http.StatusInternalServerError)
