@@ -1,6 +1,8 @@
 package api
 
 import (
+	"errors"
+	"github.com/m1khal3v/gometheus/internal/server/manager"
 	"net/http"
 )
 
@@ -8,9 +10,13 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
 
-	metric, _ := container.manager.Get(metricType, metricName)
-	if metric == nil {
-		writer.WriteHeader(http.StatusNotFound)
+	metric, err := container.manager.Get(metricType, metricName)
+	if err != nil {
+		if errors.As(err, manager.ErrMetricNotFound{}) {
+			writer.WriteHeader(http.StatusNotFound)
+		} else {
+			writer.WriteHeader(http.StatusInternalServerError)
+		}
 		return
 	}
 

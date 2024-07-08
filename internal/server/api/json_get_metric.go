@@ -2,9 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/asaskevich/govalidator"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
+	"github.com/m1khal3v/gometheus/internal/server/manager"
 	requests "github.com/m1khal3v/gometheus/pkg/request"
 	"net/http"
 )
@@ -21,9 +23,13 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	metric, _ := container.manager.Get(getMetricRequest.MetricType, getMetricRequest.MetricName)
-	if metric == nil {
-		writer.WriteHeader(http.StatusNotFound)
+	metric, err := container.manager.Get(getMetricRequest.MetricType, getMetricRequest.MetricName)
+	if err != nil {
+		if errors.As(err, manager.ErrMetricNotFound{}) {
+			writer.WriteHeader(http.StatusNotFound)
+		} else {
+			writer.WriteHeader(http.StatusInternalServerError)
+		}
 		return
 	}
 
