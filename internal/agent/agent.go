@@ -59,7 +59,7 @@ func createCollectors() ([]collector.Collector, error) {
 	}, nil
 }
 
-func Start(endpoint string, pollInterval, reportInterval uint32) error {
+func Start(endpoint string, pollInterval, reportInterval uint32, batchSize uint64) error {
 	storage := storage.New()
 	client := client.New(endpoint, true)
 	collectors, err := createCollectors()
@@ -68,7 +68,7 @@ func Start(endpoint string, pollInterval, reportInterval uint32) error {
 	}
 
 	go collectMetrics(storage, collectors, pollInterval)
-	saveMetrics(storage, client, reportInterval)
+	saveMetrics(storage, client, reportInterval, batchSize)
 
 	return nil
 }
@@ -83,25 +83,30 @@ func collectMetrics(storage *storage.Storage, collectors []collector.Collector, 
 }
 
 type apiClient interface {
-	SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error)
+	SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, error)
 }
 
-func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint32) {
+func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint32, batchSize uint64) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for range ticker.C {
-		storage.Remove(func(metric metric.Metric) bool {
-			request, err := transformer.TransformToSaveRequest(metric)
-			if err != nil {
-				logger.Logger.Error(err.Error())
-				return true
+		storage.RemoveBatch(func(metrics []metric.Metric) bool {
+			requests := make([]*request.SaveMetricRequest, 0, len(metrics))
+			for _, metric := range metrics {
+				request, err := transformer.TransformToSaveRequest(metric)
+				if err != nil {
+					logger.Logger.Error(err.Error())
+					continue
+				}
+
+				requests = append(requests, request)
 			}
 
-			if _, err = client.SaveMetricAsJSON(request); err != nil {
+			if _, err := client.SaveMetricsAsJSON(requests); err != nil {
 				logger.Logger.Warn(err.Error())
 				return false
 			}
 
 			return true
-		})
+		}, batchSize)
 	}
 }

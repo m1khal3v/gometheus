@@ -101,6 +101,20 @@ func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*res
 	return result.Result().(*response.SaveMetricResponse), nil
 }
 
+func (client *Client) SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, error) {
+	result, err := client.doRequest(client.createRequest().
+		SetHeader("Content-Type", "application/json").
+		SetBody(requests).
+		SetResult([]*response.SaveMetricResponse{}),
+		resty.MethodPost, "update")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.Result().([]*response.SaveMetricResponse), nil
+}
+
 func (client *Client) createRequest() *resty.Request {
 	return client.resty.R()
 }

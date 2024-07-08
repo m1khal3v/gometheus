@@ -16,6 +16,7 @@ func main() {
 		config.Address,
 		config.PollInterval,
 		config.ReportInterval,
+		config.BatchSize,
 	); err != nil {
 		logger.Logger.Fatal(err.Error())
 	}
