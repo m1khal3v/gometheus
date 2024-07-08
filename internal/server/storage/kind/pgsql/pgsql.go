@@ -105,6 +105,7 @@ func (storage *Storage) Save(metric metric.Metric) error {
 		INSERT INTO metric (type, name, value) 
 		VALUES ($1, $2, $3::DOUBLE PRECISION)
 		ON CONFLICT (name) DO UPDATE
+		SET type = $1, value = $3::DOUBLE PRECISION
 		`,
 		metric.Type(),
 		metric.Name(),
@@ -132,6 +133,7 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 			INSERT INTO metric (type, name, value) 
 			VALUES ($1, $2, $3::DOUBLE PRECISION)
 			ON CONFLICT (name) DO UPDATE
+			SET type = $1, value = $3::DOUBLE PRECISION
 			`,
 			metric.Type(),
 			metric.Name(),
