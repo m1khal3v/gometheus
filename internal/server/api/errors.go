@@ -28,8 +28,7 @@ func (container Container) writeErrorResponse(status int, writer http.ResponseWr
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(status)
-	_, err = writer.Write(jsonResponse)
-	if err != nil {
+	if _, err = writer.Write(jsonResponse); err != nil {
 		logger.Logger.Error(err.Error())
 	}
 }
