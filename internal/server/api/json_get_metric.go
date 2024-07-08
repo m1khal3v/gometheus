@@ -28,6 +28,7 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 		if errors.As(err, &manager.ErrMetricNotFound{}) {
 			writer.WriteHeader(http.StatusNotFound)
 		} else {
+			logger.Logger.Error(err.Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 		}
 		return

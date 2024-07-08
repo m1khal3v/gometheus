@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/manager"
 	"net/http"
 )
@@ -15,6 +16,7 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 		if errors.As(err, &manager.ErrMetricNotFound{}) {
 			writer.WriteHeader(http.StatusNotFound)
 		} else {
+			logger.Logger.Error(err.Error())
 			writer.WriteHeader(http.StatusInternalServerError)
 		}
 		return
