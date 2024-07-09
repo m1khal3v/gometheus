@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -72,8 +73,8 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 	return nil
 }
 
-func (client *Client) SaveMetric(metricType, metricName, metricValue string) (*response.ApiError, error) {
-	result, err := client.doRequest(client.createRequest().
+func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, metricValue string) (*response.ApiError, error) {
+	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "text/plain").
 		SetPathParams(map[string]string{
 			"type":  metricType,
@@ -94,8 +95,8 @@ func (client *Client) SaveMetric(metricType, metricName, metricValue string) (*r
 	return nil, nil
 }
 
-func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, *response.ApiError, error) {
-	result, err := client.doRequest(client.createRequest().
+func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.SaveMetricRequest) (*response.SaveMetricResponse, *response.ApiError, error) {
+	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(request).
 		SetResult(&response.SaveMetricResponse{}).
@@ -113,8 +114,8 @@ func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*res
 	return result.Result().(*response.SaveMetricResponse), nil, nil
 }
 
-func (client *Client) SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.ApiError, error) {
-	result, err := client.doRequest(client.createRequest().
+func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.ApiError, error) {
+	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(requests).
 		SetResult([]*response.SaveMetricResponse{}).
@@ -132,8 +133,8 @@ func (client *Client) SaveMetricsAsJSON(requests []*request.SaveMetricRequest) (
 	return result.Result().([]*response.SaveMetricResponse), nil, nil
 }
 
-func (client *Client) createRequest() *resty.Request {
-	return client.resty.R()
+func (client *Client) createRequest(ctx context.Context) *resty.Request {
+	return client.resty.R().SetContext(ctx)
 }
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
