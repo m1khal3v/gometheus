@@ -147,7 +147,7 @@ func TestStorage_Dump(t *testing.T) {
 			for _, item := range tt.items {
 				decorator.Save(nil, item)
 			}
-			decorator.Dump()
+			decorator.dump()
 
 			assert.FileExists(t, file.Name())
 			all, err := io.ReadAll(file)
@@ -365,7 +365,7 @@ func Test_restoreFromFile(t *testing.T) {
 			for _, item := range tt.items {
 				decorator.Save(nil, item)
 			}
-			decorator.Dump()
+			decorator.dump()
 
 			restorage := memory.New()
 			restoreFromFile(restorage, file.Name())

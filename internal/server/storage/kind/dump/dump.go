@@ -31,23 +31,28 @@ func New(ctx context.Context, storage storage.Storage, filepath string, storeInt
 		panic("Dump file path cannot be empty")
 	}
 
-	if restore {
-		if err := restoreFromFile(ctx, storage, filepath); err != nil {
-			return nil, err
-		}
-	}
-
 	decorator := &Storage{
 		storage:  storage,
 		filepath: filepath,
 		sync:     storeInterval == 0,
 	}
 
+	if restore {
+		if err := decorator.restoreFromFile(ctx); err != nil {
+			return nil, err
+		}
+	}
+
 	if !decorator.sync {
 		go func() {
-			for range time.Tick(time.Duration(storeInterval) * time.Second) {
-				if err := decorator.Dump(ctx); err != nil {
-					panic(err)
+			ticker := time.NewTicker(time.Duration(storeInterval) * time.Second)
+
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					decorator.mustDump(ctx)
 				}
 			}
 		}()
@@ -70,9 +75,7 @@ func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
 	}
 
 	if storage.sync {
-		if err := storage.Dump(ctx); err != nil {
-			panic(err)
-		}
+		storage.mustDump(ctx)
 	}
 
 	return nil
@@ -84,9 +87,7 @@ func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 	}
 
 	if storage.sync {
-		if err := storage.Dump(ctx); err != nil {
-			panic(err)
-		}
+		storage.mustDump(ctx)
 	}
 
 	return nil
@@ -97,7 +98,7 @@ func (storage *Storage) Ping(ctx context.Context) error {
 }
 
 func (storage *Storage) Close(ctx context.Context) error {
-	if err := storage.Dump(ctx); err != nil {
+	if err := storage.dump(ctx); err != nil {
 		return err
 	}
 
@@ -114,7 +115,13 @@ type anonymousMetric struct {
 	Value string `json:"value"`
 }
 
-func (storage *Storage) Dump(ctx context.Context) error {
+func (storage *Storage) mustDump(ctx context.Context) {
+	if err := storage.dump(ctx); err != nil {
+		panic(err)
+	}
+}
+
+func (storage *Storage) dump(ctx context.Context) error {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
 
@@ -154,14 +161,14 @@ func (storage *Storage) Dump(ctx context.Context) error {
 	return nil
 }
 
-func restoreFromFile(ctx context.Context, storage storage.Storage, filepath string) error {
-	file, err := os.OpenFile(filepath, os.O_RDONLY|os.O_CREATE, 0666)
+func (storage *Storage) restoreFromFile(ctx context.Context) error {
+	file, err := os.OpenFile(storage.filepath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	if err := storage.Reset(ctx); err != nil {
+	if err := storage.storage.Reset(ctx); err != nil {
 		return err
 	}
 
@@ -181,7 +188,7 @@ func restoreFromFile(ctx context.Context, storage storage.Storage, filepath stri
 			return err
 		}
 
-		if err := storage.Save(ctx, metric); err != nil {
+		if err := storage.storage.Save(ctx, metric); err != nil {
 			return err
 		}
 	}
