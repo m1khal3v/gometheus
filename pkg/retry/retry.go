@@ -23,7 +23,7 @@ func Retry(
 			continue
 		}
 
-		return nil
+		return err
 	}
 
 	return err
