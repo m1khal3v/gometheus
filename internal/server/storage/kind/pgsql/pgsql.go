@@ -4,14 +4,18 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	store "github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/generator"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 	"github.com/pressly/goose/v3"
 	"sync"
+	"time"
 )
 
 type Storage struct {
@@ -43,8 +47,13 @@ func New(databaseDSN string) *Storage {
 
 func (storage *Storage) Get(name string) (metric.Metric, error) {
 	var metricType, metricValue string
-	row := storage.db.QueryRow("SELECT type, value::VARCHAR FROM metric WHERE name = $1", name)
-	if err := row.Scan(&metricType, &metricValue); err != nil {
+
+	err := retry.Retry(time.Second, 4, 2, func() error {
+		row := storage.db.QueryRow("SELECT type, value::VARCHAR FROM metric WHERE name = $1", name)
+		return row.Scan(&metricType, &metricValue)
+	}, storage.isRetryableError)
+
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -65,10 +74,16 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 		return nil, err
 	}
 
-	rows, err := storage.db.Query("SELECT type, name, value::VARCHAR FROM metric")
+	var rows *sql.Rows
+	err := retry.Retry(time.Second, 4, 2, func() error {
+		var err error
+		rows, err = storage.db.Query("SELECT type, name, value::VARCHAR FROM metric")
+		return err
+	}, storage.isRetryableError)
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	return generator.NewFromFunction(func() (metric.Metric, bool) {
@@ -99,17 +114,22 @@ func (storage *Storage) Save(metric metric.Metric) error {
 		return err
 	}
 
-	if _, err := storage.db.Exec(
-		`
-		INSERT INTO metric (type, name, value) 
-		VALUES ($1, $2, $3::DOUBLE PRECISION)
-		ON CONFLICT (name) DO UPDATE
-		SET type = $1, value = $3::DOUBLE PRECISION
-		`,
-		metric.Type(),
-		metric.Name(),
-		metric.StringValue(),
-	); err != nil {
+	err := retry.Retry(time.Second, 4, 2, func() error {
+		_, err := storage.db.Exec(`
+			INSERT INTO metric (type, name, value) 
+			VALUES ($1, $2, $3::DOUBLE PRECISION)
+			ON CONFLICT (name) DO UPDATE
+			SET type = $1, value = $3::DOUBLE PRECISION
+			`,
+			metric.Type(),
+			metric.Name(),
+			metric.StringValue(),
+		)
+
+		return err
+	}, storage.isRetryableError)
+
+	if err != nil {
 		return err
 	}
 
@@ -121,36 +141,36 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 		return err
 	}
 
-	transaction, err := storage.db.Begin()
-	if err != nil {
-		return err
-	}
+	err := retry.Retry(time.Second, 4, 2, func() error {
+		transaction, err := storage.db.Begin()
+		if err != nil {
+			return err
+		}
 
-	for _, metric := range metrics {
-		if _, err := transaction.Exec(
-			`
+		for _, metric := range metrics {
+			if _, err := transaction.Exec(
+				`
 			INSERT INTO metric (type, name, value) 
 			VALUES ($1, $2, $3::DOUBLE PRECISION)
 			ON CONFLICT (name) DO UPDATE
 			SET type = $1, value = $3::DOUBLE PRECISION
 			`,
-			metric.Type(),
-			metric.Name(),
-			metric.StringValue(),
-		); err != nil {
-			if err := transaction.Rollback(); err != nil {
+				metric.Type(),
+				metric.Name(),
+				metric.StringValue(),
+			); err != nil {
+				if err := transaction.Rollback(); err != nil {
+					return err
+				}
+
 				return err
 			}
-
-			return err
 		}
-	}
 
-	if err := transaction.Commit(); err != nil {
-		return err
-	}
+		return transaction.Commit()
+	}, storage.isRetryableError)
 
-	return nil
+	return err
 }
 
 func (storage *Storage) Ping() error {
@@ -186,11 +206,10 @@ func (storage *Storage) Reset() error {
 		return err
 	}
 
-	if _, err := storage.db.Exec("TRUNCATE TABLE metric"); err != nil {
+	return retry.Retry(time.Second, 4, 2, func() error {
+		_, err := storage.db.Exec("TRUNCATE TABLE metric")
 		return err
-	}
-
-	return nil
+	}, storage.isRetryableError)
 }
 
 func (storage *Storage) checkStorageClosed() error {
@@ -199,4 +218,16 @@ func (storage *Storage) checkStorageClosed() error {
 	}
 
 	return nil
+}
+
+func (storage *Storage) isRetryableError(err error) bool {
+	var pgsqlErr *pgconn.PgError
+	if !errors.As(err, &pgsqlErr) {
+		return false
+	}
+
+	return pgerrcode.IsConnectionException(pgsqlErr.Code) ||
+		pgerrcode.IsInsufficientResources(pgsqlErr.Code) ||
+		pgerrcode.IsSystemError(pgsqlErr.Code) ||
+		pgerrcode.IsInternalError(pgsqlErr.Code)
 }
