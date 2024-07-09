@@ -43,7 +43,7 @@ func TestManager_Save(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := memory.New()
 			if tt.preset != nil {
-				storage.Save(tt.preset)
+				storage.Save(nil, tt.preset)
 			}
 			manager := New(storage)
 			manager.Save(tt.metric)

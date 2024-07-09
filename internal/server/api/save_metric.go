@@ -27,7 +27,7 @@ func (container Container) SaveMetric(writer http.ResponseWriter, request *http.
 		return
 	}
 
-	if _, err := container.manager.Save(metric); err != nil {
+	if _, err := container.manager.Save(request.Context(), metric); err != nil {
 		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
 		return
 	}

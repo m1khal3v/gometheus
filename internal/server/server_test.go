@@ -145,7 +145,7 @@ func TestSaveMetric(t *testing.T) {
 			}
 			if tt.previousValue != "" {
 				previousMetric, _ := factory.New(tt.metricType, tt.metricName, tt.previousValue)
-				storage.Save(previousMetric)
+				storage.Save(nil, previousMetric)
 			}
 
 			response, body := testRequest(t, server, method, path, nil)
@@ -158,9 +158,9 @@ func TestSaveMetric(t *testing.T) {
 			assert.Equal(t, tt.expectedBody, body)
 			if tt.expectedStatusCode == http.StatusOK {
 				if tt.expectedValue != "" {
-					assert.Equal(t, tt.expectedValue, storage.Get(tt.metricName).StringValue())
+					assert.Equal(t, tt.expectedValue, storage.Get(nil, tt.metricName).StringValue())
 				} else {
-					assert.Equal(t, tt.metricValue, storage.Get(tt.metricName).StringValue())
+					assert.Equal(t, tt.metricValue, storage.Get(nil, tt.metricName).StringValue())
 				}
 			}
 		})
@@ -325,7 +325,7 @@ func TestSaveMetricJSON(t *testing.T) {
 				method = http.MethodPost
 			}
 			if tt.previous != nil {
-				storage.Save(tt.previous)
+				storage.Save(nil, tt.previous)
 			}
 
 			bytes, err := json.Marshal(tt.request)
@@ -449,7 +449,7 @@ func TestGetMetric(t *testing.T) {
 			defer server.Close()
 
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				storage.Save(nil, metric)
 			}
 
 			path := fmt.Sprintf(
@@ -587,7 +587,7 @@ func TestGetMetricJSON(t *testing.T) {
 			defer server.Close()
 
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				storage.Save(nil, metric)
 			}
 
 			method := tt.method
@@ -667,7 +667,7 @@ func TestGetAllMetrics(t *testing.T) {
 			defer server.Close()
 
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				storage.Save(nil, metric)
 			}
 
 			method := tt.method

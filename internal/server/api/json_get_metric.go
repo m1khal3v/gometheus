@@ -20,7 +20,7 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	metric, err := container.manager.Get(getMetricRequest.MetricType, getMetricRequest.MetricName)
+	metric, err := container.manager.Get(request.Context(), getMetricRequest.MetricType, getMetricRequest.MetricName)
 	if err != nil {
 		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
 		return

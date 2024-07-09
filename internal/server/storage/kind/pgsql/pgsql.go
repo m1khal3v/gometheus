@@ -1,6 +1,7 @@
 package pgsql
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"errors"
@@ -45,11 +46,15 @@ func New(databaseDSN string) *Storage {
 	}
 }
 
-func (storage *Storage) Get(name string) (metric.Metric, error) {
+func (storage *Storage) Get(ctx context.Context, name string) (metric.Metric, error) {
 	var metricType, metricValue string
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		row := storage.db.QueryRow("SELECT type, value::VARCHAR FROM metric WHERE name = $1", name)
+		row := storage.db.QueryRowContext(
+			ctx,
+			"SELECT type, value::VARCHAR FROM metric WHERE name = $1",
+			name,
+		)
 		return row.Scan(&metricType, &metricValue)
 	}, storage.isRetryableError)
 
@@ -69,7 +74,7 @@ func (storage *Storage) Get(name string) (metric.Metric, error) {
 	return metric, nil
 }
 
-func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
+func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error) {
 	if err := storage.checkStorageClosed(); err != nil {
 		return nil, err
 	}
@@ -77,14 +82,14 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 	var rows *sql.Rows
 	err := retry.Retry(time.Second, 4, 2, func() error {
 		var err error
-		rows, err = storage.db.Query("SELECT type, name, value::VARCHAR FROM metric")
+		rows, err = storage.db.QueryContext(ctx, "SELECT type, name, value::VARCHAR FROM metric")
 		return err
 	}, storage.isRetryableError)
 	if err != nil {
 		return nil, err
 	}
 
-	return generator.NewFromFunction(func() (metric.Metric, bool) {
+	return generator.NewFromFunctionWithContext(ctx, func() (metric.Metric, bool) {
 		if !rows.Next() {
 			return nil, false
 		}
@@ -113,13 +118,13 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 	}), nil
 }
 
-func (storage *Storage) Save(metric metric.Metric) error {
+func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		_, err := storage.db.Exec(`
+		_, err := storage.db.ExecContext(ctx, `
 			INSERT INTO metric (type, name, value) 
 			VALUES ($1, $2, $3::DOUBLE PRECISION)
 			ON CONFLICT (name) DO UPDATE
@@ -140,25 +145,24 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
+func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		transaction, err := storage.db.Begin()
+		transaction, err := storage.db.BeginTx(ctx, nil)
 		if err != nil {
 			return err
 		}
 
 		for _, metric := range metrics {
-			if _, err := transaction.Exec(
-				`
-			INSERT INTO metric (type, name, value) 
-			VALUES ($1, $2, $3::DOUBLE PRECISION)
-			ON CONFLICT (name) DO UPDATE
-			SET type = $1, value = $3::DOUBLE PRECISION
-			`,
+			if _, err := transaction.ExecContext(ctx, `
+				INSERT INTO metric (type, name, value) 
+				VALUES ($1, $2, $3::DOUBLE PRECISION)
+				ON CONFLICT (name) DO UPDATE
+				SET type = $1, value = $3::DOUBLE PRECISION
+				`,
 				metric.Type(),
 				metric.Name(),
 				metric.StringValue(),
@@ -177,19 +181,19 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 	return err
 }
 
-func (storage *Storage) Ping() error {
+func (storage *Storage) Ping(ctx context.Context) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}
 
-	if err := storage.db.Ping(); err != nil {
+	if err := storage.db.PingContext(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (storage *Storage) Close() error {
+func (storage *Storage) Close(ctx context.Context) error {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
 
@@ -205,13 +209,13 @@ func (storage *Storage) Close() error {
 	return nil
 }
 
-func (storage *Storage) Reset() error {
+func (storage *Storage) Reset(ctx context.Context) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}
 
 	return retry.Retry(time.Second, 4, 2, func() error {
-		_, err := storage.db.Exec("TRUNCATE TABLE metric")
+		_, err := storage.db.ExecContext(ctx, "TRUNCATE TABLE metric")
 		return err
 	}, storage.isRetryableError)
 }

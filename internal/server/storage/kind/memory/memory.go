@@ -22,7 +22,7 @@ func New() *Storage {
 	}
 }
 
-func (storage *Storage) Get(name string) (metric.Metric, error) {
+func (storage *Storage) Get(ctx context.Context, name string) (metric.Metric, error) {
 	value, ok := storage.metrics.Load(name)
 	if !ok {
 		return nil, nil
@@ -31,13 +31,13 @@ func (storage *Storage) Get(name string) (metric.Metric, error) {
 	return value.(metric.Metric).Clone(), nil
 }
 
-func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
+func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error) {
 	if err := storage.checkStorageClosed(); err != nil {
 		return nil, err
 	}
 
 	values := generator.NewFromSyncMapOnlyValueWithContext(
-		context.TODO(),
+		ctx,
 		storage.metrics,
 		func(value metric.Metric) metric.Metric {
 			return value.Clone()
@@ -47,7 +47,7 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 	return values, nil
 }
 
-func (storage *Storage) Save(metric metric.Metric) error {
+func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
+func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}
@@ -69,11 +69,11 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) Ping() error {
+func (storage *Storage) Ping(ctx context.Context) error {
 	return storage.checkStorageClosed()
 }
 
-func (storage *Storage) Close() error {
+func (storage *Storage) Close(ctx context.Context) error {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
 
@@ -85,7 +85,7 @@ func (storage *Storage) Close() error {
 	return nil
 }
 
-func (storage *Storage) Reset() error {
+func (storage *Storage) Reset(ctx context.Context) error {
 	if err := storage.checkStorageClosed(); err != nil {
 		return err
 	}

@@ -145,7 +145,7 @@ func TestStorage_Dump(t *testing.T) {
 
 			decorator := New(storage, file.Name(), 9999, false)
 			for _, item := range tt.items {
-				decorator.Save(item)
+				decorator.Save(nil, item)
 			}
 			decorator.Dump()
 
@@ -223,9 +223,9 @@ func TestStorage_Get(t *testing.T) {
 			storage := memory.New()
 			decorator := New(storage, "/tmp/test", 9999, false)
 			for _, item := range tt.items {
-				decorator.Save(item)
+				decorator.Save(nil, item)
 			}
-			assert.Equal(t, tt.want, decorator.Get("m1"))
+			assert.Equal(t, tt.want, decorator.Get(nil, "m1"))
 		})
 	}
 }
@@ -277,9 +277,9 @@ func TestStorage_GetAll(t *testing.T) {
 			storage := memory.New()
 			decorator := New(storage, "/tmp/test", 9999, false)
 			for _, item := range tt.items {
-				decorator.Save(item)
+				decorator.Save(nil, item)
 			}
-			assert.Equal(t, tt.wantItems, decorator.GetAll())
+			assert.Equal(t, tt.wantItems, decorator.GetAll(nil))
 		})
 	}
 }
@@ -302,8 +302,8 @@ func TestStorage_Save(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := memory.New()
 			decorator := New(storage, "/tmp/test", 9999, false)
-			decorator.Save(tt.metric)
-			assert.Equal(t, tt.metric, decorator.Get(tt.metric.Name()))
+			decorator.Save(nil, tt.metric)
+			assert.Equal(t, tt.metric, decorator.Get(nil, tt.metric.Name()))
 		})
 	}
 }
@@ -363,13 +363,13 @@ func Test_restoreFromFile(t *testing.T) {
 
 			decorator := New(storage, file.Name(), 9999, false)
 			for _, item := range tt.items {
-				decorator.Save(item)
+				decorator.Save(nil, item)
 			}
 			decorator.Dump()
 
 			restorage := memory.New()
 			restoreFromFile(restorage, file.Name())
-			assert.Equal(t, tt.wantItems, restorage.GetAll())
+			assert.Equal(t, tt.wantItems, restorage.GetAll(nil))
 		})
 	}
 }

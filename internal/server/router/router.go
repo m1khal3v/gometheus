@@ -6,17 +6,17 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/api"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
-	middleware2 "github.com/m1khal3v/gometheus/pkg/middleware"
+	pkgMiddleware "github.com/m1khal3v/gometheus/pkg/middleware"
 )
 
 func New(storage storage.Storage) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
-	router.Use(middleware2.ZapLogPanic(logger.Logger, "http-panic"))
-	router.Use(middleware2.ZapLogRequest(logger.Logger, "http-request"))
+	router.Use(pkgMiddleware.ZapLogPanic(logger.Logger, "http-panic"))
+	router.Use(pkgMiddleware.ZapLogRequest(logger.Logger, "http-request"))
 	router.Use(middleware.RealIP)
-	router.Use(middleware2.Decompress())
-	router.Use(middleware2.Compress(5, "text/html", "application/json"))
+	router.Use(pkgMiddleware.Decompress())
+	router.Use(pkgMiddleware.Compress(5, "text/html", "application/json"))
 	router.Get("/", routes.GetAllMetrics)
 	router.Route("/ping", func(router chi.Router) {
 		router.Get("/", routes.PingStorage)

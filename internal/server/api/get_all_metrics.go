@@ -7,7 +7,7 @@ import (
 func (container Container) GetAllMetrics(writer http.ResponseWriter, request *http.Request) {
 	writer.Header().Set("Content-Type", "text/html")
 
-	metrics, err := container.manager.GetAll()
+	metrics, err := container.manager.GetAll(request.Context())
 	if err != nil {
 		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t get metrics", err)
 		return

@@ -63,10 +63,10 @@ func TestStorage_Save(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				storage.Save(nil, metric)
 			}
-			storage.Save(tt.metric)
-			metric := storage.Get(tt.metric.Name())
+			storage.Save(nil, tt.metric)
+			metric := storage.Get(nil, tt.metric.Name())
 			assert.Equal(t, tt.want, metric.StringValue())
 		})
 	}
@@ -105,9 +105,9 @@ func TestStorage_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				storage.Save(nil, metric)
 			}
-			assert.Equal(t, tt.want, storage.Get(tt.metricName))
+			assert.Equal(t, tt.want, storage.Get(nil, tt.metricName))
 		})
 	}
 }
@@ -133,9 +133,9 @@ func TestStorage_GetAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			for _, metric := range tt.preset {
-				storage.Save(metric)
+				storage.Save(nil, metric)
 			}
-			assert.Equal(t, tt.preset, storage.GetAll())
+			assert.Equal(t, tt.preset, storage.GetAll(nil))
 		})
 	}
 }
@@ -143,9 +143,9 @@ func TestStorage_GetAll(t *testing.T) {
 func TestStorage_SaveGet(t *testing.T) {
 	storage := New()
 	metric := counter.New("m1", 123)
-	storage.Save(metric)
-	assert.Equal(t, metric, storage.Get("m1"))
-	assert.NotSame(t, metric, storage.Get("m1"))
-	assert.Equal(t, metric, storage.GetAll()["m1"])
-	assert.NotSame(t, metric, storage.GetAll()["m1"])
+	storage.Save(nil, metric)
+	assert.Equal(t, metric, storage.Get(nil, "m1"))
+	assert.NotSame(t, metric, storage.Get(nil, "m1"))
+	assert.Equal(t, metric, storage.GetAll(nil)["m1"])
+	assert.NotSame(t, metric, storage.GetAll(nil)["m1"])
 }

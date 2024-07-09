@@ -1,6 +1,7 @@
 package factory
 
 import (
+	"context"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/kind/dump"
@@ -22,7 +23,7 @@ func newErrUnknownDriver(driver string) error {
 	}
 }
 
-func New(fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint32, restore bool) (storage.Storage, error) {
+func New(ctx context.Context, fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint32, restore bool) (storage.Storage, error) {
 	var storage storage.Storage = memory.New()
 
 	if databaseDSN != "" && databaseDriver != "" {
@@ -35,7 +36,7 @@ func New(fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint
 
 	if fileStoragePath != "" {
 		var err error
-		storage, err = dump.New(storage, fileStoragePath, storeInterval, restore)
+		storage, err = dump.New(ctx, storage, fileStoragePath, storeInterval, restore)
 		if err != nil {
 			return nil, err
 		}

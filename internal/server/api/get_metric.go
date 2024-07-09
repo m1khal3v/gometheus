@@ -8,7 +8,7 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 	metricType := request.PathValue("type")
 	metricName := request.PathValue("name")
 
-	metric, err := container.manager.Get(metricType, metricName)
+	metric, err := container.manager.Get(request.Context(), metricType, metricName)
 	if err != nil {
 		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
 		return

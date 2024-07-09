@@ -2,12 +2,16 @@ package dump
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"errors"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -18,7 +22,7 @@ type Storage struct {
 	mutex    sync.Mutex
 }
 
-func New(storage storage.Storage, filepath string, storeInterval uint32, restore bool) (*Storage, error) {
+func New(ctx context.Context, storage storage.Storage, filepath string, storeInterval uint32, restore bool) (*Storage, error) {
 	if storage == nil {
 		panic("Decorated storage cannot be nil")
 	}
@@ -28,7 +32,7 @@ func New(storage storage.Storage, filepath string, storeInterval uint32, restore
 	}
 
 	if restore {
-		if err := restoreFromFile(storage, filepath); err != nil {
+		if err := restoreFromFile(ctx, storage, filepath); err != nil {
 			return nil, err
 		}
 	}
@@ -42,7 +46,7 @@ func New(storage storage.Storage, filepath string, storeInterval uint32, restore
 	if !decorator.sync {
 		go func() {
 			for range time.Tick(time.Duration(storeInterval) * time.Second) {
-				if err := decorator.Dump(); err != nil {
+				if err := decorator.Dump(ctx); err != nil {
 					panic(err)
 				}
 			}
@@ -52,21 +56,21 @@ func New(storage storage.Storage, filepath string, storeInterval uint32, restore
 	return decorator, nil
 }
 
-func (storage *Storage) Get(name string) (metric.Metric, error) {
-	return storage.storage.Get(name)
+func (storage *Storage) Get(ctx context.Context, name string) (metric.Metric, error) {
+	return storage.storage.Get(ctx, name)
 }
 
-func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
-	return storage.storage.GetAll()
+func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error) {
+	return storage.storage.GetAll(ctx)
 }
 
-func (storage *Storage) Save(metric metric.Metric) error {
-	if err := storage.storage.Save(metric); err != nil {
+func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
+	if err := storage.storage.Save(ctx, metric); err != nil {
 		return err
 	}
 
 	if storage.sync {
-		if err := storage.Dump(); err != nil {
+		if err := storage.Dump(ctx); err != nil {
 			panic(err)
 		}
 	}
@@ -74,13 +78,13 @@ func (storage *Storage) Save(metric metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
-	if err := storage.storage.SaveBatch(metrics); err != nil {
+func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) error {
+	if err := storage.storage.SaveBatch(ctx, metrics); err != nil {
 		return err
 	}
 
 	if storage.sync {
-		if err := storage.Dump(); err != nil {
+		if err := storage.Dump(ctx); err != nil {
 			panic(err)
 		}
 	}
@@ -88,20 +92,20 @@ func (storage *Storage) SaveBatch(metrics []metric.Metric) error {
 	return nil
 }
 
-func (storage *Storage) Ping() error {
-	return storage.storage.Ping()
+func (storage *Storage) Ping(ctx context.Context) error {
+	return storage.storage.Ping(ctx)
 }
 
-func (storage *Storage) Close() error {
-	if err := storage.Dump(); err != nil {
+func (storage *Storage) Close(ctx context.Context) error {
+	if err := storage.Dump(ctx); err != nil {
 		return err
 	}
 
-	return storage.storage.Close()
+	return storage.storage.Close(ctx)
 }
 
-func (storage *Storage) Reset() error {
-	return storage.storage.Reset()
+func (storage *Storage) Reset(ctx context.Context) error {
+	return storage.storage.Reset(ctx)
 }
 
 type anonymousMetric struct {
@@ -110,17 +114,23 @@ type anonymousMetric struct {
 	Value string `json:"value"`
 }
 
-func (storage *Storage) Dump() error {
+func (storage *Storage) Dump(ctx context.Context) error {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
 
-	file, err := os.OpenFile(storage.filepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+	var file *os.File
+	err := retry.Retry(time.Second, 4, 2, func() error {
+		var err error
+		file, err = os.OpenFile(storage.filepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+		return err
+	}, storage.isRetryableError)
 	if err != nil {
 		return err
 	}
+
 	defer file.Close()
 
-	allMetrics, err := storage.storage.GetAll()
+	allMetrics, err := storage.storage.GetAll(ctx)
 	if err != nil {
 		return err
 	}
@@ -144,14 +154,14 @@ func (storage *Storage) Dump() error {
 	return nil
 }
 
-func restoreFromFile(storage storage.Storage, filepath string) error {
+func restoreFromFile(ctx context.Context, storage storage.Storage, filepath string) error {
 	file, err := os.OpenFile(filepath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	if err := storage.Reset(); err != nil {
+	if err := storage.Reset(ctx); err != nil {
 		return err
 	}
 
@@ -171,10 +181,22 @@ func restoreFromFile(storage storage.Storage, filepath string) error {
 			return err
 		}
 
-		if err := storage.Save(metric); err != nil {
+		if err := storage.Save(ctx, metric); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (storage *Storage) isRetryableError(err error) bool {
+	var pathErr *os.PathError
+	if !errors.As(err, &pathErr) {
+		return false
+	}
+
+	return errors.Is(pathErr.Err, syscall.EAGAIN) ||
+		errors.Is(pathErr.Err, syscall.EBUSY) ||
+		errors.Is(pathErr.Err, syscall.ENFILE) ||
+		errors.Is(pathErr.Err, syscall.EMFILE)
 }

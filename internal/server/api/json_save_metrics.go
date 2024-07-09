@@ -46,7 +46,7 @@ func (container Container) JSONSaveMetrics(writer http.ResponseWriter, request *
 		return
 	}
 
-	metrics, err := container.manager.SaveBatch(metrics)
+	metrics, err := container.manager.SaveBatch(request.Context(), metrics)
 	if err != nil {
 		container.writeErrorResponse(http.StatusInternalServerError, writer, "Can`t save metrics", err)
 		return
