@@ -157,6 +157,7 @@ func hookSuspendSignals(ctx context.Context, cancel context.CancelFunc, storage 
 		logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
 		logger.Logger.Info("Trying to send collected metrics...")
 		sendMetrics(ctx, storage, client, batchSize)
+		logger.Logger.Info("Agent successfully suspended")
 
 		cancel()
 	}()
