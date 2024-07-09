@@ -17,7 +17,7 @@ func Retry(
 			if i == 0 {
 				time.Sleep(baseDelay)
 			} else {
-				time.Sleep(baseDelay * time.Duration(intPow(multiplier, i)))
+				time.Sleep(baseDelay * time.Duration(pow(multiplier, i)))
 			}
 
 			continue
@@ -29,7 +29,7 @@ func Retry(
 	return err
 }
 
-func intPow(x, y uint64) uint64 {
+func pow(x, y uint64) uint64 {
 	if y == 0 {
 		return 1
 	}

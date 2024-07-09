@@ -8,8 +8,10 @@ import (
 	"github.com/go-resty/resty/v2"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 	"io"
 	"net/http"
+	"time"
 )
 
 type Client struct {
@@ -70,49 +72,64 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 	return nil
 }
 
-func (client *Client) SaveMetric(metricType, metricName, metricValue string) error {
-	_, err := client.doRequest(client.createRequest().
+func (client *Client) SaveMetric(metricType, metricName, metricValue string) (*response.ApiError, error) {
+	result, err := client.doRequest(client.createRequest().
 		SetHeader("Content-Type", "text/plain").
 		SetPathParams(map[string]string{
 			"type":  metricType,
 			"name":  metricName,
 			"value": metricValue,
-		}),
+		}).
+		SetError(&response.ApiError{}),
 		resty.MethodPost, "update/{type}/{name}/{value}")
 
 	if err != nil {
-		return err
+		if result == nil {
+			return nil, err
+		} else {
+			return result.Result().(*response.ApiError), err
+		}
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error) {
+func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, *response.ApiError, error) {
 	result, err := client.doRequest(client.createRequest().
 		SetHeader("Content-Type", "application/json").
 		SetBody(request).
-		SetResult(&response.SaveMetricResponse{}),
+		SetResult(&response.SaveMetricResponse{}).
+		SetError(&response.ApiError{}),
 		resty.MethodPost, "update")
 
 	if err != nil {
-		return nil, err
+		if result == nil {
+			return nil, nil, err
+		} else {
+			return nil, result.Result().(*response.ApiError), err
+		}
 	}
 
-	return result.Result().(*response.SaveMetricResponse), nil
+	return result.Result().(*response.SaveMetricResponse), nil, nil
 }
 
-func (client *Client) SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, error) {
+func (client *Client) SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.ApiError, error) {
 	result, err := client.doRequest(client.createRequest().
 		SetHeader("Content-Type", "application/json").
 		SetBody(requests).
-		SetResult([]*response.SaveMetricResponse{}),
+		SetResult([]*response.SaveMetricResponse{}).
+		SetError(&response.ApiError{}),
 		resty.MethodPost, "update")
 
 	if err != nil {
-		return nil, err
+		if result == nil {
+			return nil, nil, err
+		} else {
+			return nil, result.Result().(*response.ApiError), err
+		}
 	}
 
-	return result.Result().([]*response.SaveMetricResponse), nil
+	return result.Result().([]*response.SaveMetricResponse), nil, nil
 }
 
 func (client *Client) createRequest() *resty.Request {
@@ -120,14 +137,22 @@ func (client *Client) createRequest() *resty.Request {
 }
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
-	result, err := request.Execute(method, url)
-	if err != nil {
-		return nil, err
-	}
+	var result *resty.Response = nil
+	err := retry.Retry(time.Second, 4, 2, func() error {
+		var err error
+		result, err = request.Execute(method, url)
+		if err != nil {
+			return err
+		}
 
-	if result.StatusCode() != http.StatusOK {
-		return nil, newUnexpectedStatusError(result.StatusCode())
-	}
+		if result.StatusCode() != http.StatusOK {
+			return newUnexpectedStatusError(result.StatusCode())
+		}
 
-	return result, nil
+		return nil
+	}, func(err error) bool {
+		return !errors.As(err, &ErrUnexpectedStatus{})
+	})
+
+	return result, err
 }

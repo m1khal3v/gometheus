@@ -11,6 +11,7 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/client"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -83,7 +84,7 @@ func collectMetrics(storage *storage.Storage, collectors []collector.Collector, 
 }
 
 type apiClient interface {
-	SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, error)
+	SaveMetricsAsJSON(requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.ApiError, error)
 }
 
 func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint32, batchSize uint64) {
@@ -101,8 +102,15 @@ func saveMetrics(storage *storage.Storage, client apiClient, reportInterval uint
 				requests = append(requests, request)
 			}
 
-			if _, err := client.SaveMetricsAsJSON(requests); err != nil {
+			if _, apiErr, err := client.SaveMetricsAsJSON(requests); err != nil {
 				logger.Logger.Warn(err.Error())
+				if apiErr != nil {
+					logger.Logger.Warn(
+						apiErr.Message,
+						zap.Int("code", apiErr.Code),
+						zap.Any("details", apiErr.Details),
+					)
+				}
 				return false
 			}
 

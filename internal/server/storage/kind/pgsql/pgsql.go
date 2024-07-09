@@ -84,8 +84,6 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 		return nil, err
 	}
 
-	defer rows.Close()
-
 	return generator.NewFromFunction(func() (metric.Metric, bool) {
 		if !rows.Next() {
 			return nil, false
@@ -94,6 +92,9 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 		var metricType, metricName, metricValue string
 		if err := rows.Scan(&metricType, &metricName, &metricValue); err != nil {
 			logger.Logger.Error(err.Error())
+			if err := rows.Close(); err != nil {
+				logger.Logger.Error(err.Error())
+			}
 
 			return nil, false
 		}
@@ -101,6 +102,9 @@ func (storage *Storage) GetAll() (<-chan metric.Metric, error) {
 		metric, err := factory.New(metricType, metricName, metricValue)
 		if err != nil {
 			logger.Logger.Error(err.Error())
+			if err := rows.Close(); err != nil {
+				logger.Logger.Error(err.Error())
+			}
 
 			return nil, false
 		}

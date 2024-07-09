@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
-	"github.com/m1khal3v/gometheus/internal/server/chi/router"
+	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
 	"net/http"

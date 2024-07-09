@@ -1,6 +1,6 @@
 package slice
 
-// Chunk returns an iterator over consecutive sub-slices of up to n elements of s.
+// Chunk returns a channel over consecutive sub-slices of up to n elements of slice.
 // All but the last sub-slice will have size n.
 // All sub-slices are clipped to have no capacity beyond the length.
 // If s is empty, the sequence is empty: there is no empty slice in the sequence.
