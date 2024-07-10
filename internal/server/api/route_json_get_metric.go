@@ -7,8 +7,8 @@ import (
 )
 
 func (container Container) JSONGetMetric(writer http.ResponseWriter, request *http.Request) {
-	getMetricRequest := requests.GetMetricRequest{}
-	if ok := decodeAndValidateJsonRequest(request, writer, &getMetricRequest); !ok {
+	getMetricRequest, ok := decodeAndValidateJsonRequest[requests.GetMetricRequest](request, writer)
+	if !ok {
 		return
 	}
 

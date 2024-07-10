@@ -12,22 +12,24 @@ import (
 	"strings"
 )
 
-func decodeAndValidateJsonRequest(request *http.Request, writer http.ResponseWriter, target any) bool {
+func decodeAndValidateJsonRequest[T any](request *http.Request, writer http.ResponseWriter) (*T, bool) {
+	var target *T
+
 	if err := json.NewDecoder(request.Body).Decode(target); err != nil {
 		writeJsonErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
-		return false
+		return nil, false
 	}
 
 	if _, err := govalidator.ValidateStruct(target); err != nil {
 		writeJsonErrorResponse(http.StatusBadRequest, writer, "Invalid request received", err)
-		return false
+		return nil, false
 	}
 
-	return true
+	return target, true
 }
 
 func decodeAndValidateJsonRequests[T any](request *http.Request, writer http.ResponseWriter) ([]T, bool) {
-	targets := []T{}
+	var targets []T
 
 	if err := json.NewDecoder(request.Body).Decode(&targets); err != nil {
 		writeJsonErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)

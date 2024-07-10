@@ -58,7 +58,7 @@ func New(metricType, name, value string) (metric.Metric, error) {
 	}
 }
 
-func NewFromRequest(request request.SaveMetricRequest) (metric.Metric, error) {
+func NewFromRequest(request *request.SaveMetricRequest) (metric.Metric, error) {
 	switch request.MetricType {
 	case gauge.MetricType:
 		if nil == request.Value {

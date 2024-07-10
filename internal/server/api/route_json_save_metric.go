@@ -8,8 +8,8 @@ import (
 )
 
 func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *http.Request) {
-	saveMetricRequest := requests.SaveMetricRequest{}
-	if ok := decodeAndValidateJsonRequest(request, writer, &saveMetricRequest); !ok {
+	saveMetricRequest, ok := decodeAndValidateJsonRequest[requests.SaveMetricRequest](request, writer)
+	if !ok {
 		return
 	}
 
