@@ -10,17 +10,17 @@ func (container Container) GetMetric(writer http.ResponseWriter, request *http.R
 
 	metric, err := container.manager.Get(request.Context(), metricType, metricName)
 	if err != nil {
-		writeJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
+		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
 		return
 	}
 	if metric == nil {
-		writeJsonErrorResponse(http.StatusNotFound, writer, "Metric not found", nil)
+		WriteJsonErrorResponse(http.StatusNotFound, writer, "Metric not found", nil)
 		return
 	}
 
 	writer.Header().Set("Content-Type", "text/plain")
 	if _, err := writer.Write([]byte(metric.StringValue())); err != nil {
-		writeJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t write response", err)
+		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t write response", err)
 		return
 	}
 }

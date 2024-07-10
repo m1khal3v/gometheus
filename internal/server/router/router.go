@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/api"
+	internalMiddleware "github.com/m1khal3v/gometheus/internal/server/middleware"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	pkgMiddleware "github.com/m1khal3v/gometheus/pkg/middleware"
 )
@@ -12,6 +13,7 @@ import (
 func New(storage storage.Storage) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
+	router.Use(internalMiddleware.Recover())
 	router.Use(pkgMiddleware.ZapLogPanic(logger.Logger, "http-panic"))
 	router.Use(pkgMiddleware.ZapLogRequest(logger.Logger, "http-request"))
 	router.Use(middleware.RealIP)

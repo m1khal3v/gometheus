@@ -8,28 +8,28 @@ import (
 )
 
 func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *http.Request) {
-	saveMetricRequest, ok := decodeAndValidateJsonRequest[requests.SaveMetricRequest](request, writer)
+	saveMetricRequest, ok := DecodeAndValidateJsonRequest[requests.SaveMetricRequest](request, writer)
 	if !ok {
 		return
 	}
 
 	metric, err := factory.NewFromRequest(saveMetricRequest)
 	if err != nil {
-		writeJsonErrorResponse(http.StatusBadRequest, writer, "Invalid metric data received", err)
+		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid metric data received", err)
 		return
 	}
 
 	metric, err = container.manager.Save(request.Context(), metric)
 	if err != nil {
-		writeJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
+		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
 		return
 	}
 
 	response, err := transformer.TransformToSaveResponse(metric)
 	if err != nil {
-		writeJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
+		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
 		return
 	}
 
-	writeJsonResponse(response, writer)
+	WriteJsonResponse(response, writer)
 }

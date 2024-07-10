@@ -8,6 +8,6 @@ func (container Container) PingStorage(writer http.ResponseWriter, request *http
 	if err := container.manager.PingStorage(request.Context()); err == nil {
 		writer.WriteHeader(http.StatusOK)
 	} else {
-		writeJsonErrorResponse(http.StatusInternalServerError, writer, "Storage unavailable", err)
+		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Storage unavailable", err)
 	}
 }

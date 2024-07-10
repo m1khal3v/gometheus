@@ -12,23 +12,23 @@ func (container Container) SaveMetric(writer http.ResponseWriter, request *http.
 	metricValue := request.PathValue("value")
 
 	if strings.TrimSpace(metricType) == "" {
-		writeJsonErrorResponse(http.StatusBadRequest, writer, "Empty type received", nil)
+		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Empty type received", nil)
 		return
 	}
 
 	if strings.TrimSpace(metricName) == "" {
-		writeJsonErrorResponse(http.StatusBadRequest, writer, "Empty name received", nil)
+		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Empty name received", nil)
 		return
 	}
 
 	metric, err := factory.New(metricType, metricName, metricValue)
 	if err != nil {
-		writeJsonErrorResponse(http.StatusBadRequest, writer, "Invalid metric data received", err)
+		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid metric data received", err)
 		return
 	}
 
 	if _, err := container.manager.Save(request.Context(), metric); err != nil {
-		writeJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
+		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
 		return
 	}
 

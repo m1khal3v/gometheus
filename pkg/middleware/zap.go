@@ -53,9 +53,7 @@ func ZapLogPanic(logger *zap.Logger, name string) func(next http.Handler) http.H
 					zap.String("url", request.URL.String()),
 				)
 
-				if request.Header.Get("Connection") != "Upgrade" {
-					writer.WriteHeader(http.StatusInternalServerError)
-				}
+				panic(recovered)
 			}()
 
 			next.ServeHTTP(writer, request)
