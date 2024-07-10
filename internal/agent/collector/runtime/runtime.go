@@ -16,6 +16,8 @@ type Collector struct {
 	memStats  *runtime.MemStats
 }
 
+var ErrEmptyMetrics = errors.New("metrics are empty")
+
 type ErrInvalidMetricName struct {
 	Name string
 }
@@ -31,6 +33,10 @@ func newErrInvalidMetricName(name string) error {
 }
 
 func New(metrics []string) (*Collector, error) {
+	if len(metrics) == 0 {
+		return nil, ErrEmptyMetrics
+	}
+
 	collector := &Collector{
 		pollCount: 0,
 		metrics:   metrics,

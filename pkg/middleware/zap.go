@@ -31,7 +31,7 @@ func ZapLogRequest(logger *zap.Logger, name string) func(next http.Handler) http
 }
 
 func ZapLogPanic(logger *zap.Logger, name string) func(next http.Handler) http.Handler {
-	logger = logger.Named(name)
+	logger = logger.Named(name).WithOptions(zap.WithCaller(false))
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

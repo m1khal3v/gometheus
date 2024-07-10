@@ -72,7 +72,7 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.metricType, tt.args.name, tt.args.value)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
 				assert.Equal(t, tt.want, got)
 			}
@@ -133,9 +133,9 @@ func TestNewFromRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFromRequest(tt.request)
+			got, err := NewFromRequest(&tt.request)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
 				assert.Equal(t, tt.want, got)
 			}

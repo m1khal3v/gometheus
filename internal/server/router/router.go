@@ -13,9 +13,9 @@ import (
 func New(storage storage.Storage) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
+	router.Use(pkgMiddleware.ZapLogRequest(logger.Logger, "http-request"))
 	router.Use(internalMiddleware.Recover())
 	router.Use(pkgMiddleware.ZapLogPanic(logger.Logger, "http-panic"))
-	router.Use(pkgMiddleware.ZapLogRequest(logger.Logger, "http-request"))
 	router.Use(middleware.RealIP)
 	router.Use(pkgMiddleware.Decompress())
 	router.Use(pkgMiddleware.Compress(5, "text/html", "application/json"))
