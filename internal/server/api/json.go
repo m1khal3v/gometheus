@@ -28,8 +28,8 @@ func decodeAndValidateJsonRequest[T any](request *http.Request, writer http.Resp
 	return target, true
 }
 
-func decodeAndValidateJsonRequests[T any](request *http.Request, writer http.ResponseWriter) ([]T, bool) {
-	var targets []T
+func decodeAndValidateJsonRequests[T any](request *http.Request, writer http.ResponseWriter) ([]*T, bool) {
+	var targets []*T
 
 	if err := json.NewDecoder(request.Body).Decode(&targets); err != nil {
 		writeJsonErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
