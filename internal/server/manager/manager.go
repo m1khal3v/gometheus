@@ -59,7 +59,6 @@ func (manager *Manager) Save(ctx context.Context, metric metric.Metric) (metric.
 
 	switch metric.Type() {
 	case gauge.MetricType:
-		break
 	case counter.MetricType:
 		if err := manager.prepareCounter(ctx, metric.(*counter.Metric), nil); err != nil {
 			return nil, err
@@ -87,7 +86,6 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 
 		switch metric.Type() {
 		case gauge.MetricType:
-			break
 		case counter.MetricType:
 			if err := manager.prepareCounter(ctx, metric.(*counter.Metric), previous); err != nil {
 				return nil, err

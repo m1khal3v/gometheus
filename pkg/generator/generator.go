@@ -65,11 +65,7 @@ func NewFromMapWithContext[K comparable, T any](
 				return
 			default:
 				if modify != nil {
-					var err error
 					key, value = modify(key, value)
-					if err != nil {
-						return
-					}
 				}
 
 				channel <- mapItem[K, T]{key, value}
@@ -101,11 +97,7 @@ func NewFromSyncMapWithContext[K comparable, T any](
 			default:
 				keyK, valueT := key.(K), value.(T)
 				if modify != nil {
-					var err error
 					keyK, valueT = modify(keyK, valueT)
-					if err != nil {
-						return false
-					}
 				}
 
 				channel <- mapItem[K, T]{keyK, valueT}
@@ -173,11 +165,7 @@ func NewFromSyncMapOnlyValueWithContext[T any](
 			default:
 				valueT := value.(T)
 				if modify != nil {
-					var err error
 					valueT = modify(valueT)
-					if err != nil {
-						return false
-					}
 				}
 
 				channel <- valueT

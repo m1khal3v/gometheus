@@ -63,9 +63,9 @@ func TestStorage_Save(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			for _, metric := range tt.preset {
-				storage.Save(nil, metric)
+				storage.Save(context.Background(), metric)
 			}
-			storage.Save(nil, tt.metric)
+			storage.Save(context.Background(), tt.metric)
 			metric, err := storage.Get(context.Background(), tt.metric.Name())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, metric.StringValue())
@@ -106,9 +106,9 @@ func TestStorage_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			for _, metric := range tt.preset {
-				storage.Save(nil, metric)
+				storage.Save(context.Background(), metric)
 			}
-			metric, err := storage.Get(nil, tt.metricName)
+			metric, err := storage.Get(context.Background(), tt.metricName)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, metric)
 		})
@@ -136,7 +136,7 @@ func TestStorage_GetAll(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			for _, metric := range tt.preset {
-				storage.Save(nil, metric)
+				storage.Save(context.Background(), metric)
 			}
 			//all, err := storage.GetAll(context.Background())
 			//assert.NoError(t, err)
@@ -148,7 +148,7 @@ func TestStorage_GetAll(t *testing.T) {
 func TestStorage_SaveGet(t *testing.T) {
 	storage := New()
 	metric := counter.New("m1", 123)
-	storage.Save(nil, metric)
+	storage.Save(context.Background(), metric)
 	get, err := storage.Get(context.Background(), "m1")
 	assert.NoError(t, err)
 	assert.Equal(t, metric, get)

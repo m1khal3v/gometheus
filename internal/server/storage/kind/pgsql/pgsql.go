@@ -19,12 +19,16 @@ import (
 	"time"
 )
 
+const (
+	getStatement  = "get"
+	saveStatement = "save"
+)
+
 type Storage struct {
-	db            *sql.DB
-	mutex         *sync.Mutex
-	closed        bool
-	getStatement  *sql.Stmt
-	saveStatement *sql.Stmt
+	db         *sql.DB
+	mutex      *sync.Mutex
+	closed     bool
+	statements map[string]*sql.Stmt
 }
 
 //go:embed migrations/*.sql
@@ -55,7 +59,7 @@ func (storage *Storage) Get(ctx context.Context, name string) (metric.Metric, er
 	var metricType, metricValue string
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		return storage.getStatement.QueryRowContext(ctx, name).Scan(&metricType, &metricValue)
+		return storage.statements[getStatement].QueryRowContext(ctx, name).Scan(&metricType, &metricValue)
 	}, storage.isRetryableError)
 
 	if err != nil {
@@ -83,7 +87,10 @@ func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error
 	err := retry.Retry(time.Second, 4, 2, func() error {
 		var err error
 		rows, err = storage.db.QueryContext(ctx, "SELECT type, name, value::VARCHAR FROM metric")
-		return err
+		if err != nil {
+			return err
+		}
+		return rows.Err()
 	}, storage.isRetryableError)
 	if err != nil {
 		return nil, err
@@ -124,7 +131,7 @@ func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
 	}
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		_, err := storage.saveStatement.ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue())
+		_, err := storage.statements[saveStatement].ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue())
 
 		return err
 	}, storage.isRetryableError)
@@ -146,7 +153,7 @@ func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 		if err != nil {
 			return err
 		}
-		saveStatement := transaction.StmtContext(ctx, storage.saveStatement)
+		saveStatement := transaction.StmtContext(ctx, storage.statements[saveStatement])
 
 		for _, metric := range metrics {
 			if _, err := saveStatement.ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue()); err != nil {
@@ -225,26 +232,26 @@ func (storage *Storage) isRetryableError(err error) bool {
 
 func (storage *Storage) prepareStatements() {
 	items := []struct {
-		sql    string
-		target *sql.Stmt
+		name string
+		sql  string
 	}{
 		{
-			sql:    "SELECT type, value::VARCHAR FROM metric WHERE name = $1",
-			target: storage.getStatement,
+			name: getStatement,
+			sql:  "SELECT type, value::VARCHAR FROM metric WHERE name = $1",
 		},
 		{
+			name: saveStatement,
 			sql: `
 			INSERT INTO metric (type, name, value) 
 			VALUES ($1, $2, $3::DOUBLE PRECISION)
 			ON CONFLICT (name) DO UPDATE
 			SET type = $1, value = $3::DOUBLE PRECISION`,
-			target: storage.saveStatement,
 		},
 	}
 
 	for _, item := range items {
 		var err error
-		item.target, err = storage.db.Prepare(item.sql)
+		storage.statements[item.name], err = storage.db.Prepare(item.sql)
 		if err != nil {
 			panic(err)
 		}

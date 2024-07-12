@@ -8,7 +8,7 @@ import (
 )
 
 func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *http.Request) {
-	saveMetricRequest, ok := DecodeAndValidateJsonRequest[requests.SaveMetricRequest](request, writer)
+	saveMetricRequest, ok := DecodeAndValidateJSONRequest[requests.SaveMetricRequest](request, writer)
 	if !ok {
 		return
 	}
@@ -31,5 +31,5 @@ func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *h
 		return
 	}
 
-	WriteJsonResponse(response, writer)
+	WriteJSONResponse(response, writer)
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func (container Container) JSONGetMetric(writer http.ResponseWriter, request *http.Request) {
-	getMetricRequest, ok := DecodeAndValidateJsonRequest[requests.GetMetricRequest](request, writer)
+	getMetricRequest, ok := DecodeAndValidateJSONRequest[requests.GetMetricRequest](request, writer)
 	if !ok {
 		return
 	}
@@ -28,5 +28,5 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 		return
 	}
 
-	WriteJsonResponse(response, writer)
+	WriteJSONResponse(response, writer)
 }

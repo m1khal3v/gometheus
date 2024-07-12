@@ -126,6 +126,9 @@ func TestZapLogPanic(t *testing.T) {
 			}
 
 			response, err := http.DefaultClient.Do(request)
+			if response != nil {
+				response.Body.Close() // go vet fix
+			}
 			assert.Nil(t, response)
 			assert.NotNil(t, err)
 

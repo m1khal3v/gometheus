@@ -12,32 +12,32 @@ import (
 	"strings"
 )
 
-func DecodeAndValidateJsonRequest[T any](request *http.Request, writer http.ResponseWriter) (*T, bool) {
+func DecodeAndValidateJSONRequest[T any](request *http.Request, writer http.ResponseWriter) (*T, bool) {
 	var target *T
 
 	if err := json.NewDecoder(request.Body).Decode(target); err != nil {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
 		return nil, false
 	}
 
 	if _, err := govalidator.ValidateStruct(target); err != nil {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid request received", err)
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid request received", err)
 		return nil, false
 	}
 
 	return target, true
 }
 
-func DecodeAndValidateJsonRequests[T any](request *http.Request, writer http.ResponseWriter) ([]*T, bool) {
+func DecodeAndValidateJSONRequests[T any](request *http.Request, writer http.ResponseWriter) ([]*T, bool) {
 	var targets []*T
 
 	if err := json.NewDecoder(request.Body).Decode(&targets); err != nil {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
 		return nil, false
 	}
 
 	if len(targets) == 0 {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Empty request received", nil)
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Empty request received", nil)
 		return nil, false
 	}
 
@@ -50,28 +50,28 @@ func DecodeAndValidateJsonRequests[T any](request *http.Request, writer http.Res
 	}
 
 	if len(errs) > 0 {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid request received", errors.Join(errs...))
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid request received", errors.Join(errs...))
 		return nil, false
 	}
 
 	return targets, true
 }
 
-func WriteJsonResponse(response any, writer http.ResponseWriter) {
+func WriteJSONResponse(response any, writer http.ResponseWriter) {
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t encode response", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t encode response", err)
 		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	if _, err = writer.Write(jsonResponse); err != nil {
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t write response", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t write response", err)
 		return
 	}
 }
 
-func WriteJsonErrorResponse(status int, writer http.ResponseWriter, message string, responseError error) {
+func WriteJSONErrorResponse(status int, writer http.ResponseWriter, message string, responseError error) {
 	response := response.APIError{
 		Code:    status,
 		Message: message,

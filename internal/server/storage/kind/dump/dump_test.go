@@ -148,8 +148,9 @@ func TestStorage_Dump(t *testing.T) {
 			defer os.Remove(file.Name())
 
 			decorator, err := New(context.Background(), storage, file.Name(), 9999, false)
+			assert.NoError(t, err)
 			for _, item := range tt.items {
-				decorator.Save(nil, item)
+				decorator.Save(context.Background(), item)
 			}
 			decorator.dump(context.Background())
 
@@ -228,7 +229,7 @@ func TestStorage_Get(t *testing.T) {
 			decorator, err := New(context.Background(), storage, "/tmp/test", 9999, false)
 			assert.NoError(t, err)
 			for _, item := range tt.items {
-				decorator.Save(nil, item)
+				decorator.Save(context.Background(), item)
 			}
 			metric, err := decorator.Get(context.Background(), "m1")
 			assert.NoError(t, err)
