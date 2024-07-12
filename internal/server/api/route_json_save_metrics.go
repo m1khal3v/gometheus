@@ -29,13 +29,13 @@ func (container Container) JSONSaveMetrics(writer http.ResponseWriter, request *
 	}
 
 	if len(errs) > 0 {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid request data received", errors.Join(errs...))
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid request data received", errors.Join(errs...))
 		return
 	}
 
 	metrics, err := container.manager.SaveBatch(request.Context(), metrics)
 	if err != nil {
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t save metrics", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t save metrics", err)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (container Container) JSONSaveMetrics(writer http.ResponseWriter, request *
 	for _, metric := range metrics {
 		response, err := transformer.TransformToSaveResponse(metric)
 		if err != nil {
-			WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
+			WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
 			return
 		}
 

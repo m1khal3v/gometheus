@@ -26,7 +26,7 @@ func Recover() func(next http.Handler) http.Handler {
 					err = fmt.Errorf("%v", recovered)
 				}
 
-				api.WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Internal server error", err)
+				api.WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Internal server error", err)
 			}()
 
 			next.ServeHTTP(writer, request)

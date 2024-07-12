@@ -15,16 +15,16 @@ func (container Container) JSONGetMetric(writer http.ResponseWriter, request *ht
 	metric, err := container.manager.Get(request.Context(), getMetricRequest.MetricType, getMetricRequest.MetricName)
 	switch {
 	case err != nil:
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t get metric", err)
 		return
 	case metric == nil:
-		WriteJsonErrorResponse(http.StatusNotFound, writer, "Metric not found", nil)
+		WriteJSONErrorResponse(http.StatusNotFound, writer, "Metric not found", nil)
 		return
 	}
 
 	response, err := transformer.TransformToGetResponse(metric)
 	if err != nil {
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
 		return
 	}
 

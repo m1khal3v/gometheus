@@ -15,19 +15,19 @@ func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *h
 
 	metric, err := factory.NewFromRequest(saveMetricRequest)
 	if err != nil {
-		WriteJsonErrorResponse(http.StatusBadRequest, writer, "Invalid metric data received", err)
+		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid metric data received", err)
 		return
 	}
 
 	metric, err = container.manager.Save(request.Context(), metric)
 	if err != nil {
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t save metric", err)
 		return
 	}
 
 	response, err := transformer.TransformToSaveResponse(metric)
 	if err != nil {
-		WriteJsonErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
+		WriteJSONErrorResponse(http.StatusInternalServerError, writer, "Can`t create response", err)
 		return
 	}
 
