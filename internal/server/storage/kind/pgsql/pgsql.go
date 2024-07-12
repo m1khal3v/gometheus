@@ -20,9 +20,11 @@ import (
 )
 
 type Storage struct {
-	db     *sql.DB
-	mutex  *sync.Mutex
-	closed bool
+	db            *sql.DB
+	mutex         *sync.Mutex
+	closed        bool
+	getStatement  *sql.Stmt
+	saveStatement *sql.Stmt
 }
 
 //go:embed migrations/*.sql
@@ -39,23 +41,21 @@ func New(databaseDSN string) *Storage {
 		panic(err)
 	}
 
-	return &Storage{
+	storage := &Storage{
 		db:     db,
 		mutex:  &sync.Mutex{},
 		closed: false,
 	}
+	storage.prepareStatements()
+
+	return storage
 }
 
 func (storage *Storage) Get(ctx context.Context, name string) (metric.Metric, error) {
 	var metricType, metricValue string
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		row := storage.db.QueryRowContext(
-			ctx,
-			"SELECT type, value::VARCHAR FROM metric WHERE name = $1",
-			name,
-		)
-		return row.Scan(&metricType, &metricValue)
+		return storage.getStatement.QueryRowContext(ctx, name).Scan(&metricType, &metricValue)
 	}, storage.isRetryableError)
 
 	if err != nil {
@@ -124,16 +124,7 @@ func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
 	}
 
 	err := retry.Retry(time.Second, 4, 2, func() error {
-		_, err := storage.db.ExecContext(ctx, `
-			INSERT INTO metric (type, name, value) 
-			VALUES ($1, $2, $3::DOUBLE PRECISION)
-			ON CONFLICT (name) DO UPDATE
-			SET type = $1, value = $3::DOUBLE PRECISION
-			`,
-			metric.Type(),
-			metric.Name(),
-			metric.StringValue(),
-		)
+		_, err := storage.saveStatement.ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue())
 
 		return err
 	}, storage.isRetryableError)
@@ -155,20 +146,12 @@ func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 		if err != nil {
 			return err
 		}
+		saveStatement := transaction.StmtContext(ctx, storage.saveStatement)
 
 		for _, metric := range metrics {
-			if _, err := transaction.ExecContext(ctx, `
-				INSERT INTO metric (type, name, value) 
-				VALUES ($1, $2, $3::DOUBLE PRECISION)
-				ON CONFLICT (name) DO UPDATE
-				SET type = $1, value = $3::DOUBLE PRECISION
-				`,
-				metric.Type(),
-				metric.Name(),
-				metric.StringValue(),
-			); err != nil {
-				if err := transaction.Rollback(); err != nil {
-					return err
+			if _, err := saveStatement.ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue()); err != nil {
+				if rollbackErr := transaction.Rollback(); rollbackErr != nil {
+					return errors.Join(err, rollbackErr)
 				}
 
 				return err
@@ -238,4 +221,32 @@ func (storage *Storage) isRetryableError(err error) bool {
 		pgerrcode.IsInsufficientResources(pgsqlErr.Code) ||
 		pgerrcode.IsSystemError(pgsqlErr.Code) ||
 		pgerrcode.IsInternalError(pgsqlErr.Code)
+}
+
+func (storage *Storage) prepareStatements() {
+	items := []struct {
+		sql    string
+		target *sql.Stmt
+	}{
+		{
+			sql:    "SELECT type, value::VARCHAR FROM metric WHERE name = $1",
+			target: storage.getStatement,
+		},
+		{
+			sql: `
+			INSERT INTO metric (type, name, value) 
+			VALUES ($1, $2, $3::DOUBLE PRECISION)
+			ON CONFLICT (name) DO UPDATE
+			SET type = $1, value = $3::DOUBLE PRECISION`,
+			target: storage.saveStatement,
+		},
+	}
+
+	for _, item := range items {
+		var err error
+		item.target, err = storage.db.Prepare(item.sql)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
