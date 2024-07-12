@@ -5,6 +5,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"strconv"
 	"strings"
 	"testing"
@@ -31,7 +32,7 @@ func TestStorage_Append(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storage := New()
 			storage.Append(tt.metrics)
-			assert.Equal(t, tt.metrics, storage.metrics)
+			require.Equal(t, tt.metrics, storage.metrics)
 			for index, metric := range tt.metrics {
 				assert.NotSame(t, metric, storage.metrics[index])
 			}

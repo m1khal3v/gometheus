@@ -6,6 +6,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 	"testing"
 )
@@ -72,8 +73,11 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.metricType, tt.args.name, tt.args.value)
 			if tt.wantErr != nil {
+				assert.Nil(t, got)
 				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
+				require.NoError(t, err)
+				require.NotNil(t, got)
 				assert.Equal(t, tt.want, got)
 			}
 		})

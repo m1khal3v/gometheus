@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"runtime"
 	"testing"
 )
@@ -45,6 +46,8 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.metrics)
 			if tt.wantErr == nil {
+				require.NoError(t, err)
+				require.NotNil(t, got)
 				assert.Equal(t, tt.want, got)
 			} else {
 				assert.Nil(t, got)
@@ -87,7 +90,7 @@ func TestCollector_Collect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector, err := New(tt.metrics)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			metrics := collector.Collect()
 			assert.Len(t, metrics, len(tt.metrics)+1)
@@ -97,6 +100,7 @@ func TestCollector_Collect(t *testing.T) {
 					assert.Equal(t, fmt.Sprintf("%d", len(tt.metrics)), metric.StringValue())
 				} else {
 					assert.Equal(t, "gauge", metric.Type())
+					assert.NotEmpty(t, metric.StringValue())
 				}
 			}
 		})

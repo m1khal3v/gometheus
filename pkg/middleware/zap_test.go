@@ -1,8 +1,10 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -66,7 +68,7 @@ func TestZapLogRequest(t *testing.T) {
 			response.Body.Close()
 
 			allLogs := logs.All()
-			assert.Len(t, allLogs, 1)
+			require.Len(t, allLogs, 1)
 			log := allLogs[0]
 
 			assert.Equal(t, "Request processed", log.Message)
@@ -121,19 +123,17 @@ func TestZapLogPanic(t *testing.T) {
 			defer httpServer.Close()
 
 			request, err := http.NewRequest(tt.method, httpServer.URL+tt.path, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			response, err := http.DefaultClient.Do(request)
 			if response != nil {
 				response.Body.Close() // go vet fix
 			}
-			assert.Nil(t, response)
-			assert.NotNil(t, err)
+			require.Nil(t, response)
+			require.Error(t, err)
 
 			allLogs := logs.All()
-			assert.Len(t, allLogs, 1)
+			require.Len(t, allLogs, 1)
 			log := allLogs[0]
 
 			assert.Equal(t, tt.method+" panic", log.Message)
@@ -157,5 +157,7 @@ func fieldByKey(t *testing.T, fields []zapcore.Field, key string) *zapcore.Field
 			return &field
 		}
 	}
+
+	t.Fatal(fmt.Sprintf("field %s not found", key))
 	return nil
 }

@@ -3,6 +3,7 @@ package random
 import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -31,9 +32,9 @@ func TestCollector_Collect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			collector, err := New(tt.min, tt.max)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			metrics := collector.Collect()
-			assert.Len(t, metrics, 1)
+			require.Len(t, metrics, 1)
 			assert.Equal(t, "RandomValue", metrics[0].Name())
 			assert.Equal(t, "gauge", metrics[0].Type())
 			value := metrics[0].(*gauge.Metric).GetValue()
@@ -71,8 +72,11 @@ func TestNewCollector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			collector, err := New(tt.min, tt.max)
 			if tt.wantErr == nil {
+				require.NotNil(t, collector)
+				require.NoError(t, err)
 				assert.Equal(t, tt.want, collector)
 			} else {
+				assert.Nil(t, collector)
 				assert.Equal(t, err, tt.wantErr)
 			}
 		})
