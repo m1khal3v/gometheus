@@ -13,7 +13,7 @@ import (
 )
 
 func DecodeAndValidateJSONRequest[T any](request *http.Request, writer http.ResponseWriter) (*T, bool) {
-	var target *T
+	target := new(T)
 
 	if err := json.NewDecoder(request.Body).Decode(target); err != nil {
 		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
@@ -29,7 +29,7 @@ func DecodeAndValidateJSONRequest[T any](request *http.Request, writer http.Resp
 }
 
 func DecodeAndValidateJSONRequests[T any](request *http.Request, writer http.ResponseWriter) ([]*T, bool) {
-	var targets []*T
+	targets := make([]*T, 0)
 
 	if err := json.NewDecoder(request.Body).Decode(&targets); err != nil {
 		WriteJSONErrorResponse(http.StatusBadRequest, writer, "Invalid json received", err)
