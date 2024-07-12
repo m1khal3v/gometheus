@@ -18,18 +18,25 @@ var connection *pgx.Conn
 
 func TestNew(t *testing.T) {
 	assert.NotPanics(t, func() {
-		New(prepareDSN(t, "new"))
+		dsn, cleanup := prepareDSN(t, "new")
+		defer cleanup()
+
+		New(dsn)
 	})
 }
 
-func prepareDSN(t *testing.T, name string) string {
+func prepareDSN(t *testing.T, name string) (string, func()) {
 	t.Helper()
 	name = pgx.Identifier{fmt.Sprintf("test%s%d", name, rand.Uint32())}.Sanitize()
 	if _, err := connection.Exec(context.Background(), fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", name)); err != nil {
 		t.Fatalf("Could not create schema: %s", err)
 	}
 
-	return fmt.Sprintf("%s&search_path=%s", baseDSN, name)
+	return fmt.Sprintf("%s&search_path=%s", baseDSN, name), func() {
+		if _, err := connection.Exec(context.Background(), fmt.Sprintf("DROP SCHEMA %s CASCADE;", name)); err != nil {
+			t.Fatalf("Could not drop schema: %s", err)
+		}
+	}
 }
 
 func TestMain(m *testing.M) {
