@@ -61,13 +61,10 @@ func TestNewCollector(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid collector",
-			min:  2,
-			max:  1,
-			wantErr: ErrMinGreaterThanMax{
-				Min: 2,
-				Max: 1,
-			},
+			name:    "invalid collector",
+			min:     2,
+			max:     1,
+			wantErr: newErrMinGreaterThanMax(2, 1),
 		},
 	}
 	for _, tt := range tests {
@@ -76,7 +73,7 @@ func TestNewCollector(t *testing.T) {
 			if tt.wantErr == nil {
 				assert.Equal(t, tt.want, collector)
 			} else {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Equal(t, err, tt.wantErr)
 			}
 		})
 	}

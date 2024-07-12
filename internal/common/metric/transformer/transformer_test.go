@@ -46,7 +46,7 @@ func TestTransformToGetResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformToGetResponse(tt.metric)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
 				assert.Equal(t, tt.want, got)
 			}
@@ -89,7 +89,7 @@ func TestTransformToSaveRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformToSaveRequest(tt.metric)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
 				assert.Equal(t, tt.want, got)
 			}
@@ -132,7 +132,7 @@ func TestTransformToSaveResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformToSaveResponse(tt.metric)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
 				assert.Equal(t, tt.want, got)
 			}
