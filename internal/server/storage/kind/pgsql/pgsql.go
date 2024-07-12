@@ -153,10 +153,10 @@ func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 		if err != nil {
 			return err
 		}
-		saveStatement := transaction.StmtContext(ctx, storage.statements[saveStatement])
+		statement := transaction.StmtContext(ctx, storage.statements[saveStatement])
 
 		for _, metric := range metrics {
-			if _, err := saveStatement.ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue()); err != nil {
+			if _, err := statement.ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue()); err != nil {
 				if rollbackErr := transaction.Rollback(); rollbackErr != nil {
 					return errors.Join(err, rollbackErr)
 				}
