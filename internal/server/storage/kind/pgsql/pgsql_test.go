@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 }
 
 func tryUseExistingPostgres() (func(), bool) {
-	baseDSN = fmt.Sprintf("postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable")
+	baseDSN = "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable"
 	var err error
 	connection, err = pgx.Connect(context.Background(), baseDSN)
 
