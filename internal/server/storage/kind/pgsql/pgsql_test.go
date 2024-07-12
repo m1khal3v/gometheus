@@ -22,78 +22,6 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestMain(m *testing.M) {
-	if !tryConnectToExistingPostgres() {
-		pool, err := dockertest.NewPool("")
-		if err != nil {
-			log.Fatalf("Could not construct pool: %s", err)
-		}
-
-		err = pool.Client.Ping()
-		if err != nil {
-			log.Fatalf("Could not connect to Docker: %s", err)
-		}
-
-		port, err := getFreePort()
-		if err != nil {
-			log.Fatalf("Could not get a free port: %s", err)
-		}
-
-		resource, err := pool.RunWithOptions(&dockertest.RunOptions{
-			Repository: "postgres",
-			PortBindings: map[docker.Port][]docker.PortBinding{
-				"5432/tcp": {{
-					HostPort: fmt.Sprintf("%d", port),
-				}},
-			},
-			Env: []string{
-				"POSTGRES_PASSWORD=test",
-				"POSTGRES_USER=test",
-				"POSTGRES_DB=test",
-				"listen_addresses = '0.0.0.0'",
-			},
-		}, func(config *docker.HostConfig) {
-			config.AutoRemove = true
-			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
-		})
-		if err != nil {
-			log.Fatalf("Could not start resource: %s", err)
-		}
-
-		if err := resource.Expire(180); err != nil {
-			log.Fatalf("Could not set expire: %s", err)
-		}
-
-		baseDSN = fmt.Sprintf("postgres://test:test@%s/test?sslmode=disable", resource.GetHostPort("5432/tcp"))
-		err = pool.Retry(func() error {
-			connection, err = pgx.Connect(context.Background(), baseDSN)
-			return err
-		})
-		if err != nil {
-			log.Fatalf("Unable to connect to Postgres: %s", err)
-		}
-
-		defer func() {
-			if err := connection.Close(context.Background()); err != nil {
-				log.Fatalf("Could not close connection: %s", err)
-			}
-			if err := pool.Purge(resource); err != nil {
-				log.Fatalf("Could not purge resource: %s", err)
-			}
-		}()
-	}
-
-	m.Run()
-}
-
-func tryConnectToExistingPostgres() bool {
-	baseDSN = fmt.Sprintf("postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable")
-	var err error
-	connection, err = pgx.Connect(context.Background(), baseDSN)
-
-	return err == nil
-}
-
 func prepareDSN(t *testing.T, name string) string {
 	t.Helper()
 	name = pgx.Identifier{fmt.Sprintf("test%s%d", name, rand.Uint32())}.Sanitize()
@@ -102,6 +30,88 @@ func prepareDSN(t *testing.T, name string) string {
 	}
 
 	return fmt.Sprintf("%s&search_path=%s", baseDSN, name)
+}
+
+func TestMain(m *testing.M) {
+	cleanup, ok := tryUseExistingPostgres()
+	if !ok {
+		cleanup = createLocalPostgres()
+	}
+	defer cleanup()
+
+	m.Run()
+}
+
+func tryUseExistingPostgres() (func(), bool) {
+	baseDSN = fmt.Sprintf("postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable")
+	var err error
+	connection, err = pgx.Connect(context.Background(), baseDSN)
+
+	return func() {
+		if err := connection.Close(context.Background()); err != nil {
+			log.Fatalf("Could not close connection: %s", err)
+		}
+	}, err == nil
+}
+
+func createLocalPostgres() func() {
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not construct pool: %s", err)
+	}
+
+	err = pool.Client.Ping()
+	if err != nil {
+		log.Fatalf("Could not connect to Docker: %s", err)
+	}
+
+	port, err := getFreePort()
+	if err != nil {
+		log.Fatalf("Could not get a free port: %s", err)
+	}
+
+	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "postgres",
+		PortBindings: map[docker.Port][]docker.PortBinding{
+			"5432/tcp": {{
+				HostPort: fmt.Sprintf("%d", port),
+			}},
+		},
+		Env: []string{
+			"POSTGRES_PASSWORD=test",
+			"POSTGRES_USER=test",
+			"POSTGRES_DB=test",
+			"listen_addresses = '0.0.0.0'",
+		},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+	})
+	if err != nil {
+		log.Fatalf("Could not start resource: %s", err)
+	}
+
+	if err := resource.Expire(180); err != nil {
+		log.Fatalf("Could not set expire: %s", err)
+	}
+
+	baseDSN = fmt.Sprintf("postgres://test:test@%s/test?sslmode=disable", resource.GetHostPort("5432/tcp"))
+	err = pool.Retry(func() error {
+		connection, err = pgx.Connect(context.Background(), baseDSN)
+		return err
+	})
+	if err != nil {
+		log.Fatalf("Unable to connect to Postgres: %s", err)
+	}
+
+	return func() {
+		if err := connection.Close(context.Background()); err != nil {
+			log.Fatalf("Could not close connection: %s", err)
+		}
+		if err := pool.Purge(resource); err != nil {
+			log.Fatalf("Could not purge resource: %s", err)
+		}
+	}
 }
 
 func getFreePort() (int, error) {
