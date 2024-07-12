@@ -248,6 +248,7 @@ func (storage *Storage) prepareStatements() {
 			SET type = $1, value = $3::DOUBLE PRECISION`,
 		},
 	}
+	storage.statements = make(map[string]*sql.Stmt, len(items))
 
 	for _, item := range items {
 		var err error
