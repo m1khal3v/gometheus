@@ -118,9 +118,9 @@ func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request
 	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(requests).
-		SetResult([]*response.SaveMetricResponse{}).
+		SetResult(&[]*response.SaveMetricResponse{}).
 		SetError(&response.APIError{}),
-		resty.MethodPost, "update")
+		resty.MethodPost, "updates")
 
 	if err != nil {
 		if result == nil {
@@ -130,7 +130,7 @@ func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request
 		}
 	}
 
-	return result.Result().([]*response.SaveMetricResponse), nil, nil
+	return *result.Result().(*[]*response.SaveMetricResponse), nil, nil
 }
 
 func (client *Client) createRequest(ctx context.Context) *resty.Request {
