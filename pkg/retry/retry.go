@@ -6,6 +6,7 @@ import (
 
 func Retry(
 	baseDelay time.Duration,
+	maxDelay time.Duration,
 	attempts uint64,
 	multiplier uint64,
 	function func() error,
@@ -14,7 +15,7 @@ func Retry(
 	var err error
 	for i := uint64(0); i < attempts; i++ {
 		if err = function(); err != nil && filter(err) {
-			time.Sleep(calculateDelay(baseDelay, i, multiplier))
+			time.Sleep(calculateDelay(baseDelay, maxDelay, i, multiplier))
 
 			continue
 		}
@@ -41,10 +42,10 @@ func pow(x, y uint64) uint64 {
 	return result
 }
 
-func calculateDelay(baseDelay time.Duration, attempt uint64, multiplier uint64) time.Duration {
+func calculateDelay(baseDelay time.Duration, maxDelay time.Duration, attempt uint64, multiplier uint64) time.Duration {
 	if attempt == 0 {
-		return baseDelay
+		return min(baseDelay, maxDelay)
 	} else {
-		return baseDelay * time.Duration(pow(multiplier, attempt))
+		return min(baseDelay*time.Duration(pow(multiplier, attempt)), maxDelay)
 	}
 }

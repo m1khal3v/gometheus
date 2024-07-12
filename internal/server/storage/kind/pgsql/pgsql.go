@@ -58,7 +58,7 @@ func New(databaseDSN string) *Storage {
 func (storage *Storage) Get(ctx context.Context, name string) (metric.Metric, error) {
 	var metricType, metricValue string
 
-	err := retry.Retry(time.Second, 4, 2, func() error {
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		return storage.statements[getStatement].QueryRowContext(ctx, name).Scan(&metricType, &metricValue)
 	}, storage.isRetryableError)
 
@@ -84,7 +84,7 @@ func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error
 	}
 
 	var rows *sql.Rows
-	err := retry.Retry(time.Second, 4, 2, func() error {
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		var err error
 		rows, err = storage.db.QueryContext(ctx, "SELECT type, name, value::VARCHAR FROM metric")
 		if err != nil {
@@ -130,7 +130,7 @@ func (storage *Storage) Save(ctx context.Context, metric metric.Metric) error {
 		return err
 	}
 
-	err := retry.Retry(time.Second, 4, 2, func() error {
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		_, err := storage.statements[saveStatement].ExecContext(ctx, metric.Type(), metric.Name(), metric.StringValue())
 
 		return err
@@ -148,7 +148,7 @@ func (storage *Storage) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 		return err
 	}
 
-	err := retry.Retry(time.Second, 4, 2, func() error {
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		transaction, err := storage.db.BeginTx(ctx, nil)
 		if err != nil {
 			return err
@@ -204,7 +204,7 @@ func (storage *Storage) Reset(ctx context.Context) error {
 		return err
 	}
 
-	return retry.Retry(time.Second, 4, 2, func() error {
+	return retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		_, err := storage.db.ExecContext(ctx, "TRUNCATE TABLE metric")
 		return err
 	}, storage.isRetryableError)

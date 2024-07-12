@@ -139,7 +139,7 @@ func (client *Client) createRequest(ctx context.Context) *resty.Request {
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
 	var result *resty.Response = nil
-	err := retry.Retry(time.Second, 4, 2, func() error {
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		var err error
 		result, err = request.Execute(method, url)
 		if err != nil {

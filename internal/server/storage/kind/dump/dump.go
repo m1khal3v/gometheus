@@ -126,7 +126,7 @@ func (storage *Storage) dump(ctx context.Context) error {
 	defer storage.mutex.Unlock()
 
 	var file *os.File
-	err := retry.Retry(time.Second, 4, 2, func() error {
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
 		var err error
 		file, err = os.OpenFile(storage.filepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
 		return err
