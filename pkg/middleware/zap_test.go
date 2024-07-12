@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -158,6 +157,6 @@ func fieldByKey(t *testing.T, fields []zapcore.Field, key string) *zapcore.Field
 		}
 	}
 
-	t.Fatal(fmt.Sprintf("field %s not found", key))
+	t.Fatalf("field %s not found", key)
 	return nil
 }
