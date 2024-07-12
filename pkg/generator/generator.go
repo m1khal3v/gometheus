@@ -129,11 +129,7 @@ func NewFromMapOnlyValueWithContext[K comparable, T any](
 				return
 			default:
 				if modify != nil {
-					var err error
 					value = modify(value)
-					if err != nil {
-						return
-					}
 				}
 
 				channel <- value
