@@ -73,7 +73,7 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 	return nil
 }
 
-func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, metricValue string) (*response.ApiError, error) {
+func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, metricValue string) (*response.APIError, error) {
 	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "text/plain").
 		SetPathParams(map[string]string{
@@ -81,52 +81,52 @@ func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, me
 			"name":  metricName,
 			"value": metricValue,
 		}).
-		SetError(&response.ApiError{}),
+		SetError(&response.APIError{}),
 		resty.MethodPost, "update/{type}/{name}/{value}")
 
 	if err != nil {
 		if result == nil {
 			return nil, err
 		} else {
-			return result.Result().(*response.ApiError), err
+			return result.Result().(*response.APIError), err
 		}
 	}
 
 	return nil, nil
 }
 
-func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.SaveMetricRequest) (*response.SaveMetricResponse, *response.ApiError, error) {
+func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.SaveMetricRequest) (*response.SaveMetricResponse, *response.APIError, error) {
 	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(request).
 		SetResult(&response.SaveMetricResponse{}).
-		SetError(&response.ApiError{}),
+		SetError(&response.APIError{}),
 		resty.MethodPost, "update")
 
 	if err != nil {
 		if result == nil {
 			return nil, nil, err
 		} else {
-			return nil, result.Result().(*response.ApiError), err
+			return nil, result.Result().(*response.APIError), err
 		}
 	}
 
 	return result.Result().(*response.SaveMetricResponse), nil, nil
 }
 
-func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.ApiError, error) {
+func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.APIError, error) {
 	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(requests).
 		SetResult([]*response.SaveMetricResponse{}).
-		SetError(&response.ApiError{}),
+		SetError(&response.APIError{}),
 		resty.MethodPost, "update")
 
 	if err != nil {
 		if result == nil {
 			return nil, nil, err
 		} else {
-			return nil, result.Result().(*response.ApiError), err
+			return nil, result.Result().(*response.APIError), err
 		}
 	}
 

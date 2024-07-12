@@ -105,7 +105,7 @@ func collectMetrics(ctx context.Context, storage *storage.Storage, collectors []
 }
 
 type apiClient interface {
-	SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.ApiError, error)
+	SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.APIError, error)
 }
 
 func processMetrics(ctx context.Context, storage *storage.Storage, client apiClient, reportInterval uint32, batchSize uint64) {

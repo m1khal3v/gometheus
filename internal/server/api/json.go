@@ -72,7 +72,7 @@ func WriteJsonResponse(response any, writer http.ResponseWriter) {
 }
 
 func WriteJsonErrorResponse(status int, writer http.ResponseWriter, message string, responseError error) {
-	response := response.ApiError{
+	response := response.APIError{
 		Code:    status,
 		Message: message,
 		Details: pkgErrors.ToUniqueStrings(pkgErrors.Unwrap(responseError)...),
