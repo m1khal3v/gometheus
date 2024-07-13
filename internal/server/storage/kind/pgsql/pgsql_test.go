@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 	})
 }
 
-func TestGet(t *testing.T) {
+func TestStorage_Get(t *testing.T) {
 	tests := []struct {
 		name       string
 		preset     []metric.Metric
@@ -81,7 +81,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGetAll(t *testing.T) {
+func TestStorage_GetAll(t *testing.T) {
 	tests := []struct {
 		name   string
 		preset []metric.Metric
@@ -111,12 +111,12 @@ func TestGetAll(t *testing.T) {
 			storage := createStorage(t, ctx, tt.preset)
 			got, err := storage.GetAll(ctx)
 			require.NoError(t, err)
-			assert.Equal(t, tt.preset, slice.FromChannel(got))
+			assert.ElementsMatch(t, tt.preset, slice.FromChannel(got))
 		})
 	}
 }
 
-func TestReset(t *testing.T) {
+func TestStorage_Reset(t *testing.T) {
 	ctx := context.Background()
 	storage := createStorage(t, ctx, []metric.Metric{
 		counter.New("m1", 123),

@@ -1,4 +1,3 @@
-// TODO: Переписать
 package dump
 
 import (
@@ -9,7 +8,9 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/kind/memory"
+	"github.com/m1khal3v/gometheus/pkg/slice"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io"
 	"os"
 	"strings"
@@ -90,14 +91,15 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			if tt.wantPanic != "" {
 				assert.PanicsWithValue(t, tt.wantPanic, func() {
-					New(context.Background(), tt.args.storage, tt.args.filepath, tt.args.storeInterval, tt.args.restore)
+					New(ctx, tt.args.storage, tt.args.filepath, tt.args.storeInterval, tt.args.restore)
 				})
 				return
 			}
-			storage, err := New(context.Background(), tt.args.storage, tt.args.filepath, tt.args.storeInterval, tt.args.restore)
-			assert.NoError(t, err)
+			storage, err := New(ctx, tt.args.storage, tt.args.filepath, tt.args.storeInterval, tt.args.restore)
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, storage)
 		})
 	}
@@ -139,6 +141,7 @@ func TestStorage_Dump(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
 			file, err := os.CreateTemp("", "dump_test_*.json")
 			if err != nil {
@@ -147,14 +150,14 @@ func TestStorage_Dump(t *testing.T) {
 			defer file.Close()
 			defer os.Remove(file.Name())
 
-			decorator, err := New(context.Background(), storage, file.Name(), 9999, false)
-			assert.NoError(t, err)
+			decorator, err := New(ctx, storage, file.Name(), 9999, false)
+			require.NoError(t, err)
 			for _, item := range tt.items {
-				decorator.Save(context.Background(), item)
+				decorator.Save(ctx, item)
 			}
-			decorator.dump(context.Background())
+			decorator.dump(ctx)
 
-			assert.FileExists(t, file.Name())
+			require.FileExists(t, file.Name())
 			all, err := io.ReadAll(file)
 			if err != nil {
 				t.Fatal(err)
@@ -167,7 +170,7 @@ func TestStorage_Dump(t *testing.T) {
 			if tt.wantItems == nil {
 				tt.wantItems = tt.items
 			}
-			assert.Len(t, items, len(tt.wantItems))
+			require.Len(t, items, len(tt.wantItems))
 
 			for _, metric := range tt.wantItems {
 				assert.Contains(t, items, fmt.Sprintf(
@@ -225,14 +228,15 @@ func TestStorage_Get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
-			decorator, err := New(context.Background(), storage, "/tmp/test", 9999, false)
-			assert.NoError(t, err)
+			decorator, err := New(ctx, storage, "/tmp/test", 9999, false)
+			require.NoError(t, err)
 			for _, item := range tt.items {
-				decorator.Save(context.Background(), item)
+				decorator.Save(ctx, item)
 			}
-			metric, err := decorator.Get(context.Background(), "m1")
-			assert.NoError(t, err)
+			metric, err := decorator.Get(ctx, "m1")
+			require.NoError(t, err)
 			assert.Equal(t, tt.want, metric)
 		})
 	}
@@ -242,12 +246,12 @@ func TestStorage_GetAll(t *testing.T) {
 	tests := []struct {
 		name      string
 		items     []metric.Metric
-		wantItems map[string]metric.Metric
+		wantItems []metric.Metric
 	}{
 		{
 			name:      "empty storage",
 			items:     []metric.Metric{},
-			wantItems: map[string]metric.Metric{},
+			wantItems: []metric.Metric{},
 		},
 		{
 			name: "storage with items",
@@ -258,12 +262,12 @@ func TestStorage_GetAll(t *testing.T) {
 				counter.New("m4", 331),
 				counter.New("m5", 545),
 			},
-			wantItems: map[string]metric.Metric{
-				"m1": gauge.New("m1", 123.321),
-				"m2": counter.New("m2", 123),
-				"m3": gauge.New("m3", 123.124),
-				"m4": counter.New("m4", 331),
-				"m5": counter.New("m5", 545),
+			wantItems: []metric.Metric{
+				gauge.New("m1", 123.321),
+				counter.New("m2", 123),
+				gauge.New("m3", 123.124),
+				counter.New("m4", 331),
+				counter.New("m5", 545),
 			},
 		},
 		{
@@ -275,20 +279,24 @@ func TestStorage_GetAll(t *testing.T) {
 				counter.New("m1", 331),
 				counter.New("m1", 545),
 			},
-			wantItems: map[string]metric.Metric{
-				"m1": counter.New("m1", 545),
+			wantItems: []metric.Metric{
+				counter.New("m1", 545),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
-			decorator, err := New(context.Background(), storage, "/tmp/test", 9999, false)
-			assert.NoError(t, err)
+			decorator, err := New(ctx, storage, "/tmp/test", 9999, false)
+			require.NoError(t, err)
 			for _, item := range tt.items {
-				assert.NoError(t, decorator.Save(context.Background(), item))
+				require.NoError(t, decorator.Save(ctx, item))
 			}
-			//assert.Equal(t, tt.wantItems, decorator.GetAll(context.Background()))
+
+			all, err := decorator.GetAll(ctx)
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tt.wantItems, slice.FromChannel(all))
 		})
 	}
 }
@@ -309,12 +317,13 @@ func TestStorage_Save(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
-			decorator, err := New(context.Background(), storage, "/tmp/test", 9999, false)
-			assert.NoError(t, err)
-			decorator.Save(context.Background(), tt.metric)
-			metric, err := decorator.Get(context.Background(), tt.metric.Name())
-			assert.NoError(t, err)
+			decorator, err := New(ctx, storage, "/tmp/test", 9999, false)
+			require.NoError(t, err)
+			decorator.Save(ctx, tt.metric)
+			metric, err := decorator.Get(ctx, tt.metric.Name())
+			require.NoError(t, err)
 			assert.Equal(t, tt.metric, metric)
 		})
 	}
@@ -324,12 +333,12 @@ func Test_restoreFromFile(t *testing.T) {
 	tests := []struct {
 		name      string
 		items     []metric.Metric
-		wantItems map[string]metric.Metric
+		wantItems []metric.Metric
 	}{
 		{
 			name:      "empty storage",
 			items:     []metric.Metric{},
-			wantItems: map[string]metric.Metric{},
+			wantItems: []metric.Metric{},
 		},
 		{
 			name: "storage with items",
@@ -340,12 +349,12 @@ func Test_restoreFromFile(t *testing.T) {
 				counter.New("m4", 331),
 				counter.New("m5", 545),
 			},
-			wantItems: map[string]metric.Metric{
-				"m1": gauge.New("m1", 123.321),
-				"m2": counter.New("m2", 123),
-				"m3": gauge.New("m3", 123.124),
-				"m4": counter.New("m4", 331),
-				"m5": counter.New("m5", 545),
+			wantItems: []metric.Metric{
+				gauge.New("m1", 123.321),
+				counter.New("m2", 123),
+				gauge.New("m3", 123.124),
+				counter.New("m4", 331),
+				counter.New("m5", 545),
 			},
 		},
 		{
@@ -357,14 +366,15 @@ func Test_restoreFromFile(t *testing.T) {
 				counter.New("m1", 331),
 				counter.New("m1", 545),
 			},
-			wantItems: map[string]metric.Metric{
-				"m1": counter.New("m1", 545),
+			wantItems: []metric.Metric{
+				counter.New("m1", 545),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
 			file, err := os.CreateTemp("", "restore_test_*.json")
 			if err != nil {
@@ -373,15 +383,17 @@ func Test_restoreFromFile(t *testing.T) {
 			defer file.Close()
 			defer os.Remove(file.Name())
 
-			decorator, err := New(context.Background(), storage, file.Name(), 9999, false)
-			assert.NoError(t, err)
+			decorator, err := New(ctx, storage, file.Name(), 9999, false)
+			require.NoError(t, err)
 			for _, item := range tt.items {
-				decorator.Save(context.Background(), item)
+				decorator.Save(ctx, item)
 			}
-			decorator.dump(context.Background())
+			decorator.dump(ctx)
 
-			decorator.restoreFromFile(context.Background())
-			//assert.Equal(t, tt.wantItems, storage.GetAll(context.Background()))
+			decorator.restoreFromFile(ctx)
+			all, err := decorator.GetAll(ctx)
+			require.NoError(t, err)
+			assert.ElementsMatch(t, tt.wantItems, slice.FromChannel(all))
 		})
 	}
 }
