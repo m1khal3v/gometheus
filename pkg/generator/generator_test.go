@@ -29,6 +29,8 @@ func TestNewFromFunctionWithContext(t *testing.T) {
 
 func TestNewFromFunctionWithContextClose(t *testing.T) {
 	ctx, closer := context.WithCancel(context.Background())
+	defer closer()
+
 	i := 0
 	generate := func() (int, bool) {
 		i++
@@ -85,6 +87,8 @@ func TestNewFromMapWithContext(t *testing.T) {
 
 func TestNewFromMapWithContextClose(t *testing.T) {
 	ctx, closer := context.WithCancel(context.Background())
+	defer closer()
+
 	generatorMap := map[string]int{
 		"one":   1,
 		"two":   2,
@@ -166,6 +170,8 @@ func TestNewFromSyncMapWithContext(t *testing.T) {
 
 func TestNewFromSyncMapWithContextClose(t *testing.T) {
 	ctx, closer := context.WithCancel(context.Background())
+	defer closer()
+
 	generatorMap := &sync.Map{}
 	generatorMap.Store("one", 1)
 	generatorMap.Store("two", 2)
@@ -236,6 +242,8 @@ func TestNewFromMapOnlyValueWithContext(t *testing.T) {
 
 func TestNewFromMapOnlyValueWithContextClose(t *testing.T) {
 	ctx, closer := context.WithCancel(context.Background())
+	defer closer()
+
 	generatorMap := map[string]int{
 		"one":   1,
 		"two":   2,
@@ -294,6 +302,8 @@ func TestNewFromSyncMapOnlyValueWithContext(t *testing.T) {
 
 func TestNewFromSyncMapOnlyValueWithContextClose(t *testing.T) {
 	ctx, closer := context.WithCancel(context.Background())
+	defer closer()
+
 	generatorMap := &sync.Map{}
 	generatorMap.Store("one", 1)
 	generatorMap.Store("two", 2)
