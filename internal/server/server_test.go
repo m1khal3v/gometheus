@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
@@ -68,6 +69,7 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test invalid gauge",
 			metricValue:        "abc",
 			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "{\"code\":400,\"message\":\"Invalid metric data received\",\"details\":[\"metric value 'abc' is invalid\"]}",
 		},
 		{
 			name:               "invalid counter",
@@ -75,6 +77,7 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test invalid counter",
 			metricValue:        "123.321",
 			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "{\"code\":400,\"message\":\"Invalid metric data received\",\"details\":[\"metric value '123.321' is invalid\"]}",
 		},
 		{
 			name:               "update gauge",
@@ -99,6 +102,7 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test empty type",
 			metricValue:        "123.321",
 			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "{\"code\":400,\"message\":\"Empty type received\",\"details\":[]}",
 		},
 		{
 			name:               "invalid type",
@@ -106,13 +110,15 @@ func TestSaveMetric(t *testing.T) {
 			metricName:         "test invalid type",
 			metricValue:        "123.321",
 			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "{\"code\":400,\"message\":\"Invalid metric data received\",\"details\":[\"metric type 'test' is not defined\"]}",
 		},
 		{
 			name:               "empty name",
 			metricType:         "counter",
 			metricName:         "",
 			metricValue:        "123",
-			expectedStatusCode: http.StatusNotFound,
+			expectedStatusCode: http.StatusBadRequest,
+			expectedBody:       "{\"code\":400,\"message\":\"Empty name received\",\"details\":[]}",
 		},
 		{
 			name:               "empty value",
@@ -133,6 +139,7 @@ func TestSaveMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			path := fmt.Sprintf(
 				"/update/%v/%v/%v",
 				tt.metricType,
@@ -144,8 +151,9 @@ func TestSaveMetric(t *testing.T) {
 				method = http.MethodPost
 			}
 			if tt.previousValue != "" {
-				previousMetric, _ := factory.New(tt.metricType, tt.metricName, tt.previousValue)
-				storage.Save(nil, previousMetric)
+				previousMetric, err := factory.New(tt.metricType, tt.metricName, tt.previousValue)
+				require.NoError(t, err)
+				require.NoError(t, storage.Save(ctx, previousMetric))
 			}
 
 			response, body := testRequest(t, server, method, path, nil)
@@ -157,10 +165,12 @@ func TestSaveMetric(t *testing.T) {
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			assert.Equal(t, tt.expectedBody, body)
 			if tt.expectedStatusCode == http.StatusOK {
+				got, err := storage.Get(ctx, tt.metricName)
+				require.NoError(t, err)
 				if tt.expectedValue != "" {
-					assert.Equal(t, tt.expectedValue, storage.Get(nil, tt.metricName).StringValue())
+					assert.Equal(t, tt.expectedValue, got.StringValue())
 				} else {
-					assert.Equal(t, tt.metricValue, storage.Get(nil, tt.metricName).StringValue())
+					assert.Equal(t, tt.metricValue, got.StringValue())
 				}
 			}
 		})
@@ -320,12 +330,13 @@ func TestSaveMetricJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			method := tt.method
 			if method == "" {
 				method = http.MethodPost
 			}
 			if tt.previous != nil {
-				storage.Save(nil, tt.previous)
+				require.NoError(t, storage.Save(ctx, tt.previous))
 			}
 
 			bytes, err := json.Marshal(tt.request)
@@ -341,13 +352,9 @@ func TestSaveMetricJSON(t *testing.T) {
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
 				expectedResponse, err := transformer.TransformToSaveResponse(tt.expected)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				expectedResponseBody, err := json.Marshal(expectedResponse)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				assert.Equal(t, string(expectedResponseBody), body)
 			}
 		})
@@ -392,6 +399,7 @@ func TestGetMetric(t *testing.T) {
 				"test gauge": gauge.New("test gauge", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
+			expectedBody:       "{\"code\":404,\"message\":\"Metric not found\",\"details\":[]}",
 		},
 		{
 			name:       "invalid counter",
@@ -401,6 +409,7 @@ func TestGetMetric(t *testing.T) {
 				"test counter": counter.New("test counter", 123),
 			},
 			expectedStatusCode: http.StatusNotFound,
+			expectedBody:       "{\"code\":404,\"message\":\"Metric not found\",\"details\":[]}",
 		},
 		{
 			name:       "empty type",
@@ -410,6 +419,7 @@ func TestGetMetric(t *testing.T) {
 				"test empty type": gauge.New("test empty type", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
+			expectedBody:       "{\"code\":404,\"message\":\"Metric not found\",\"details\":[]}",
 		},
 		{
 			name:       "invalid type",
@@ -419,7 +429,7 @@ func TestGetMetric(t *testing.T) {
 				"test invalid type": gauge.New("test invalid type", 123.321),
 			},
 			expectedStatusCode: http.StatusNotFound,
-			expectedBody:       "",
+			expectedBody:       "{\"code\":404,\"message\":\"Metric not found\",\"details\":[]}",
 		},
 		{
 			name:       "empty name",
@@ -444,12 +454,13 @@ func TestGetMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
-				storage.Save(nil, metric)
+				require.NoError(t, storage.Save(ctx, metric))
 			}
 
 			path := fmt.Sprintf(
@@ -582,12 +593,13 @@ func TestGetMetricJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
-				storage.Save(nil, metric)
+				require.NoError(t, storage.Save(ctx, metric))
 			}
 
 			method := tt.method
@@ -608,13 +620,9 @@ func TestGetMetricJSON(t *testing.T) {
 			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
 			if tt.expectedStatusCode == http.StatusOK {
 				expectedResponse, err := transformer.TransformToGetResponse(tt.expected)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				expectedResponseBody, err := json.Marshal(expectedResponse)
-				if err != nil {
-					t.Fatal(err)
-				}
+				require.NoError(t, err)
 				assert.Equal(t, string(expectedResponseBody), body)
 			}
 		})
@@ -662,12 +670,13 @@ func TestGetAllMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			storage := memory.New()
 			server := httptest.NewServer(router.New(storage))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
-				storage.Save(nil, metric)
+				require.NoError(t, storage.Save(ctx, metric))
 			}
 
 			method := tt.method
