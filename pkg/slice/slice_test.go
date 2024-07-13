@@ -58,3 +58,34 @@ func TestChunk(t *testing.T) {
 		})
 	}
 }
+
+func TestFromChannel(t *testing.T) {
+	tests := []struct {
+		name  string
+		items []any
+	}{
+		{
+			name:  "one item",
+			items: []any{123},
+		},
+		{
+			name:  "multiple items",
+			items: []any{123.321, 321.123, 555.646},
+		},
+		{
+			name:  "empty items",
+			items: []any{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			channel := make(chan any, len(tt.items))
+			for _, item := range tt.items {
+				channel <- item
+			}
+			close(channel)
+
+			assert.Equal(t, tt.items, FromChannel(channel))
+		})
+	}
+}

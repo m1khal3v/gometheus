@@ -28,3 +28,12 @@ func Chunk[T any](slice []T, n uint64) <-chan []T {
 
 	return channel
 }
+
+func FromChannel[T any](channel <-chan T) []T {
+	slice := make([]T, 0)
+	for item := range channel {
+		slice = append(slice, item)
+	}
+
+	return slice
+}
