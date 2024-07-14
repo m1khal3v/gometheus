@@ -65,12 +65,18 @@ func createCollectors() ([]collector.Collector, error) {
 	}, nil
 }
 
-func Start(endpoint string, pollInterval, reportInterval uint32, batchSize uint64) error {
+func Start(address string, pollInterval, reportInterval uint32, batchSize uint64) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	storage := storage.New()
-	client := client.New(endpoint, true)
+	client, err := client.New(&client.Config{
+		Address: address,
+	})
+	if err != nil {
+		return err
+	}
+
 	collectors, err := createCollectors()
 	if err != nil {
 		return err

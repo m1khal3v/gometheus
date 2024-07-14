@@ -12,11 +12,27 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/retry"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 )
 
+// This is a very simplified regular expression that will work in most cases.
+// In border cases, you can disable address verification through the config
+var addressRegex = regexp.MustCompile("^https?://[a-zA-Z0-9][a-zA-Z0-9-.]*(:\\d+)?(/[a-zA-Z0-9-_+%]*)*$")
+
 type Client struct {
 	resty *resty.Client
+	retry bool
+}
+
+type Config struct {
+	Address   string
+	Transport http.RoundTripper
+
+	DisableCompress          bool
+	DisableAddressValidation bool
+	DisableRetry             bool
 }
 
 type ErrUnexpectedStatus struct {
@@ -24,26 +40,63 @@ type ErrUnexpectedStatus struct {
 }
 
 func (err ErrUnexpectedStatus) Error() string {
-	return fmt.Sprintf("Unexpected status code: %d", err.Status)
+	return fmt.Sprintf("unexpected status code: %d", err.Status)
 }
 
-func newUnexpectedStatusError(status int) ErrUnexpectedStatus {
+func newErrUnexpectedStatus(status int) ErrUnexpectedStatus {
 	return ErrUnexpectedStatus{
 		Status: status,
 	}
 }
 
-func New(endpoint string, compress bool) *Client {
+type ErrInvalidAddress struct {
+	Address string
+}
+
+func (err ErrInvalidAddress) Error() string {
+	return fmt.Sprintf("invalid address: %s", err.Address)
+}
+
+func newErrInvalidAddress(address string) ErrInvalidAddress {
+	return ErrInvalidAddress{
+		Address: address,
+	}
+}
+
+func New(config *Config) (*Client, error) {
+	if err := prepareConfig(config); err != nil {
+		return nil, err
+	}
+
 	client := resty.
 		New().
-		SetBaseURL(fmt.Sprintf("http://%s/", endpoint)).
+		SetTransport(config.Transport).
+		SetBaseURL(config.Address).
 		SetHeader("Accept-Encoding", "gzip")
 
-	if compress {
+	if !config.DisableCompress {
 		client.SetPreRequestHook(compressRequestBody)
 	}
 
-	return &Client{resty: client}
+	return &Client{resty: client, retry: !config.DisableRetry}, nil
+}
+
+func prepareConfig(config *Config) error {
+	if !config.DisableAddressValidation {
+		if !strings.HasPrefix(config.Address, "http") {
+			config.Address = "http://" + config.Address
+		}
+
+		if !addressRegex.MatchString(config.Address) {
+			return newErrInvalidAddress(config.Address)
+		}
+	}
+
+	if config.Transport == nil {
+		config.Transport = http.DefaultTransport
+	}
+
+	return nil
 }
 
 func compressRequestBody(client *resty.Client, request *http.Request) error {
@@ -85,7 +138,7 @@ func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, me
 		resty.MethodPost, "update/{type}/{name}/{value}")
 
 	if err != nil {
-		if result == nil {
+		if result.RawResponse == nil {
 			return nil, err
 		} else {
 			return result.Error().(*response.APIError), err
@@ -104,7 +157,7 @@ func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.Sav
 		resty.MethodPost, "update")
 
 	if err != nil {
-		if result == nil {
+		if result.RawResponse == nil {
 			return nil, nil, err
 		} else {
 			return nil, result.Error().(*response.APIError), err
@@ -123,7 +176,7 @@ func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request
 		resty.MethodPost, "updates")
 
 	if err != nil {
-		if result == nil {
+		if result.RawResponse == nil {
 			return nil, nil, err
 		} else {
 			return nil, result.Error().(*response.APIError), err
@@ -139,7 +192,7 @@ func (client *Client) createRequest(ctx context.Context) *resty.Request {
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
 	var result *resty.Response = nil
-	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
+	do := func() error {
 		var err error
 		result, err = request.Execute(method, url)
 		if err != nil {
@@ -147,13 +200,20 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		}
 
 		if result.StatusCode() != http.StatusOK {
-			return newUnexpectedStatusError(result.StatusCode())
+			return newErrUnexpectedStatus(result.StatusCode())
 		}
 
 		return nil
-	}, func(err error) bool {
-		return !errors.As(err, &ErrUnexpectedStatus{})
-	})
+	}
+
+	var err error
+	if !client.retry {
+		err = do()
+	} else {
+		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
+			return !errors.As(err, &ErrUnexpectedStatus{})
+		})
+	}
 
 	return result, err
 }
