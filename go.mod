@@ -5,7 +5,7 @@ go 1.22.5
 require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/caarlos0/env/v6 v6.10.1
-	github.com/go-chi/chi/v5 v5.0.12
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-resty/resty/v2 v2.13.1
 	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438
 	github.com/jackc/pgx/v5 v5.6.0

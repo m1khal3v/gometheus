@@ -227,7 +227,8 @@ func (storage *Storage) isRetryableError(err error) bool {
 	return pgerrcode.IsConnectionException(pgsqlErr.Code) ||
 		pgerrcode.IsInsufficientResources(pgsqlErr.Code) ||
 		pgerrcode.IsSystemError(pgsqlErr.Code) ||
-		pgerrcode.IsInternalError(pgsqlErr.Code)
+		pgerrcode.IsInternalError(pgsqlErr.Code) ||
+		pgerrcode.IsTransactionRollback(pgsqlErr.Code)
 }
 
 func (storage *Storage) prepareStatements() {

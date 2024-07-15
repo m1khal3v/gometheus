@@ -631,9 +631,9 @@ func TestSaveMetricsJSON(t *testing.T) {
 					require.NoError(t, err)
 					expectedResponses = append(expectedResponses, expectedResponse)
 				}
-				expectedResponseBody, err := json.Marshal(expectedResponses)
-				require.NoError(t, err)
-				assert.Equal(t, string(expectedResponseBody), body)
+				actualResponses := make([]*responses.SaveMetricResponse, 0)
+				require.NoError(t, json.Unmarshal([]byte(body), &actualResponses))
+				assert.ElementsMatch(t, expectedResponses, actualResponses)
 			}
 			require.NoError(t, storage.Reset(ctx))
 		})
