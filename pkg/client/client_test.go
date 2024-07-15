@@ -21,7 +21,7 @@ func TestNew(t *testing.T) {
 		name          string
 		config        *Config
 		wantErr       error
-		wantBaseUrl   string
+		wantBaseURL   string
 		wantTransport http.RoundTripper
 	}{
 		{
@@ -29,26 +29,36 @@ func TestNew(t *testing.T) {
 			config: &Config{
 				Address: "http://localhost",
 			},
-			wantBaseUrl:   "http://localhost",
+			wantBaseURL:   "http://localhost",
 			wantTransport: http.DefaultTransport,
 		},
 		{
 			name: "valid address + compress",
 			config: &Config{
-				Address:         "localhost:8080",
+				Address:         "127.0.0.1:8080",
 				DisableCompress: false,
 			},
-			wantBaseUrl:   "http://localhost:8080",
+			wantBaseURL:   "http://127.0.0.1:8080",
 			wantTransport: http.DefaultTransport,
 		},
 		{
-			name: "valid address + compress + transport",
+			name: "valid address + compress + transport #1",
 			config: &Config{
-				Address:         "https://localhost:443/api/",
+				Address:         "https://my.server.ru:443/api/",
 				DisableCompress: true,
 				Transport:       &http.Transport{MaxIdleConns: 123},
 			},
-			wantBaseUrl:   "https://localhost:443/api",
+			wantBaseURL:   "https://my.server.ru:443/api",
+			wantTransport: &http.Transport{MaxIdleConns: 123},
+		},
+		{
+			name: "valid address + compress + transport #2",
+			config: &Config{
+				Address:         "https://my.server.ru:443/api/sub",
+				DisableCompress: true,
+				Transport:       &http.Transport{MaxIdleConns: 123},
+			},
+			wantBaseURL:   "https://my.server.ru:443/api/sub",
 			wantTransport: &http.Transport{MaxIdleConns: 123},
 		},
 		{
@@ -68,23 +78,16 @@ func TestNew(t *testing.T) {
 		{
 			name: "invalid address #3",
 			config: &Config{
-				Address: "http://ftp://localhost",
+				Address: "https://my.server.ru:443/api?a=b&c=d",
 			},
-			wantErr: newErrInvalidAddress("http://ftp://localhost"),
+			wantErr: newErrInvalidAddress("https://my.server.ru:443/api?a=b&c=d"),
 		},
 		{
 			name: "invalid address #4",
 			config: &Config{
-				Address: "https://localhost/api#fragment",
+				Address: "https://127.0.0.1/api#fragment",
 			},
-			wantErr: newErrInvalidAddress("http://ftp://localhost"),
-		},
-		{
-			name: "invalid address #5",
-			config: &Config{
-				Address: "https://localhost/api?param=1&param2=2",
-			},
-			wantErr: newErrInvalidAddress("http://ftp://localhost"),
+			wantErr: newErrInvalidAddress("https://127.0.0.1/api#fragment"),
 		},
 		{
 			name: "invalid address #5 disable check",
@@ -92,7 +95,7 @@ func TestNew(t *testing.T) {
 				Address:                  "https://localhost/api?param=1&param2=2",
 				DisableAddressValidation: true,
 			},
-			wantBaseUrl:   "https://localhost/api?param=1&param2=2",
+			wantBaseURL:   "https://localhost/api?param=1&param2=2",
 			wantTransport: http.DefaultTransport,
 		},
 	}
@@ -100,11 +103,11 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.config)
 			if tt.wantErr != nil {
-				assert.ErrorAs(t, err, &tt.wantErr)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, tt.wantBaseUrl, got.resty.BaseURL)
+				assert.Equal(t, tt.wantBaseURL, got.resty.BaseURL)
 				transport, err := got.resty.Transport()
 				require.NoError(t, err)
 				assert.Equal(t, tt.wantTransport, transport)
@@ -120,7 +123,7 @@ func TestClient_SaveMetric(t *testing.T) {
 		metricName  string
 		metricValue string
 		transport   roundTripFunction
-		wantApiErr  *response.APIError
+		wantAPIErr  *response.APIError
 		wantErr     error
 	}{
 		{
@@ -149,7 +152,7 @@ func TestClient_SaveMetric(t *testing.T) {
 				}), nil
 			}),
 			wantErr: newErrUnexpectedStatus(http.StatusBadRequest),
-			wantApiErr: &response.APIError{
+			wantAPIErr: &response.APIError{
 				Code:    http.StatusBadRequest,
 				Message: "Bad Request",
 				Details: []string{
@@ -185,8 +188,8 @@ func TestClient_SaveMetric(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			if tt.wantApiErr != nil {
-				assert.Equal(t, tt.wantApiErr, apiErr)
+			if tt.wantAPIErr != nil {
+				assert.Equal(t, tt.wantAPIErr, apiErr)
 			} else {
 				require.Nil(t, apiErr)
 			}
@@ -200,7 +203,7 @@ func TestClient_SaveMetricAsJSON(t *testing.T) {
 		request    *request.SaveMetricRequest
 		transport  roundTripFunction
 		want       *response.SaveMetricResponse
-		wantApiErr *response.APIError
+		wantAPIErr *response.APIError
 		wantErr    error
 	}{
 		{
@@ -240,7 +243,7 @@ func TestClient_SaveMetricAsJSON(t *testing.T) {
 				}), nil
 			}),
 			wantErr: newErrUnexpectedStatus(http.StatusBadRequest),
-			wantApiErr: &response.APIError{
+			wantAPIErr: &response.APIError{
 				Code:    http.StatusBadRequest,
 				Message: "Bad Request",
 				Details: []string{
@@ -278,8 +281,8 @@ func TestClient_SaveMetricAsJSON(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			if tt.wantApiErr != nil {
-				assert.Equal(t, tt.wantApiErr, apiErr)
+			if tt.wantAPIErr != nil {
+				assert.Equal(t, tt.wantAPIErr, apiErr)
 			} else {
 				require.Nil(t, apiErr)
 			}
@@ -299,7 +302,7 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 		request    []*request.SaveMetricRequest
 		transport  roundTripFunction
 		want       []*response.SaveMetricResponse
-		wantApiErr *response.APIError
+		wantAPIErr *response.APIError
 		wantErr    error
 	}{
 		{
@@ -339,7 +342,7 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 				}), nil
 			}),
 			wantErr: newErrUnexpectedStatus(http.StatusBadRequest),
-			wantApiErr: &response.APIError{
+			wantAPIErr: &response.APIError{
 				Code:    http.StatusBadRequest,
 				Message: "Bad Request",
 				Details: []string{
@@ -377,8 +380,8 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			if tt.wantApiErr != nil {
-				assert.Equal(t, tt.wantApiErr, apiErr)
+			if tt.wantAPIErr != nil {
+				assert.Equal(t, tt.wantAPIErr, apiErr)
 			} else {
 				require.Nil(t, apiErr)
 			}

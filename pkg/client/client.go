@@ -19,7 +19,7 @@ import (
 
 // This is a very simplified regular expression that will work in most cases.
 // In border cases, you can disable address verification through the config
-var addressRegex = regexp.MustCompile("^https?://[a-zA-Z0-9][a-zA-Z0-9-.]*(:\\d+)?(/[a-zA-Z0-9-_+%]*)*$")
+var addressRegex = regexp.MustCompile(`^https?://[a-zA-Z0-9][a-zA-Z0-9-.]*(:\d+)?(/[a-zA-Z0-9-_+%]*)*$`)
 
 type Client struct {
 	resty *resty.Client

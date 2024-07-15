@@ -12,6 +12,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/kind/memory"
+	responses "github.com/m1khal3v/gometheus/pkg/response"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -357,6 +358,284 @@ func TestSaveMetricJSON(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, string(expectedResponseBody), body)
 			}
+		})
+	}
+}
+
+func TestSaveMetricsJSON(t *testing.T) {
+	storage := memory.New()
+	server := httptest.NewServer(router.New(storage))
+	defer server.Close()
+	tests := []struct {
+		method             string
+		name               string
+		request            []saveMetricRequest
+		previous           []metric.Metric
+		expected           []metric.Metric
+		expectedStatusCode int
+	}{
+		{
+			name: "valid gauge",
+			request: []saveMetricRequest{
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Value:      123.321,
+				},
+				{
+					MetricName: "gauge2",
+					MetricType: "gauge",
+					Value:      321.123,
+				},
+			},
+			expected: []metric.Metric{
+				gauge.New("gauge", 123.321),
+				gauge.New("gauge2", 321.123),
+			},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "valid counter",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Delta:      123,
+				},
+				{
+					MetricName: "counter2",
+					MetricType: "counter",
+					Delta:      321,
+				},
+			},
+			expected: []metric.Metric{
+				counter.New("counter", 123),
+				counter.New("counter2", 321),
+			},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "valid multiple",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Delta:      123,
+				},
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Value:      321.123,
+				},
+			},
+			expected: []metric.Metric{
+				counter.New("counter", 123),
+				gauge.New("gauge", 321.123),
+			},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "update multiple",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Delta:      123,
+				},
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Value:      321.123,
+				},
+			},
+			expected: []metric.Metric{
+				counter.New("counter", 444),
+				gauge.New("gauge", 321.123),
+			},
+			previous: []metric.Metric{
+				counter.New("counter", 321),
+				gauge.New("gauge", 123.321),
+			},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "update multiple with collision",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Delta:      123,
+				},
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Value:      321.123,
+				},
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Delta:      444,
+				},
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Value:      333.333,
+				},
+			},
+			expected: []metric.Metric{
+				counter.New("counter", 888),
+				gauge.New("gauge", 333.333),
+			},
+			previous: []metric.Metric{
+				counter.New("counter", 321),
+				gauge.New("gauge", 123.321),
+			},
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			name: "invalid gauge field",
+			request: []saveMetricRequest{
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Delta:      123.321,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid counter field",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Value:      123,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid gauge value",
+			request: []saveMetricRequest{
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+					Value:      "abc",
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid counter value",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+					Delta:      123.321,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty gauge value",
+			request: []saveMetricRequest{
+				{
+					MetricName: "gauge",
+					MetricType: "gauge",
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty counter value",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "counter",
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty type",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "",
+					Delta:      123,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "empty name",
+			request: []saveMetricRequest{
+				{
+					MetricName: "",
+					MetricType: "counter",
+					Delta:      123,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "invalid type",
+			request: []saveMetricRequest{
+				{
+					MetricName: "counter",
+					MetricType: "invalid",
+					Delta:      123,
+				},
+			},
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			method: http.MethodGet,
+			name:   "invalid method",
+			request: []saveMetricRequest{{
+				MetricName: "gauge",
+				MetricType: "gauge",
+				Value:      123.321,
+			}},
+			expectedStatusCode: http.StatusMethodNotAllowed,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			method := tt.method
+			if method == "" {
+				method = http.MethodPost
+			}
+			if tt.previous != nil {
+				for _, metric := range tt.previous {
+					require.NoError(t, storage.Save(ctx, metric))
+				}
+			}
+
+			bytes, err := json.Marshal(tt.request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response, body := testRequest(t, server, method, "/updates", bytes)
+			err = response.Body.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, tt.expectedStatusCode, response.StatusCode)
+			if tt.expectedStatusCode == http.StatusOK {
+				expectedResponses := make([]*responses.SaveMetricResponse, 0)
+				for _, metric := range tt.expected {
+					expectedResponse, err := transformer.TransformToSaveResponse(metric)
+					require.NoError(t, err)
+					expectedResponses = append(expectedResponses, expectedResponse)
+				}
+				expectedResponseBody, err := json.Marshal(expectedResponses)
+				require.NoError(t, err)
+				assert.Equal(t, string(expectedResponseBody), body)
+			}
+			require.NoError(t, storage.Reset(ctx))
 		})
 	}
 }
