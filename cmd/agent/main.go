@@ -21,12 +21,7 @@ func main() {
 		zap.Uint64("batch_size", config.BatchSize),
 	)
 
-	if err := agent.Start(
-		config.Address,
-		config.PollInterval,
-		config.ReportInterval,
-		config.BatchSize,
-	); err != nil {
+	if err := agent.Start(config); err != nil {
 		logger.Logger.Fatal(err.Error())
 	}
 }

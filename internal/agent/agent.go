@@ -6,6 +6,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/agent/collector"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
+	"github.com/m1khal3v/gometheus/internal/agent/config"
 	"github.com/m1khal3v/gometheus/internal/agent/storage"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
@@ -65,13 +66,13 @@ func createCollectors() ([]collector.Collector, error) {
 	}, nil
 }
 
-func Start(address string, pollInterval, reportInterval uint32, batchSize uint64) error {
+func Start(config config.Config) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	storage := storage.New()
 	client, err := client.New(&client.Config{
-		Address: address,
+		Address: config.Address,
 	})
 	if err != nil {
 		return err
@@ -82,9 +83,9 @@ func Start(address string, pollInterval, reportInterval uint32, batchSize uint64
 		return err
 	}
 
-	hookSuspendSignals(ctx, cancel, storage, client, batchSize)
-	go collectMetrics(ctx, storage, collectors, pollInterval)
-	go processMetrics(ctx, storage, client, reportInterval, batchSize)
+	hookSuspendSignals(ctx, cancel, storage, client, config.BatchSize)
+	go collectMetrics(ctx, storage, collectors, config.PollInterval)
+	go processMetrics(ctx, storage, client, config.ReportInterval, config.BatchSize)
 
 	<-ctx.Done()
 

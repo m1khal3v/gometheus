@@ -5,9 +5,9 @@ import (
 )
 
 func Retry(
-	baseDelay time.Duration,
+	baseDelay,
 	maxDelay time.Duration,
-	attempts uint64,
+	attempts,
 	multiplier uint64,
 	function func() error,
 	filter func(err error) bool,

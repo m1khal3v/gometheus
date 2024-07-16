@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
@@ -15,24 +16,24 @@ import (
 	"syscall"
 )
 
-func Start(endpoint, fileStoragePath, databaseDriver, databaseDSN string, storeInterval uint32, restore bool) error {
+func Start(config config.Config) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	storage, err := factory.New(
 		ctx,
-		fileStoragePath,
-		databaseDriver,
-		databaseDSN,
-		storeInterval,
-		restore,
+		config.FileStoragePath,
+		config.DatabaseDriver,
+		config.DatabaseDSN,
+		config.StoreInterval,
+		config.Restore,
 	)
 	if err != nil {
 		return err
 	}
 
 	server := &http.Server{
-		Addr:    endpoint,
+		Addr:    config.Address,
 		Handler: router.New(storage),
 		BaseContext: func(listener net.Listener) context.Context {
 			return ctx

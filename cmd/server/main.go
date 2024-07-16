@@ -23,14 +23,7 @@ func main() {
 		zap.Bool("restore", config.Restore),
 	)
 
-	if err := server.Start(
-		config.Address,
-		config.FileStoragePath,
-		config.DatabaseDriver,
-		config.DatabaseDSN,
-		config.StoreInterval,
-		config.Restore,
-	); err != nil {
+	if err := server.Start(config); err != nil {
 		logger.Logger.Fatal(err.Error())
 	}
 }
