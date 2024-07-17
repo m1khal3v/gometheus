@@ -167,7 +167,7 @@ func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.Sav
 	return result.Result().(*response.SaveMetricResponse), nil, nil
 }
 
-func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error) {
+func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error) {
 	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(requests).

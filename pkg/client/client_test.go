@@ -299,15 +299,15 @@ func TestClient_SaveMetricAsJSON(t *testing.T) {
 func TestClient_SaveMetricsAsJSON(t *testing.T) {
 	tests := []struct {
 		name       string
-		request    []*request.SaveMetricRequest
+		request    []request.SaveMetricRequest
 		transport  roundTripFunction
-		want       []*response.SaveMetricResponse
+		want       []response.SaveMetricResponse
 		wantAPIErr *response.APIError
 		wantErr    error
 	}{
 		{
 			name: "valid",
-			request: []*request.SaveMetricRequest{{
+			request: []request.SaveMetricRequest{{
 				MetricName: "test_metric",
 				MetricType: "counter",
 				Delta:      ptr.To(int64(123)),
@@ -319,7 +319,7 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 					Delta:      ptr.To(int64(123)),
 				}}), nil
 			}),
-			want: []*response.SaveMetricResponse{{
+			want: []response.SaveMetricResponse{{
 				MetricType: "counter",
 				MetricName: "test_metric",
 				Delta:      ptr.To(int64(123)),
@@ -327,7 +327,7 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 		},
 		{
 			name: "api error",
-			request: []*request.SaveMetricRequest{{
+			request: []request.SaveMetricRequest{{
 				MetricName: "test_metric",
 				MetricType: "counter",
 				Delta:      ptr.To(int64(123)),
@@ -352,7 +352,7 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 		},
 		{
 			name: "transport error",
-			request: []*request.SaveMetricRequest{{
+			request: []request.SaveMetricRequest{{
 				MetricName: "test_metric",
 				MetricType: "counter",
 				Delta:      ptr.To(int64(123)),

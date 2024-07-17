@@ -113,7 +113,7 @@ func collectMetrics(ctx context.Context, storage *storage.Storage, collectors []
 }
 
 type apiClient interface {
-	SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error)
+	SaveMetricsAsJSON(ctx context.Context, requests []request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error)
 }
 
 func processMetrics(ctx context.Context, storage *storage.Storage, client apiClient, reportInterval uint32, batchSize uint64) {
@@ -130,7 +130,7 @@ func processMetrics(ctx context.Context, storage *storage.Storage, client apiCli
 
 func sendMetrics(ctx context.Context, storage *storage.Storage, client apiClient, batchSize uint64) {
 	storage.RemoveBatch(func(metrics []metric.Metric) bool {
-		requests := make([]*request.SaveMetricRequest, 0, len(metrics))
+		requests := make([]request.SaveMetricRequest, 0, len(metrics))
 		for _, metric := range metrics {
 			request, err := transformer.TransformToSaveRequest(metric)
 			if err != nil {
@@ -138,7 +138,7 @@ func sendMetrics(ctx context.Context, storage *storage.Storage, client apiClient
 				continue
 			}
 
-			requests = append(requests, request)
+			requests = append(requests, *request)
 		}
 
 		if _, apiErr, err := client.SaveMetricsAsJSON(ctx, requests); err != nil {
