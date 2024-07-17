@@ -7,6 +7,7 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 	"testing"
 )
@@ -39,15 +40,18 @@ func TestTransformToGetResponse(t *testing.T) {
 		{
 			name:    "invalid",
 			metric:  &invalidMetric{},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformToGetResponse(tt.metric)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Nil(t, got)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
+				require.NoError(t, err)
+				require.NotNil(t, got)
 				assert.Equal(t, tt.want, got)
 			}
 		})
@@ -82,15 +86,18 @@ func TestTransformToSaveRequest(t *testing.T) {
 		{
 			name:    "invalid",
 			metric:  &invalidMetric{},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformToSaveRequest(tt.metric)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Nil(t, got)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
+				require.NoError(t, err)
+				require.NotNil(t, got)
 				assert.Equal(t, tt.want, got)
 			}
 		})
@@ -125,15 +132,18 @@ func TestTransformToSaveResponse(t *testing.T) {
 		{
 			name:    "invalid",
 			metric:  &invalidMetric{},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := TransformToSaveResponse(tt.metric)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Nil(t, got)
+				assert.Equal(t, err, tt.wantErr)
 			} else {
+				require.NoError(t, err)
+				require.NotNil(t, got)
 				assert.Equal(t, tt.want, got)
 			}
 		})

@@ -3,17 +3,36 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 	"io"
 	"net/http"
+	"regexp"
+	"strings"
+	"time"
 )
+
+// This is a very simplified regular expression that will work in most cases.
+// In border cases, you can disable address verification through the config
+var addressRegex = regexp.MustCompile(`^https?://[a-zA-Z0-9][a-zA-Z0-9-.]*(:\d+)?(/[a-zA-Z0-9-_+%]*)*$`)
 
 type Client struct {
 	resty *resty.Client
+	retry bool
+}
+
+type Config struct {
+	Address   string
+	Transport http.RoundTripper
+
+	DisableCompress          bool
+	DisableAddressValidation bool
+	DisableRetry             bool
 }
 
 type ErrUnexpectedStatus struct {
@@ -21,26 +40,63 @@ type ErrUnexpectedStatus struct {
 }
 
 func (err ErrUnexpectedStatus) Error() string {
-	return fmt.Sprintf("Unexpected status code: %d", err.Status)
+	return fmt.Sprintf("unexpected status code: %d", err.Status)
 }
 
-func newUnexpectedStatusError(status int) ErrUnexpectedStatus {
+func newErrUnexpectedStatus(status int) ErrUnexpectedStatus {
 	return ErrUnexpectedStatus{
 		Status: status,
 	}
 }
 
-func New(endpoint string, compress bool) *Client {
+type ErrInvalidAddress struct {
+	Address string
+}
+
+func (err ErrInvalidAddress) Error() string {
+	return fmt.Sprintf("invalid address: %s", err.Address)
+}
+
+func newErrInvalidAddress(address string) ErrInvalidAddress {
+	return ErrInvalidAddress{
+		Address: address,
+	}
+}
+
+func New(config *Config) (*Client, error) {
+	if err := prepareConfig(config); err != nil {
+		return nil, err
+	}
+
 	client := resty.
 		New().
-		SetBaseURL(fmt.Sprintf("http://%s/", endpoint)).
+		SetTransport(config.Transport).
+		SetBaseURL(config.Address).
 		SetHeader("Accept-Encoding", "gzip")
 
-	if compress {
+	if !config.DisableCompress {
 		client.SetPreRequestHook(compressRequestBody)
 	}
 
-	return &Client{resty: client}
+	return &Client{resty: client, retry: !config.DisableRetry}, nil
+}
+
+func prepareConfig(config *Config) error {
+	if !config.DisableAddressValidation {
+		if !strings.HasPrefix(config.Address, "http") {
+			config.Address = "http://" + config.Address
+		}
+
+		if !addressRegex.MatchString(config.Address) {
+			return newErrInvalidAddress(config.Address)
+		}
+	}
+
+	if config.Transport == nil {
+		config.Transport = http.DefaultTransport
+	}
+
+	return nil
 }
 
 func compressRequestBody(client *resty.Client, request *http.Request) error {
@@ -70,50 +126,94 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 	return nil
 }
 
-func (client *Client) SaveMetric(metricType, metricName, metricValue string) error {
-	_, err := client.doRequest(client.createRequest().
+func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, metricValue string) (*response.APIError, error) {
+	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "text/plain").
 		SetPathParams(map[string]string{
 			"type":  metricType,
 			"name":  metricName,
 			"value": metricValue,
-		}),
+		}).
+		SetError(&response.APIError{}),
 		resty.MethodPost, "update/{type}/{name}/{value}")
 
 	if err != nil {
-		return err
+		if result.RawResponse == nil {
+			return nil, err
+		} else {
+			return result.Error().(*response.APIError), err
+		}
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (client *Client) SaveMetricAsJSON(request *request.SaveMetricRequest) (*response.SaveMetricResponse, error) {
-	result, err := client.doRequest(client.createRequest().
+func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.SaveMetricRequest) (*response.SaveMetricResponse, *response.APIError, error) {
+	result, err := client.doRequest(client.createRequest(ctx).
 		SetHeader("Content-Type", "application/json").
 		SetBody(request).
-		SetResult(&response.SaveMetricResponse{}),
+		SetResult(&response.SaveMetricResponse{}).
+		SetError(&response.APIError{}),
 		resty.MethodPost, "update")
 
 	if err != nil {
-		return nil, err
+		if result.RawResponse == nil {
+			return nil, nil, err
+		} else {
+			return nil, result.Error().(*response.APIError), err
+		}
 	}
 
-	return result.Result().(*response.SaveMetricResponse), nil
+	return result.Result().(*response.SaveMetricResponse), nil, nil
 }
 
-func (client *Client) createRequest() *resty.Request {
-	return client.resty.R()
+func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error) {
+	result, err := client.doRequest(client.createRequest(ctx).
+		SetHeader("Content-Type", "application/json").
+		SetBody(requests).
+		SetResult(&[]response.SaveMetricResponse{}).
+		SetError(&response.APIError{}),
+		resty.MethodPost, "updates")
+
+	if err != nil {
+		if result.RawResponse == nil {
+			return nil, nil, err
+		} else {
+			return nil, result.Error().(*response.APIError), err
+		}
+	}
+
+	return *result.Result().(*[]response.SaveMetricResponse), nil, nil
+}
+
+func (client *Client) createRequest(ctx context.Context) *resty.Request {
+	return client.resty.R().SetContext(ctx)
 }
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
-	result, err := request.Execute(method, url)
-	if err != nil {
-		return nil, err
+	var result *resty.Response = nil
+	do := func() error {
+		var err error
+		result, err = request.Execute(method, url)
+		if err != nil {
+			return err
+		}
+
+		if result.StatusCode() != http.StatusOK {
+			return newErrUnexpectedStatus(result.StatusCode())
+		}
+
+		return nil
 	}
 
-	if result.StatusCode() != http.StatusOK {
-		return nil, newUnexpectedStatusError(result.StatusCode())
+	var err error
+	if !client.retry {
+		err = do()
+	} else {
+		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
+			return !errors.As(err, &ErrUnexpectedStatus{})
+		})
 	}
 
-	return result, nil
+	return result, err
 }

@@ -6,7 +6,7 @@ import (
 )
 
 const ttl = 5 * time.Minute
-const deleteFrequency = 60 * time.Second
+const deleteFrequency = time.Minute
 
 type mutexItem struct {
 	mutex      *sync.Mutex

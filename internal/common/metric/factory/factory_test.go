@@ -6,6 +6,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/utils/ptr"
 	"testing"
 )
@@ -47,7 +48,7 @@ func TestNew(t *testing.T) {
 				name:       "test",
 				value:      "123.321",
 			},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 		{
 			name: "test invalid gauge",
@@ -56,7 +57,7 @@ func TestNew(t *testing.T) {
 				name:       "test",
 				value:      "abc123.321",
 			},
-			wantErr: newInvalidValueError("abc123.321"),
+			wantErr: newErrInvalidValue("abc123.321"),
 		},
 		{
 			name: "test invalid counter",
@@ -65,15 +66,18 @@ func TestNew(t *testing.T) {
 				name:       "test",
 				value:      "123.321",
 			},
-			wantErr: newInvalidValueError("123.321"),
+			wantErr: newErrInvalidValue("123.321"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := New(tt.args.metricType, tt.args.name, tt.args.value)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.Nil(t, got)
+				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
+				require.NoError(t, err)
+				require.NotNil(t, got)
 				assert.Equal(t, tt.want, got)
 			}
 		})
@@ -112,7 +116,7 @@ func TestNewFromRequest(t *testing.T) {
 				MetricType: "invalid",
 				Value:      ptr.To(123.321),
 			},
-			wantErr: newUnknownTypeError("invalid"),
+			wantErr: newErrUnknownType("invalid"),
 		},
 		{
 			name: "test nil gauge",
@@ -120,7 +124,7 @@ func TestNewFromRequest(t *testing.T) {
 				MetricName: "test",
 				MetricType: "gauge",
 			},
-			wantErr: newInvalidValueError("nil"),
+			wantErr: newErrInvalidValue("nil"),
 		},
 		{
 			name: "test nil counter",
@@ -128,14 +132,14 @@ func TestNewFromRequest(t *testing.T) {
 				MetricName: "test",
 				MetricType: "counter",
 			},
-			wantErr: newInvalidValueError("nil"),
+			wantErr: newErrInvalidValue("nil"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFromRequest(tt.request)
+			got, err := NewFromRequest(&tt.request)
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
 				assert.Equal(t, tt.want, got)
 			}

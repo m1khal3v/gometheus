@@ -1,8 +1,8 @@
 package runtime
 
 import (
+	"errors"
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
@@ -12,50 +12,61 @@ import (
 
 type Collector struct {
 	pollCount uint8
+	metrics   []string
+	memStats  *runtime.MemStats
 }
 
-func getCollectableMemStatsMetrics() []string {
-	return []string{
-		"Alloc",
-		"BuckHashSys",
-		"Frees",
-		"GCCPUFraction",
-		"GCSys",
-		"HeapAlloc",
-		"HeapIdle",
-		"HeapInuse",
-		"HeapObjects",
-		"HeapReleased",
-		"HeapSys",
-		"LastGC",
-		"Lookups",
-		"MCacheInuse",
-		"MCacheSys",
-		"MSpanInuse",
-		"MSpanSys",
-		"Mallocs",
-		"NextGC",
-		"NumForcedGC",
-		"NumGC",
-		"OtherSys",
-		"PauseTotalNs",
-		"StackInuse",
-		"StackSys",
-		"Sys",
-		"TotalAlloc",
+var ErrEmptyMetrics = errors.New("metrics are empty")
+
+type ErrInvalidMetricName struct {
+	Name string
+}
+
+func (err ErrInvalidMetricName) Error() string {
+	return fmt.Sprintf("invalid metric name: %s", err.Name)
+}
+
+func newErrInvalidMetricName(name string) error {
+	return &ErrInvalidMetricName{
+		Name: name,
 	}
 }
 
-func New() *Collector {
-	return &Collector{pollCount: 0}
+func New(metrics []string) (*Collector, error) {
+	if len(metrics) == 0 {
+		return nil, ErrEmptyMetrics
+	}
+
+	collector := &Collector{
+		pollCount: 0,
+		metrics:   metrics,
+		memStats:  &runtime.MemStats{},
+	}
+
+	if err := collector.validateMetricNames(); err != nil {
+		return nil, err
+	}
+
+	return collector, nil
+}
+
+func (collector *Collector) validateMetricNames() error {
+	var err error = nil
+
+	for _, name := range collector.metrics {
+		if !reflect.ValueOf(*collector.memStats).FieldByName(name).IsValid() {
+			err = errors.Join(err, newErrInvalidMetricName(name))
+		}
+	}
+
+	return err
 }
 
 func (collector *Collector) Collect() []metric.Metric {
-	memStats := &runtime.MemStats{}
-	runtime.ReadMemStats(memStats)
-	metrics := make([]metric.Metric, 0, 28)
-	for _, name := range getCollectableMemStatsMetrics() {
-		metrics = append(metrics, collector.collectMetric(memStats, name))
+	runtime.ReadMemStats(collector.memStats)
+	metrics := make([]metric.Metric, 0)
+	for _, name := range collector.metrics {
+		metrics = append(metrics, collector.collectMetric(name))
 	}
 	metrics = append(metrics, collector.getPollCount())
 	collector.refreshPollCount()
@@ -63,12 +74,8 @@ func (collector *Collector) Collect() []metric.Metric {
 	return metrics
 }
 
-func (collector *Collector) collectMetric(memStats *runtime.MemStats, name string) metric.Metric {
-	field := reflect.ValueOf(*memStats).FieldByName(name)
-	if !field.IsValid() {
-		logger.Logger.Panic(fmt.Sprintf("Property '%s' not found in memStats", name))
-	}
-
+func (collector *Collector) collectMetric(name string) metric.Metric {
+	field := reflect.ValueOf(*collector.memStats).FieldByName(name)
 	collector.pollCount = collector.pollCount + 1
 
 	return gauge.New(

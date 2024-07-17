@@ -10,6 +10,7 @@ type Config struct {
 	PollInterval   uint32 `env:"POLL_INTERVAL"`
 	ReportInterval uint32 `env:"REPORT_INTERVAL"`
 	LogLevel       string `env:"LOG_LEVEL"`
+	BatchSize      uint64 `env:"BATCH_SIZE"`
 }
 
 func ParseConfig() *Config {
@@ -18,6 +19,7 @@ func ParseConfig() *Config {
 	flag.Uint32VarP(&config.PollInterval, "poll-interval", "p", 2, "interval of collecting metrics")
 	flag.Uint32VarP(&config.ReportInterval, "report-interval", "r", 10, "interval of reporting metrics")
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
+	flag.Uint64VarP(&config.BatchSize, "batch-size", "b", 200, "number of metrics sent within one request")
 	flag.Parse()
 	if err := env.Parse(config); err != nil {
 		panic(err)
