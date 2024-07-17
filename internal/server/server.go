@@ -35,7 +35,7 @@ func Start(config *config.Config) error {
 
 	server := &http.Server{
 		Addr:    config.Address,
-		Handler: router.New(storage),
+		Handler: router.New(storage, config.Key),
 	}
 
 	go func() {
@@ -46,7 +46,7 @@ func Start(config *config.Config) error {
 
 	select {
 	case <-errCtx.Done():
-		return errCtx.Err()
+		return context.Cause(errCtx)
 	case <-suspendCtx.Done():
 		logger.Logger.Info("Received suspend signal. Trying to shutdown gracefully...")
 

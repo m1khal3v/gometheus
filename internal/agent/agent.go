@@ -105,7 +105,7 @@ func collectMetrics(ctx context.Context, storage *storage.Storage, collectors []
 				case <-ctx.Done():
 					return
 				default:
-					storage.Append(collector.Collect())
+					go storage.Append(collector.Collect())
 				}
 			}
 		}
