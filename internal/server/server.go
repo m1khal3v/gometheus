@@ -3,25 +3,23 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
-	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
-	"net"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 )
 
-func Start(config config.Config) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func Start(config *config.Config) error {
+	ctx := context.Background()
+
+	suspendCtx, suspendCancel := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer suspendCancel()
 
 	storage, err := factory.New(
-		ctx,
+		suspendCtx,
 		config.FileStoragePath,
 		config.DatabaseDriver,
 		config.DatabaseDSN,
@@ -32,30 +30,25 @@ func Start(config config.Config) error {
 		return err
 	}
 
+	errCtx, errCancel := context.WithCancelCause(ctx)
+	defer errCancel(nil)
+
 	server := &http.Server{
 		Addr:    config.Address,
 		Handler: router.New(storage),
-		BaseContext: func(listener net.Listener) context.Context {
-			return ctx
-		},
-	}
-	hookSuspendSignals(ctx, cancel, storage, server)
-
-	if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		return err
 	}
 
-	<-ctx.Done()
-
-	return nil
-}
-
-func hookSuspendSignals(ctx context.Context, cancel context.CancelFunc, storage storage.Storage, server *http.Server) {
-	signalChannel := make(chan os.Signal, 1)
-	signal.Notify(signalChannel, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func() {
-		signal := <-signalChannel
-		logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			errCancel(err)
+		}
+	}()
+
+	select {
+	case <-errCtx.Done():
+		return errCtx.Err()
+	case <-suspendCtx.Done():
+		logger.Logger.Info("Received suspend signal. Trying to shutdown gracefully...")
 
 		if err := storage.Close(ctx); err != nil {
 			logger.Logger.Error(err.Error())
@@ -66,9 +59,9 @@ func hookSuspendSignals(ctx context.Context, cancel context.CancelFunc, storage 
 		if err := server.Shutdown(ctx); err != nil {
 			logger.Logger.Error(err.Error())
 		} else {
-			logger.Logger.Info("Server shutdown successfully")
+			logger.Logger.Info("Server was shutdown successfully")
 		}
 
-		cancel()
-	}()
+		return nil
+	}
 }

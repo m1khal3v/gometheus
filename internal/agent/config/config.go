@@ -13,8 +13,8 @@ type Config struct {
 	BatchSize      uint64 `env:"BATCH_SIZE"`
 }
 
-func ParseConfig() Config {
-	config := Config{}
+func ParseConfig() *Config {
+	config := &Config{}
 	flag.StringVarP(&config.Address, "address", "a", "localhost:8080", "address of gometheus server")
 	flag.Uint32VarP(&config.PollInterval, "poll-interval", "p", 2, "interval of collecting metrics")
 	flag.Uint32VarP(&config.ReportInterval, "report-interval", "r", 10, "interval of reporting metrics")

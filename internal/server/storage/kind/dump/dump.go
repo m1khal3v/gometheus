@@ -16,10 +16,10 @@ import (
 )
 
 type Storage struct {
-	storage  storage.Storage
-	filepath string
-	sync     bool
-	mutex    sync.Mutex
+	storage storage.Storage
+	file    *os.File
+	sync    bool
+	mutex   sync.Mutex
 }
 
 func New(ctx context.Context, storage storage.Storage, filepath string, storeInterval uint32, restore bool) (*Storage, error) {
@@ -27,14 +27,15 @@ func New(ctx context.Context, storage storage.Storage, filepath string, storeInt
 		panic("Decorated storage cannot be nil")
 	}
 
-	if filepath == "" {
-		panic("Dump file path cannot be empty")
+	file, err := openFile(filepath)
+	if err != nil {
+		return nil, err
 	}
 
 	decorator := &Storage{
-		storage:  storage,
-		filepath: filepath,
-		sync:     storeInterval == 0,
+		storage: storage,
+		file:    file,
+		sync:    storeInterval == 0,
 	}
 
 	if restore {
@@ -102,6 +103,10 @@ func (storage *Storage) Close(ctx context.Context) error {
 		return err
 	}
 
+	if err := storage.file.Close(); err != nil {
+		return err
+	}
+
 	return storage.storage.Close(ctx)
 }
 
@@ -125,17 +130,9 @@ func (storage *Storage) dump(ctx context.Context) error {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
 
-	var file *os.File
-	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
-		var err error
-		file, err = os.OpenFile(storage.filepath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-		return err
-	}, storage.isRetryableError)
-	if err != nil {
+	if err := truncateFile(storage.file); err != nil {
 		return err
 	}
-
-	defer file.Close()
 
 	allMetrics, err := storage.storage.GetAll(ctx)
 	if err != nil {
@@ -153,7 +150,7 @@ func (storage *Storage) dump(ctx context.Context) error {
 			return err
 		}
 
-		if _, err := file.Write(append(jsonMetric, "\n"...)); err != nil {
+		if _, err := storage.file.Write(append(jsonMetric, "\n"...)); err != nil {
 			return err
 		}
 	}
@@ -162,17 +159,11 @@ func (storage *Storage) dump(ctx context.Context) error {
 }
 
 func (storage *Storage) restoreFromFile(ctx context.Context) error {
-	file, err := os.OpenFile(storage.filepath, os.O_RDONLY|os.O_CREATE, 0666)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
 	if err := storage.storage.Reset(ctx); err != nil {
 		return err
 	}
 
-	reader := bufio.NewScanner(file)
+	reader := bufio.NewScanner(storage.file)
 	for reader.Scan() {
 		if reader.Text() == "" {
 			continue
@@ -196,7 +187,33 @@ func (storage *Storage) restoreFromFile(ctx context.Context) error {
 	return nil
 }
 
-func (storage *Storage) isRetryableError(err error) bool {
+func openFile(filepath string) (*os.File, error) {
+	var file *os.File
+	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
+		var err error
+		file, err = os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
+		return err
+	}, isRetryableError)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
+func truncateFile(file *os.File) error {
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	if err := file.Truncate(0); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isRetryableError(err error) bool {
 	var pathErr *os.PathError
 	if !errors.As(err, &pathErr) {
 		return false

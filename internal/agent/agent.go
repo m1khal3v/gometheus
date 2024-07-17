@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"github.com/m1khal3v/gometheus/internal/agent/collector"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
@@ -15,7 +14,6 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"go.uber.org/zap"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -66,9 +64,9 @@ func createCollectors() ([]collector.Collector, error) {
 	}, nil
 }
 
-func Start(config config.Config) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func Start(config *config.Config) error {
+	ctx := context.Background()
+	suspendCtx, _ := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	storage := storage.New()
 	client, err := client.New(&client.Config{
@@ -83,11 +81,14 @@ func Start(config config.Config) error {
 		return err
 	}
 
-	hookSuspendSignals(ctx, cancel, storage, client, config.BatchSize)
-	go collectMetrics(ctx, storage, collectors, config.PollInterval)
-	go processMetrics(ctx, storage, client, config.ReportInterval, config.BatchSize)
+	go collectMetrics(suspendCtx, storage, collectors, config.PollInterval)
+	go processMetrics(suspendCtx, storage, client, config.ReportInterval, config.BatchSize)
 
-	<-ctx.Done()
+	<-suspendCtx.Done()
+
+	logger.Logger.Info("Received suspend signal. Trying to send collected metrics...")
+	sendMetrics(ctx, storage, client, config.BatchSize)
+	logger.Logger.Info("Agent successfully suspended")
 
 	return nil
 }
@@ -112,7 +113,7 @@ func collectMetrics(ctx context.Context, storage *storage.Storage, collectors []
 }
 
 type apiClient interface {
-	SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]*response.SaveMetricResponse, *response.APIError, error)
+	SaveMetricsAsJSON(ctx context.Context, requests []*request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error)
 }
 
 func processMetrics(ctx context.Context, storage *storage.Storage, client apiClient, reportInterval uint32, batchSize uint64) {
@@ -154,18 +155,4 @@ func sendMetrics(ctx context.Context, storage *storage.Storage, client apiClient
 
 		return true
 	}, batchSize)
-}
-
-func hookSuspendSignals(ctx context.Context, cancel context.CancelFunc, storage *storage.Storage, client apiClient, batchSize uint64) {
-	signalChannel := make(chan os.Signal, 1)
-	signal.Notify(signalChannel, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func() {
-		signal := <-signalChannel
-		logger.Logger.Info(fmt.Sprintf("Received suspend signal: %s", signal.String()))
-		logger.Logger.Info("Trying to send collected metrics...")
-		sendMetrics(ctx, storage, client, batchSize)
-		logger.Logger.Info("Agent successfully suspended")
-
-		cancel()
-	}()
 }

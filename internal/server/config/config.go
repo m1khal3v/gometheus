@@ -15,8 +15,8 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
-func ParseConfig() Config {
-	config := Config{}
+func ParseConfig() *Config {
+	config := &Config{}
 	flag.StringVarP(&config.Address, "address", "a", "localhost:8080", "address of gometheus server")
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
 	flag.Uint32VarP(&config.StoreInterval, "store-interval", "i", 300, "dump metrics to file interval in seconds")
