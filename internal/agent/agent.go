@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"crypto/sha256"
 	"github.com/m1khal3v/gometheus/internal/agent/collector"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
@@ -71,6 +72,11 @@ func Start(config *config.Config) error {
 	storage := storage.New()
 	client, err := client.New(&client.Config{
 		Address: config.Address,
+		Signature: &client.SignatureConfig{
+			Key:    config.Key,
+			Hash:   sha256.New,
+			Header: "HashSHA256",
+		},
 	})
 	if err != nil {
 		return err

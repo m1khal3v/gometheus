@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/hmac"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"github.com/m1khal3v/gometheus/pkg/retry"
+	"hash"
 	"io"
 	"net/http"
 	"regexp"
@@ -26,14 +29,23 @@ type Client struct {
 	retry bool
 }
 
+type SignatureConfig struct {
+	Key    string
+	Hash   func() hash.Hash
+	Header string
+}
+
 type Config struct {
 	Address   string
 	Transport http.RoundTripper
+	Signature *SignatureConfig
 
 	DisableCompress          bool
 	DisableAddressValidation bool
 	DisableRetry             bool
 }
+
+type preRequestHook func(config *Config, request *http.Request) error
 
 type ErrUnexpectedStatus struct {
 	Status int
@@ -74,9 +86,15 @@ func New(config *Config) (*Client, error) {
 		SetBaseURL(config.Address).
 		SetHeader("Accept-Encoding", "gzip")
 
+	hooks := make([]preRequestHook, 0)
 	if !config.DisableCompress {
-		client.SetPreRequestHook(compressRequestBody)
+		hooks = append(hooks, compressRequestBody)
 	}
+	if config.Signature.Key != "" && config.Signature.Hash != nil && config.Signature.Header != "" {
+		hooks = append(hooks, addHMACSignature)
+	}
+
+	client.SetPreRequestHook(preRequestHookCombine(config, hooks...))
 
 	return &Client{resty: client, retry: !config.DisableRetry}, nil
 }
@@ -99,12 +117,24 @@ func prepareConfig(config *Config) error {
 	return nil
 }
 
-func compressRequestBody(client *resty.Client, request *http.Request) error {
+func preRequestHookCombine(config *Config, functions ...preRequestHook) resty.PreRequestHook {
+	return func(client *resty.Client, request *http.Request) error {
+		for _, function := range functions {
+			if err := function(config, request); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func compressRequestBody(config *Config, request *http.Request) error {
 	if request.Body == nil {
 		return nil
 	}
 
-	buffer := new(bytes.Buffer)
+	buffer := bytes.NewBuffer([]byte{})
 	writer, err := gzip.NewWriterLevel(buffer, 5)
 	if err != nil {
 		return err
@@ -122,6 +152,29 @@ func compressRequestBody(client *resty.Client, request *http.Request) error {
 	request.ContentLength = int64(buffer.Len())
 	request.Header.Set("Content-Encoding", "gzip")
 	request.Header.Set("Content-Length", fmt.Sprintf("%d", buffer.Len()))
+
+	return nil
+}
+
+func addHMACSignature(config *Config, request *http.Request) error {
+	buffer := bytes.NewBuffer([]byte{})
+
+	if request.Body != nil {
+		_, err := io.Copy(buffer, request.Body)
+		if err = errors.Join(err, request.Body.Close()); err != nil {
+			return err
+		}
+	}
+
+	request.Body = io.NopCloser(buffer)
+	request.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
+	}
+
+	request.Header.Set(config.Signature.Header, hex.EncodeToString(hmac.
+		New(config.Signature.Hash, []byte(config.Signature.Key)).
+		Sum(buffer.Bytes()),
+	))
 
 	return nil
 }

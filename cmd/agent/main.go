@@ -19,6 +19,7 @@ func main() {
 		zap.Uint32("poll_interval", config.PollInterval),
 		zap.Uint32("report_interval", config.ReportInterval),
 		zap.Uint64("batch_size", config.BatchSize),
+		zap.Bool("key", config.Key != ""),
 	)
 
 	if err := agent.Start(config); err != nil {
