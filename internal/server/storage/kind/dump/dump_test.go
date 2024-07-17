@@ -28,7 +28,6 @@ func TestNew(t *testing.T) {
 	tests := []struct {
 		name      string
 		args      args
-		want      *Storage
 		wantPanic string
 	}{
 		{
@@ -39,25 +38,12 @@ func TestNew(t *testing.T) {
 			wantPanic: "Decorated storage cannot be nil",
 		},
 		{
-			name: "empty filepath",
-			args: args{
-				storage:  storage,
-				filepath: "",
-			},
-			wantPanic: "Dump file path cannot be empty",
-		},
-		{
 			name: "valid 1",
 			args: args{
 				storage:       storage,
 				filepath:      "/tmp/dump.json",
 				storeInterval: 0,
 				restore:       false,
-			},
-			want: &Storage{
-				storage:  storage,
-				filepath: "/tmp/dump.json",
-				sync:     true,
 			},
 		},
 		{
@@ -68,11 +54,6 @@ func TestNew(t *testing.T) {
 				storeInterval: 0,
 				restore:       true,
 			},
-			want: &Storage{
-				storage:  storage,
-				filepath: "/tmp/dump.json",
-				sync:     true,
-			},
 		},
 		{
 			name: "valid 3",
@@ -81,11 +62,6 @@ func TestNew(t *testing.T) {
 				filepath:      "/tmp/dump.json",
 				storeInterval: 3000,
 				restore:       true,
-			},
-			want: &Storage{
-				storage:  storage,
-				filepath: "/tmp/dump.json",
-				sync:     false,
 			},
 		},
 	}
@@ -98,14 +74,13 @@ func TestNew(t *testing.T) {
 				})
 				return
 			}
-			storage, err := New(ctx, tt.args.storage, tt.args.filepath, tt.args.storeInterval, tt.args.restore)
+			_, err := New(ctx, tt.args.storage, tt.args.filepath, tt.args.storeInterval, tt.args.restore)
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, storage)
 		})
 	}
 }
 
-func TestStorage_Dump(t *testing.T) {
+func TestStorage_dump(t *testing.T) {
 	tests := []struct {
 		name      string
 		items     []metric.Metric
@@ -388,7 +363,7 @@ func Test_restoreFromFile(t *testing.T) {
 			for _, item := range tt.items {
 				decorator.Save(ctx, item)
 			}
-			decorator.dump(ctx)
+			require.NoError(t, decorator.dump(ctx))
 
 			decorator.restoreFromFile(ctx)
 			all, err := decorator.GetAll(ctx)

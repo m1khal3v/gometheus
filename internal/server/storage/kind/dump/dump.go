@@ -130,12 +130,16 @@ func (storage *Storage) dump(ctx context.Context) error {
 	storage.mutex.Lock()
 	defer storage.mutex.Unlock()
 
-	if err := truncateFile(storage.file); err != nil {
+	allMetrics, err := storage.storage.GetAll(ctx)
+	if err != nil {
 		return err
 	}
 
-	allMetrics, err := storage.storage.GetAll(ctx)
-	if err != nil {
+	if _, err := storage.file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	if err := storage.file.Truncate(0); err != nil {
 		return err
 	}
 
@@ -160,6 +164,10 @@ func (storage *Storage) dump(ctx context.Context) error {
 
 func (storage *Storage) restoreFromFile(ctx context.Context) error {
 	if err := storage.storage.Reset(ctx); err != nil {
+		return err
+	}
+
+	if _, err := storage.file.Seek(0, 0); err != nil {
 		return err
 	}
 
@@ -199,18 +207,6 @@ func openFile(filepath string) (*os.File, error) {
 	}
 
 	return file, nil
-}
-
-func truncateFile(file *os.File) error {
-	if _, err := file.Seek(0, 0); err != nil {
-		return err
-	}
-
-	if err := file.Truncate(0); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func isRetryableError(err error) bool {
