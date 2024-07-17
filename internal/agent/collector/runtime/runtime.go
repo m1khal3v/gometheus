@@ -13,7 +13,6 @@ import (
 type Collector struct {
 	pollCount uint8
 	metrics   []string
-	memStats  *runtime.MemStats
 }
 
 var ErrEmptyMetrics = errors.New("metrics are empty")
@@ -40,7 +39,6 @@ func New(metrics []string) (*Collector, error) {
 	collector := &Collector{
 		pollCount: 0,
 		metrics:   metrics,
-		memStats:  &runtime.MemStats{},
 	}
 
 	if err := collector.validateMetricNames(); err != nil {
@@ -52,9 +50,10 @@ func New(metrics []string) (*Collector, error) {
 
 func (collector *Collector) validateMetricNames() error {
 	var err error = nil
+	memStats := runtime.MemStats{}
 
 	for _, name := range collector.metrics {
-		if !reflect.ValueOf(*collector.memStats).FieldByName(name).IsValid() {
+		if !reflect.ValueOf(memStats).FieldByName(name).IsValid() {
 			err = errors.Join(err, newErrInvalidMetricName(name))
 		}
 	}
@@ -63,19 +62,22 @@ func (collector *Collector) validateMetricNames() error {
 }
 
 func (collector *Collector) Collect() []metric.Metric {
-	runtime.ReadMemStats(collector.memStats)
+	memStats := runtime.MemStats{}
+	runtime.ReadMemStats(&memStats)
+
 	metrics := make([]metric.Metric, 0)
 	for _, name := range collector.metrics {
-		metrics = append(metrics, collector.collectMetric(name))
+		metrics = append(metrics, collector.collectMetric(memStats, name))
 	}
 	metrics = append(metrics, collector.getPollCount())
+
 	collector.refreshPollCount()
 
 	return metrics
 }
 
-func (collector *Collector) collectMetric(name string) metric.Metric {
-	field := reflect.ValueOf(*collector.memStats).FieldByName(name)
+func (collector *Collector) collectMetric(memStats runtime.MemStats, name string) metric.Metric {
+	field := reflect.ValueOf(memStats).FieldByName(name)
 	collector.pollCount = collector.pollCount + 1
 
 	return gauge.New(

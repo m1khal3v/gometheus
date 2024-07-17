@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"runtime"
 	"testing"
 )
 
@@ -22,8 +21,7 @@ func TestNew(t *testing.T) {
 				"Frees",
 			},
 			want: &Collector{
-				metrics:  []string{"Sys", "Frees"},
-				memStats: &runtime.MemStats{},
+				metrics: []string{"Sys", "Frees"},
 			},
 			wantErr: nil,
 		},
