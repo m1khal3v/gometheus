@@ -90,7 +90,10 @@ func New(config *Config) (*Client, error) {
 	if !config.DisableCompress {
 		hooks = append(hooks, compressRequestBody)
 	}
-	if config.Signature.Key != "" && config.Signature.Hash != nil && config.Signature.Header != "" {
+	if config.Signature != nil &&
+		config.Signature.Key != "" &&
+		config.Signature.Hash != nil &&
+		config.Signature.Header != "" {
 		hooks = append(hooks, addHMACSignature)
 	}
 
