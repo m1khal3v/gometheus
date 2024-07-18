@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -90,7 +91,10 @@ func TestCollector_Collect(t *testing.T) {
 			collector, err := New(tt.metrics)
 			require.NoError(t, err)
 
-			metrics := collector.Collect()
+			metrics := make([]metric.Metric, 0)
+			for metric := range collector.Collect() {
+				metrics = append(metrics, metric)
+			}
 			assert.Len(t, metrics, len(tt.metrics)+1)
 			for _, metric := range metrics {
 				if metric.Name() == "PollCount" {

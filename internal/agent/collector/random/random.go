@@ -39,12 +39,19 @@ func New(min, max float64) (*Collector, error) {
 	}, nil
 }
 
-func (collector *Collector) Collect() []metric.Metric {
-	return []metric.Metric{gauge.New(
-		"RandomValue",
-		// since rand.Float64 returns a value from 0 to 1 and does not support Min/Max
-		// correct this by multiplying the value by the difference between Max and Min and adding Min to the result
-		// the final value will be in the range from Min to Max including both values
-		rand.Float64()*(collector.max-collector.min)+collector.min,
-	)}
+func (collector *Collector) Collect() <-chan metric.Metric {
+	channel := make(chan metric.Metric, 1)
+
+	go func() {
+		channel <- gauge.New(
+			"RandomValue",
+			// since rand.Float64 returns a value from 0 to 1 and does not support Min/Max
+			// correct this by multiplying the value by the difference between Max and Min and adding Min to the result
+			// the final value will be in the range from Min to Max including both values
+			rand.Float64()*(collector.max-collector.min)+collector.min,
+		)
+		close(channel)
+	}()
+
+	return channel
 }
