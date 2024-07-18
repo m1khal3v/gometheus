@@ -14,8 +14,10 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/client"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"github.com/m1khal3v/gometheus/pkg/semaphore"
 	"go.uber.org/zap"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -87,37 +89,45 @@ func Start(config *config.Config) error {
 		return err
 	}
 
-	go collectMetrics(suspendCtx, queue, collectors, config.PollInterval)
-	go processMetrics(suspendCtx, queue, client, config.ReportInterval, config.BatchSize)
+	semaphore := semaphore.New(config.RateLimit)
+
+	go collectMetricsWithInterval(suspendCtx, queue, collectors, config.PollInterval)
+	go processMetricsWithInterval(suspendCtx, queue, client, semaphore, config.ReportInterval, config.BatchSize)
 
 	<-suspendCtx.Done()
 
-	logger.Logger.Info("Received suspend signal. Trying to send collected metrics...")
-	sendMetrics(ctx, queue, client, config.BatchSize)
+	logger.Logger.Info("Received suspend signal. Trying to process already collected metrics...")
+	processMetrics(ctx, queue, client, semaphore, config.BatchSize)
 	logger.Logger.Info("Agent successfully suspended")
 
 	return nil
 }
 
-func collectMetrics(ctx context.Context, queue *queue.Queue, collectors []collector.Collector, pollInterval uint32) {
+func collectMetricsWithInterval(ctx context.Context, queue *queue.Queue, collectors []collector.Collector, pollInterval uint32) {
 	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for _, item := range collectors {
-				collector := item
+			collectMetrics(ctx, queue, collectors)
+		}
+	}
+}
 
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					go func() {
-						queue.Push(collector.Collect())
-					}()
+func collectMetrics(ctx context.Context, queue *queue.Queue, collectors []collector.Collector) {
+	for _, item := range collectors {
+		collector := item
+
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			go func() {
+				for metric := range collector.Collect() {
+					queue.Push(metric)
 				}
-			}
+			}()
 		}
 	}
 }
@@ -126,30 +136,62 @@ type apiClient interface {
 	SaveMetricsAsJSON(ctx context.Context, requests []request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error)
 }
 
-func processMetrics(ctx context.Context, queue *queue.Queue, client apiClient, reportInterval uint32, batchSize uint64) {
+func processMetricsWithInterval(ctx context.Context, queue *queue.Queue, client apiClient, semaphore *semaphore.Semaphore, reportInterval uint32, batchSize uint64) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			sendMetrics(ctx, queue, client, batchSize)
+			processMetrics(ctx, queue, client, semaphore, batchSize)
 		}
 	}
 }
 
-func sendMetrics(ctx context.Context, queue *queue.Queue, client apiClient, batchSize uint64) {
-	processed := make([]metric.Metric, 0, batchSize)
-	requests := make([]request.SaveMetricRequest, 0, batchSize)
+func processMetrics(ctx context.Context, queue *queue.Queue, client apiClient, semaphore *semaphore.Semaphore, batchSize uint64) {
+	var waitGroup sync.WaitGroup
 
-	for metric := range queue.Pop(batchSize) {
-		request, err := transformer.TransformToSaveRequest(metric)
-		if err != nil {
-			logger.Logger.Error(err.Error())
-			continue
+	for queue.Count() > 0 {
+		select {
+		case <-ctx.Done():
+			return
+		case <-semaphore.Acquire():
+			break
 		}
 
-		processed = append(processed, metric)
+		metrics := queue.Pop(batchSize)
+		waitGroup.Add(1)
+
+		go func() {
+			defer waitGroup.Done()
+			defer semaphore.Release()
+
+			if err := sendMetrics(ctx, client, metrics); err != nil {
+				for _, metric := range metrics {
+					queue.Push(metric)
+				}
+			}
+		}()
+	}
+
+	waitGroup.Wait()
+}
+
+func sendMetrics(ctx context.Context, client apiClient, metrics []metric.Metric) error {
+	count := len(metrics)
+	if count == 0 {
+		return nil
+	}
+
+	requests := make([]request.SaveMetricRequest, 0, count)
+	for _, metric := range metrics {
+		request, err := transformer.TransformToSaveRequest(metric)
+		if err != nil {
+			logger.Logger.Panic(err.Error())
+
+			return err
+		}
+
 		requests = append(requests, *request)
 	}
 
@@ -163,6 +205,8 @@ func sendMetrics(ctx context.Context, queue *queue.Queue, client apiClient, batc
 			)
 		}
 
-		queue.PushSlice(processed)
+		return err
 	}
+
+	return nil
 }

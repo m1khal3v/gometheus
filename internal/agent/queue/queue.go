@@ -14,32 +14,29 @@ func New(size uint64) *Queue {
 	}
 }
 
-func (queue *Queue) Push(metrics <-chan metric.Metric) {
-	for metric := range metrics {
-		queue.items <- metric.Clone()
-	}
+func (queue *Queue) Push(metric metric.Metric) {
+	queue.items <- metric.Clone()
 }
 
-func (queue *Queue) PushSlice(metrics []metric.Metric) {
-	for _, metric := range metrics {
-		queue.items <- metric.Clone()
-	}
-}
-
-func (queue *Queue) Pop(count uint64) <-chan metric.Metric {
-	channel := make(chan metric.Metric, count)
-	if count == 0 {
-		close(channel)
-		return channel
+func (queue *Queue) Pop(count uint64) []metric.Metric {
+	if count == 0 || len(queue.items) == 0 {
+		return []metric.Metric{}
 	}
 
-	go func() {
-		for i := uint64(0); i < count; i++ {
-			channel <- <-queue.items
+	metrics := make([]metric.Metric, 0, count)
+
+	for i := uint64(0); i < count; i++ {
+		select {
+		case metric := <-queue.items:
+			metrics = append(metrics, metric)
+		default:
+			break
 		}
+	}
 
-		close(channel)
-	}()
+	return metrics
+}
 
-	return channel
+func (queue *Queue) Count() uint64 {
+	return uint64(len(queue.items))
 }
