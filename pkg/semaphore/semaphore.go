@@ -1,5 +1,7 @@
 package semaphore
 
+import "context"
+
 type Semaphore struct {
 	channel chan struct{}
 }
@@ -19,10 +21,13 @@ func New(max uint64) *Semaphore {
 	}
 }
 
-// Acquire implementation of a semaphore with the ability to use inside a select block
-// requires reading one message from the channel to Acquire once
-func (semaphore *Semaphore) Acquire() <-chan struct{} {
-	return semaphore.channel
+func (semaphore *Semaphore) Acquire(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return context.Cause(ctx)
+	case <-semaphore.channel:
+		return nil
+	}
 }
 
 func (semaphore *Semaphore) Release() {

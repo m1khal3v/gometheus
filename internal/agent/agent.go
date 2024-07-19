@@ -178,15 +178,11 @@ func processMetrics(ctx context.Context, queue *queue.Queue, client apiClient, s
 	var errGroup errgroup.Group
 
 	for queue.Count() > 0 {
-		select {
-		case <-ctx.Done():
-			return context.Cause(ctx)
-		case <-semaphore.Acquire():
-			break
+		if err := semaphore.Acquire(ctx); err != nil {
+			return err
 		}
 
 		metrics := queue.Pop(batchSize)
-
 		errGroup.Go(func() error {
 			defer semaphore.Release()
 
