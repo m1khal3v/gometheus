@@ -9,11 +9,11 @@ import (
 	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
 	"github.com/m1khal3v/gometheus/internal/agent/config"
-	"github.com/m1khal3v/gometheus/internal/agent/queue"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	"github.com/m1khal3v/gometheus/pkg/client"
+	"github.com/m1khal3v/gometheus/pkg/queue"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"github.com/m1khal3v/gometheus/pkg/semaphore"
@@ -68,6 +68,9 @@ func createCollectors() ([]collector.Collector, error) {
 		"FreeMemory":     gopsutil.MetricFreeMemory,
 		"CPUUtilization": gopsutil.MetricCPUUtilization,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return []collector.Collector{
 		runtimeCollector,
@@ -80,7 +83,7 @@ func Start(config *config.Config) error {
 	ctx := context.Background()
 	suspendCtx, _ := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	queue := queue.New(10000)
+	queue := queue.New[metric.Metric](10000)
 	client, err := client.New(&client.Config{
 		Address: config.Address,
 		Signature: &client.SignatureConfig{
@@ -114,7 +117,7 @@ func Start(config *config.Config) error {
 	return nil
 }
 
-func collectMetricsWithInterval(ctx context.Context, queue *queue.Queue, collectors []collector.Collector, pollInterval uint32) {
+func collectMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.Metric], collectors []collector.Collector, pollInterval uint32) {
 	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	for {
 		select {
@@ -128,7 +131,7 @@ func collectMetricsWithInterval(ctx context.Context, queue *queue.Queue, collect
 	}
 }
 
-func collectMetrics(ctx context.Context, queue *queue.Queue, collectors []collector.Collector) error {
+func collectMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], collectors []collector.Collector) error {
 	var errGroup errgroup.Group
 
 	for _, item := range collectors {
@@ -160,7 +163,7 @@ type apiClient interface {
 	SaveMetricsAsJSON(ctx context.Context, requests []request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error)
 }
 
-func processMetricsWithInterval(ctx context.Context, queue *queue.Queue, client apiClient, semaphore *semaphore.Semaphore, reportInterval uint32, batchSize uint64) {
+func processMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.Metric], client apiClient, semaphore *semaphore.Semaphore, reportInterval uint32, batchSize uint64) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for {
 		select {
@@ -174,7 +177,7 @@ func processMetricsWithInterval(ctx context.Context, queue *queue.Queue, client 
 	}
 }
 
-func processMetrics(ctx context.Context, queue *queue.Queue, client apiClient, semaphore *semaphore.Semaphore, batchSize uint64) error {
+func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], client apiClient, semaphore *semaphore.Semaphore, batchSize uint64) error {
 	var errGroup errgroup.Group
 
 	for queue.Count() > 0 {
