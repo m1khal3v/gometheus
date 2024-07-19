@@ -39,7 +39,7 @@ func New(min, max float64) (*Collector, error) {
 	}, nil
 }
 
-func (collector *Collector) Collect() <-chan metric.Metric {
+func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	channel := make(chan metric.Metric, 1)
 
 	go func() {
@@ -53,5 +53,5 @@ func (collector *Collector) Collect() <-chan metric.Metric {
 		close(channel)
 	}()
 
-	return channel
+	return channel, nil
 }

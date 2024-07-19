@@ -23,7 +23,7 @@ func ParseConfig() *Config {
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
 	flag.Uint64VarP(&config.BatchSize, "batch-size", "b", 200, "number of metrics sent within one request")
 	flag.StringVarP(&config.Key, "key", "k", "", "secret key")
-	flag.Uint64VarP(&config.RateLimit, "rate-limit", "l", 10, "maximum number of concurrently executing requests")
+	flag.Uint64VarP(&config.RateLimit, "rate-limit", "m", 10, "maximum number of concurrently executing requests")
 	flag.Parse()
 	if err := env.Parse(config); err != nil {
 		panic(err)

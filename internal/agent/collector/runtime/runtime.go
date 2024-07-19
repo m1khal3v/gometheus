@@ -62,7 +62,7 @@ func (collector *Collector) validateMetricNames() error {
 	return err
 }
 
-func (collector *Collector) Collect() <-chan metric.Metric {
+func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	channel := make(chan metric.Metric, len(collector.metrics)+1)
 
 	memStats := runtime.MemStats{}
@@ -94,5 +94,5 @@ func (collector *Collector) Collect() <-chan metric.Metric {
 	)
 	close(channel)
 
-	return channel
+	return channel, nil
 }

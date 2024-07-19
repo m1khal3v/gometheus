@@ -5,6 +5,10 @@ type Semaphore struct {
 }
 
 func New(max uint64) *Semaphore {
+	if max == 0 {
+		panic("max cannot be 0")
+	}
+
 	channel := make(chan struct{}, max)
 	for i := 0; i < int(max); i++ {
 		channel <- struct{}{}
