@@ -58,9 +58,8 @@ type Config struct {
 }
 
 type Client struct {
-	resty     *resty.Client
-	retry     bool
-	signature *signatureConfig
+	resty  *resty.Client
+	config *Config
 }
 
 type preRequestHook func(config *Config, request *http.Request) error
@@ -160,7 +159,7 @@ func New(config *Config) (*Client, error) {
 
 	client.SetPreRequestHook(preRequestHookCombine(config, hooks...))
 
-	return &Client{resty: client, retry: !config.DisableRetry, signature: config.Signature}, nil
+	return &Client{resty: client, config: config}, nil
 }
 
 func prepareConfig(config *Config) error {
@@ -330,7 +329,7 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 	}
 
 	var err error
-	if !client.retry {
+	if client.config.DisableRetry {
 		err = do()
 	} else {
 		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
@@ -342,8 +341,8 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		return result, err
 	}
 
-	if client.signature != nil && !client.signature.DisableResponseValidation {
-		encoder := hmac.New(client.signature.hash, []byte(client.signature.key))
+	if client.config.Signature != nil && !client.config.Signature.DisableResponseValidation {
+		encoder := hmac.New(client.config.Signature.hash, []byte(client.config.Signature.key))
 		body, err := result.RawResponse.Body.(*BufferReader).ReadAll()
 		if err != nil {
 			return nil, err
@@ -354,7 +353,7 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		}
 
 		expectedSignature := encoder.Sum(nil)
-		resultSignature, err := hex.DecodeString(result.Header().Get(client.signature.header))
+		resultSignature, err := hex.DecodeString(result.Header().Get(client.config.Signature.header))
 		if err != nil {
 			return nil, err
 		}
