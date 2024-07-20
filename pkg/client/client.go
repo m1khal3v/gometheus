@@ -24,25 +24,41 @@ import (
 // In border cases, you can disable address verification through the config
 var addressRegex = regexp.MustCompile(`^https?://[a-zA-Z0-9][a-zA-Z0-9-.]*(:\d+)?(/[a-zA-Z0-9-_+%]*)*$`)
 
-type Client struct {
-	resty *resty.Client
-	retry bool
+type signatureConfig struct {
+	key    string
+	hash   func() hash.Hash
+	header string
+
+	DisableRequestSign        bool
+	DisableResponseValidation bool
 }
 
-type SignatureConfig struct {
-	Key    string
-	Hash   func() hash.Hash
-	Header string
+func NewSignatureConfig(header, key string, hash func() hash.Hash) *signatureConfig {
+	if hash == nil {
+		panic("hash can`t be nil")
+	}
+
+	return &signatureConfig{
+		key:    key,
+		hash:   hash,
+		header: header,
+	}
 }
 
 type Config struct {
 	Address   string
 	Transport http.RoundTripper
-	Signature *SignatureConfig
+	Signature *signatureConfig
 
 	DisableCompress          bool
 	DisableAddressValidation bool
 	DisableRetry             bool
+}
+
+type Client struct {
+	resty     *resty.Client
+	retry     bool
+	signature *signatureConfig
 }
 
 type preRequestHook func(config *Config, request *http.Request) error
@@ -75,6 +91,8 @@ func newErrInvalidAddress(address string) ErrInvalidAddress {
 	}
 }
 
+var ErrInvalidSignature = errors.New("invalid signature")
+
 func New(config *Config) (*Client, error) {
 	if err := prepareConfig(config); err != nil {
 		return nil, err
@@ -90,16 +108,13 @@ func New(config *Config) (*Client, error) {
 	if !config.DisableCompress {
 		hooks = append(hooks, compressRequestBody)
 	}
-	if config.Signature != nil &&
-		config.Signature.Key != "" &&
-		config.Signature.Hash != nil &&
-		config.Signature.Header != "" {
+	if config.Signature != nil && !config.Signature.DisableRequestSign {
 		hooks = append(hooks, addHMACSignature)
 	}
 
 	client.SetPreRequestHook(preRequestHookCombine(config, hooks...))
 
-	return &Client{resty: client, retry: !config.DisableRetry}, nil
+	return &Client{resty: client, retry: !config.DisableRetry, signature: config.Signature}, nil
 }
 
 func prepareConfig(config *Config) error {
@@ -174,8 +189,8 @@ func addHMACSignature(config *Config, request *http.Request) error {
 		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
 	}
 
-	request.Header.Set(config.Signature.Header, hex.EncodeToString(hmac.
-		New(config.Signature.Hash, []byte(config.Signature.Key)).
+	request.Header.Set(config.Signature.header, hex.EncodeToString(hmac.
+		New(config.Signature.hash, []byte(config.Signature.key)).
 		Sum(buffer.Bytes()),
 	))
 
@@ -269,6 +284,20 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
 			return !errors.As(err, &ErrUnexpectedStatus{})
 		})
+	}
+
+	if client.signature != nil && !client.signature.DisableResponseValidation {
+		expectedSignature := hmac.
+			New(client.signature.hash, []byte(client.signature.key)).
+			Sum(result.Body())
+		resultSignature, err := hex.DecodeString(result.Header().Get(client.signature.header))
+		if err != nil {
+			return nil, err
+		}
+
+		if !hmac.Equal(expectedSignature, resultSignature) {
+			return nil, ErrInvalidSignature
+		}
 	}
 
 	return result, err

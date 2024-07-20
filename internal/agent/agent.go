@@ -85,12 +85,8 @@ func Start(config *config.Config) error {
 
 	queue := queue.New[metric.Metric](10000)
 	client, err := client.New(&client.Config{
-		Address: config.Address,
-		Signature: &client.SignatureConfig{
-			Key:    config.Key,
-			Hash:   sha256.New,
-			Header: "HashSHA256",
-		},
+		Address:   config.Address,
+		Signature: client.NewSignatureConfig("HashSHA256", config.Key, sha256.New),
 	})
 	if err != nil {
 		return err
