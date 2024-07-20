@@ -189,10 +189,12 @@ func addHMACSignature(config *Config, request *http.Request) error {
 		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
 	}
 
-	request.Header.Set(config.Signature.header, hex.EncodeToString(hmac.
-		New(config.Signature.hash, []byte(config.Signature.key)).
-		Sum(buffer.Bytes()),
-	))
+	encoder := hmac.New(config.Signature.hash, []byte(config.Signature.key))
+	if _, err := encoder.Write(buffer.Bytes()); err != nil {
+		return err
+	}
+
+	request.Header.Set(config.Signature.header, hex.EncodeToString(encoder.Sum(nil)))
 
 	return nil
 }
@@ -209,7 +211,7 @@ func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, me
 		resty.MethodPost, "update/{type}/{name}/{value}")
 
 	if err != nil {
-		if result.RawResponse == nil {
+		if result == nil || result.RawResponse == nil {
 			return nil, err
 		} else {
 			return result.Error().(*response.APIError), err
@@ -228,7 +230,7 @@ func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.Sav
 		resty.MethodPost, "update")
 
 	if err != nil {
-		if result.RawResponse == nil {
+		if result == nil || result.RawResponse == nil {
 			return nil, nil, err
 		} else {
 			return nil, result.Error().(*response.APIError), err
@@ -247,7 +249,7 @@ func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []request.
 		resty.MethodPost, "updates")
 
 	if err != nil {
-		if result.RawResponse == nil {
+		if result == nil || result.RawResponse == nil {
 			return nil, nil, err
 		} else {
 			return nil, result.Error().(*response.APIError), err
@@ -286,7 +288,8 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		})
 	}
 
-	if client.signature != nil && !client.signature.DisableResponseValidation {
+	if err == nil && client.signature != nil && !client.signature.DisableResponseValidation {
+		// TODO: тут надо заюзать NoDecodeResponse и разгзипливать самостоятельно
 		expectedSignature := hmac.
 			New(client.signature.hash, []byte(client.signature.key)).
 			Sum(result.Body())
