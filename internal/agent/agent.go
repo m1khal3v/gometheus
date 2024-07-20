@@ -84,10 +84,12 @@ func Start(config *config.Config) error {
 	suspendCtx, _ := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	queue := queue.New[metric.Metric](10000)
-	client, err := client.New(&client.Config{
-		Address:   config.Address,
-		Signature: client.NewSignatureConfig("HashSHA256", config.Key, sha256.New),
-	})
+
+	clientConfig := &client.Config{Address: config.Address}
+	if config.Key != "" {
+		clientConfig.Signature = client.NewSignatureConfig("HashSHA256", config.Key, sha256.New)
+	}
+	client, err := client.New(clientConfig)
 	if err != nil {
 		return err
 	}
