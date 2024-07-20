@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"golang.org/x/exp/maps"
 	"sync"
 )
 
@@ -54,17 +55,12 @@ func NewFromMapWithContext[K comparable, T any](
 	source map[K]T,
 	modify keyValueModifier[K, T],
 ) <-chan mapItem[K, T] {
-	sourceCopy := make(map[K]T, len(source))
-	for key, value := range source {
-		sourceCopy[key] = value
-	}
-
 	channel := make(chan mapItem[K, T], 1)
 
 	go func() {
 		defer close(channel)
 
-		for key, value := range sourceCopy {
+		for key, value := range maps.Clone(source) {
 			select {
 			case <-ctx.Done():
 				return
