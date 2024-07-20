@@ -6,7 +6,6 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
-	"golang.org/x/sync/errgroup"
 	"slices"
 )
 
@@ -41,15 +40,35 @@ func newErrInvalidMetricName(name string) error {
 	}
 }
 
+type ErrNonUniqueOutName struct {
+	Name string
+}
+
+func (err ErrNonUniqueOutName) Error() string {
+	return fmt.Sprintf("out name '%s' is not unique", err.Name)
+}
+
+func newErrNonUniqueOutName(name string) error {
+	return &ErrNonUniqueOutName{
+		Name: name,
+	}
+}
+
 func New(metrics map[string]string) (*Collector, error) {
 	collector := &Collector{}
+	outNames := make(map[string]struct{}, len(metrics))
 
-	for _, metric := range metrics {
-		if !slices.Contains(getAvailableMetrics(), metric) {
-			return nil, newErrInvalidMetricName(metric)
+	for name, outName := range metrics {
+		if _, ok := outNames[outName]; ok {
+			return nil, newErrNonUniqueOutName(outName)
+		}
+		outNames[outName] = struct{}{}
+
+		if !slices.Contains(getAvailableMetrics(), name) {
+			return nil, newErrInvalidMetricName(name)
 		}
 
-		if metric == MetricCPUUtilization {
+		if name == MetricCPUUtilization {
 			cpuCount, err := cpu.Counts(true)
 			if err != nil {
 				return nil, err
@@ -68,47 +87,48 @@ func New(metrics map[string]string) (*Collector, error) {
 
 func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	channel := make(chan metric.Metric, collector.channelSize)
-	defer close(channel)
 
-	var errGroup errgroup.Group
-	for metricName, name := range collector.metrics {
-		errGroup.Go(func() error {
+	var memory *mem.VirtualMemoryStat
+	var utilization []float64
+	var err error
+
+	switch {
+	case collector.isset(MetricTotalMemory), collector.isset(MetricFreeMemory):
+		memory, err = mem.VirtualMemory()
+		if err != nil {
+			return nil, err
+		}
+	case collector.isset(MetricCPUUtilization):
+		utilization, err = cpu.Percent(0, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	go func() {
+		defer close(channel)
+
+		for name, outName := range collector.metrics {
 			switch name {
 			case MetricTotalMemory:
-				memory, err := mem.VirtualMemory()
-				if err != nil {
-					return err
-				}
-
-				channel <- gauge.New(metricName, float64(memory.Total))
+				channel <- gauge.New(outName, float64(memory.Total))
 			case MetricFreeMemory:
-				memory, err := mem.VirtualMemory()
-				if err != nil {
-					return err
-				}
-
-				channel <- gauge.New(metricName, float64(memory.Free))
+				channel <- gauge.New(outName, float64(memory.Free))
 			case MetricCPUUtilization:
-				utilization, err := cpu.Percent(0, true)
-				if err != nil {
-					return err
-				}
-
 				for i, value := range utilization {
 					channel <- gauge.New(
-						fmt.Sprintf("%s%d", metricName, i+1),
+						fmt.Sprintf("%s%d", outName, i+1),
 						value,
 					)
 				}
 			}
-
-			return nil
-		})
-	}
-
-	if err := errGroup.Wait(); err != nil {
-		return nil, err
-	}
+		}
+	}()
 
 	return channel, nil
+}
+
+func (collector *Collector) isset(metric string) bool {
+	_, ok := collector.metrics[metric]
+	return ok
 }

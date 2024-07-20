@@ -64,9 +64,9 @@ func createCollectors() ([]collector.Collector, error) {
 	}
 
 	gopsUtilCollector, err := gopsutil.New(map[string]string{
-		"TotalMemory":    gopsutil.MetricTotalMemory,
-		"FreeMemory":     gopsutil.MetricFreeMemory,
-		"CPUUtilization": gopsutil.MetricCPUUtilization,
+		gopsutil.MetricTotalMemory:    "TotalMemory",
+		gopsutil.MetricFreeMemory:     "FreeMemory",
+		gopsutil.MetricCPUUtilization: "CPUUtilization",
 	})
 	if err != nil {
 		return nil, err
