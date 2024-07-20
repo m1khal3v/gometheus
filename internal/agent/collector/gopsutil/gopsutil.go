@@ -128,7 +128,7 @@ func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	return channel, nil
 }
 
-func (collector *Collector) isset(metric string) bool {
-	_, ok := collector.metrics[metric]
+func (collector *Collector) isset(name string) bool {
+	_, ok := collector.metrics[name]
 	return ok
 }

@@ -30,9 +30,7 @@ func TestQueue(t *testing.T) {
 				queue.Push(item)
 			}
 			items := make([]bool, 0, len(tt.items))
-			for _, item := range queue.Pop(count) {
-				items = append(items, item)
-			}
+			items = append(items, queue.Pop(count)...)
 			require.Equal(t, tt.items, items)
 		})
 	}

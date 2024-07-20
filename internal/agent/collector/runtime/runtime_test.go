@@ -92,7 +92,10 @@ func TestCollector_Collect(t *testing.T) {
 			require.NoError(t, err)
 
 			metrics := make([]metric.Metric, 0)
-			for metric := range collector.Collect() {
+			collected, err := collector.Collect()
+			require.NoError(t, err)
+
+			for metric := range collected {
 				metrics = append(metrics, metric)
 			}
 			assert.Len(t, metrics, len(tt.metrics)+1)

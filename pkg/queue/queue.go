@@ -26,7 +26,7 @@ func (queue *Queue[T]) Pop(count uint64) []T {
 		case metric := <-queue.items:
 			metrics = append(metrics, metric)
 		default:
-			break
+			// no more items to return - break
 		}
 	}
 
