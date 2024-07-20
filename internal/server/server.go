@@ -7,6 +7,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
+	"go.uber.org/zap"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -51,13 +52,13 @@ func Start(config *config.Config) error {
 		logger.Logger.Info("Received suspend signal. Trying to shutdown gracefully...")
 
 		if err := storage.Close(ctx); err != nil {
-			logger.Logger.Error(err.Error())
+			logger.Logger.Error("Failed to close storage", zap.Error(err))
 		} else {
 			logger.Logger.Info("Storage was closed successfully")
 		}
 
 		if err := server.Shutdown(ctx); err != nil {
-			logger.Logger.Error(err.Error())
+			logger.Logger.Error("Failed to shutdown server", zap.Error(err))
 		} else {
 			logger.Logger.Info("Server was shutdown successfully")
 		}

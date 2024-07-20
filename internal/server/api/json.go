@@ -3,13 +3,12 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/asaskevich/govalidator"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	pkgErrors "github.com/m1khal3v/gometheus/pkg/errors"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"go.uber.org/zap"
 	"net/http"
-	"strings"
 )
 
 func DecodeAndValidateJSONRequest[T any](request *http.Request, writer http.ResponseWriter) (*T, bool) {
@@ -79,18 +78,18 @@ func WriteJSONErrorResponse(status int, writer http.ResponseWriter, message stri
 	}
 
 	if status >= 500 {
-		logger.Logger.Error(fmt.Sprintf("%s: %s", message, strings.Join(response.Details, "; ")))
+		logger.Logger.Error(message, zap.Any("details", response.Details))
 	}
 
 	jsonResponse, err := json.Marshal(response)
 	if err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Logger.Error("Failed to encode response", zap.Error(err))
 		return
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
 	writer.WriteHeader(status)
 	if _, err = writer.Write(jsonResponse); err != nil {
-		logger.Logger.Error(err.Error())
+		logger.Logger.Error("Failed to write response", zap.Error(err))
 	}
 }
