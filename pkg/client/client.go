@@ -342,12 +342,12 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 	}
 
 	if client.config.Signature != nil && !client.config.Signature.DisableResponseValidation {
-		encoder := hmac.New(client.config.Signature.hash, []byte(client.config.Signature.key))
 		body, err := result.RawResponse.Body.(*BufferReader).ReadAll()
 		if err != nil {
 			return nil, err
 		}
 
+		encoder := hmac.New(client.config.Signature.hash, []byte(client.config.Signature.key))
 		if _, err := encoder.Write(body); err != nil {
 			return nil, err
 		}
