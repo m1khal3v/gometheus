@@ -327,41 +327,49 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 
 		return nil
 	}
-
-	var err error
-	if client.config.DisableRetry {
-		err = do()
-	} else {
-		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
-			return !errors.As(err, &ErrUnexpectedStatus{})
-		})
+	if !client.config.DisableRetry {
+		do = func() error {
+			return retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
+				return !errors.As(err, &ErrUnexpectedStatus{})
+			})
+		}
 	}
 
-	if err != nil {
+	if err := do(); err != nil {
 		return result, err
 	}
 
-	if client.config.Signature != nil && !client.config.Signature.DisableResponseValidation {
+	signConfig := client.config.Signature
+	if signConfig != nil && !signConfig.DisableResponseValidation {
 		body, err := result.RawResponse.Body.(*BufferReader).ReadAll()
 		if err != nil {
 			return nil, err
 		}
 
-		encoder := hmac.New(client.config.Signature.hash, []byte(client.config.Signature.key))
-		if _, err := encoder.Write(body); err != nil {
-			return nil, err
-		}
-
-		expectedSignature := encoder.Sum(nil)
-		resultSignature, err := hex.DecodeString(result.Header().Get(client.config.Signature.header))
+		resultSignature, err := hex.DecodeString(result.Header().Get(signConfig.header))
 		if err != nil {
 			return nil, err
 		}
 
-		if !hmac.Equal(expectedSignature, resultSignature) {
-			return nil, ErrInvalidSignature
+		if err := validateHMACSignature(body, resultSignature, []byte(signConfig.key), signConfig.hash); err != nil {
+			return nil, err
 		}
 	}
 
-	return result, err
+	return result, nil
+}
+
+func validateHMACSignature(body, signature, key []byte, hash func() hash.Hash) error {
+	encoder := hmac.New(hash, key)
+	if _, err := encoder.Write(body); err != nil {
+		return err
+	}
+
+	expectedSignature := encoder.Sum(nil)
+
+	if !hmac.Equal(expectedSignature, signature) {
+		return ErrInvalidSignature
+	}
+
+	return nil
 }
