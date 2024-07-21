@@ -35,7 +35,7 @@ func HMACSignatureRespond(header string, hash func() hash.Hash, key string) func
 			wrapper := middleware.NewWrapResponseWriter(writer, request.ProtoMajor)
 			buffer := bytes.NewBuffer([]byte{})
 			wrapper.Tee(buffer)
-			wrapper.Discard()
+			wrapper.Discard() // disable writing to original writer
 
 			next.ServeHTTP(wrapper, request)
 
@@ -43,7 +43,6 @@ func HMACSignatureRespond(header string, hash func() hash.Hash, key string) func
 			defer restore()
 
 			writer.Header().Set("Content-Length", fmt.Sprintf("%d", wrapper.BytesWritten()))
-			encoder.Write(buffer.Bytes())
 			writer.Header().Set(header, hex.EncodeToString(encoder.Sum(nil)))
 			writer.WriteHeader(wrapper.Status())
 
