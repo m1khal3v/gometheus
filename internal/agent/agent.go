@@ -145,9 +145,7 @@ func collectMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], coll
 					return err
 				}
 
-				for metric := range collected {
-					queue.Push(metric)
-				}
+				queue.PushChannel(collected)
 
 				return nil
 			})
@@ -176,6 +174,8 @@ func processMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.M
 }
 
 func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], client apiClient, semaphore *semaphore.Semaphore, batchSize uint64) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
 	var errGroup errgroup.Group
 
 	for queue.Count() > 0 {
@@ -183,19 +183,11 @@ func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], clie
 			return err
 		}
 
-		metrics := queue.Pop(batchSize)
 		errGroup.Go(func() error {
 			defer semaphore.Release()
-
-			if err := sendMetrics(ctx, client, metrics); err != nil {
-				for _, metric := range metrics {
-					queue.Push(metric)
-				}
-
-				return err
-			}
-
-			return nil
+			return queue.RemoveBatch(batchSize, func(items []metric.Metric) error {
+				return sendMetrics(ctx, client, items)
+			})
 		})
 	}
 
