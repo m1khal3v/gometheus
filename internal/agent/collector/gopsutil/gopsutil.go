@@ -1,6 +1,7 @@
 package gopsutil
 
 import (
+	"errors"
 	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
@@ -54,7 +55,13 @@ func newErrNonUniqueOutName(name string) error {
 	}
 }
 
+var ErrEmptyMetrics = errors.New("metrics are empty")
+
 func New(metrics map[string]string) (*Collector, error) {
+	if len(metrics) == 0 {
+		return nil, ErrEmptyMetrics
+	}
+
 	collector := &Collector{}
 	outNames := make(map[string]struct{}, len(metrics))
 
@@ -92,14 +99,14 @@ func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	var utilization []float64
 	var err error
 
-	switch {
-	case collector.isset(MetricTotalMemory), collector.isset(MetricFreeMemory):
+	if collector.isset(MetricTotalMemory) || collector.isset(MetricFreeMemory) {
 		memory, err = mem.VirtualMemory()
 		if err != nil {
 			return nil, err
 		}
-	case collector.isset(MetricCPUUtilization):
-		utilization, err = cpu.Percent(0, false)
+	}
+	if collector.isset(MetricCPUUtilization) {
+		utilization, err = cpu.Percent(0, true)
 		if err != nil {
 			return nil, err
 		}
