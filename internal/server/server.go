@@ -50,18 +50,18 @@ func Start(config *config.Config) error {
 	case <-errCtx.Done():
 		return context.Cause(errCtx)
 	case <-suspendCtx.Done():
-		ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*30)
 		defer cancel()
 
 		logger.Logger.Info("Received suspend signal. Trying to shutdown gracefully...")
 
-		if err := storage.Close(ctx); err != nil {
+		if err := storage.Close(timeoutCtx); err != nil {
 			logger.Logger.Error("Failed to close storage", zap.Error(err))
 		} else {
 			logger.Logger.Info("Storage was closed successfully")
 		}
 
-		if err := server.Shutdown(ctx); err != nil {
+		if err := server.Shutdown(timeoutCtx); err != nil {
 			logger.Logger.Error("Failed to shutdown server", zap.Error(err))
 		} else {
 			logger.Logger.Info("Server was shutdown successfully")

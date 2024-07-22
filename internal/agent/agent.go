@@ -174,19 +174,19 @@ func processMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.M
 }
 
 func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], client apiClient, semaphore *semaphore.Semaphore, batchSize uint64) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 	var errGroup errgroup.Group
 
 	for queue.Count() > 0 {
-		if err := semaphore.Acquire(ctx); err != nil {
+		if err := semaphore.Acquire(timeoutCtx); err != nil {
 			return err
 		}
 
 		errGroup.Go(func() error {
 			defer semaphore.Release()
 			return queue.RemoveBatch(batchSize, func(items []metric.Metric) error {
-				return sendMetrics(ctx, client, items)
+				return sendMetrics(timeoutCtx, client, items)
 			})
 		})
 	}
@@ -210,9 +210,9 @@ func sendMetrics(ctx context.Context, client apiClient, metrics []metric.Metric)
 		requests = append(requests, *request)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	if _, apiErr, err := client.SaveMetricsAsJSON(ctx, requests); err != nil {
+	if _, apiErr, err := client.SaveMetricsAsJSON(timeoutCtx, requests); err != nil {
 		if apiErr != nil {
 			return fmt.Errorf("code: %d. %s [%v]", apiErr.Code, apiErr.Message, apiErr.Details)
 		}
