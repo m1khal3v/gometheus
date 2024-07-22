@@ -62,8 +62,13 @@ func (manager *Manager) Save(ctx context.Context, metric metric.Metric) (metric.
 	switch metric.Type() {
 	case gauge.MetricType:
 	case counter.MetricType:
-		if err := manager.prepareCounter(ctx, metric.(*counter.Metric), nil); !errors.Is(err, ErrDeadlock) {
+		var err error
+		if err = manager.prepareCounter(ctx, metric.(*counter.Metric), nil); !errors.Is(err, ErrDeadlock) {
 			defer manager.mutex.Unlock(metric.Name())
+		}
+
+		if err != nil {
+			return nil, err
 		}
 	default:
 		return nil, newErrUnknownMetricType(metric.Type())
@@ -89,6 +94,10 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 
 			if previous == nil && !errors.Is(err, ErrDeadlock) {
 				defer manager.mutex.Unlock(metric.Name())
+			}
+
+			if err != nil {
+				return nil, err
 			}
 		default:
 			return nil, newErrUnknownMetricType(metric.Type())
