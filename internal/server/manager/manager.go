@@ -3,11 +3,13 @@ package manager
 import (
 	"context"
 	"fmt"
+	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/mutex"
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
 
@@ -98,6 +100,10 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 	}
 
 	metrics = maps.Values(processed)
+	for _, metric := range metrics {
+		logger.Logger.Info("Saving metric", zap.String("metric", metric.Name()), zap.String("type", metric.Type()), zap.String("value", metric.StringValue()))
+	}
+
 	if err := manager.storage.SaveBatch(ctx, metrics); err != nil {
 		return nil, err
 	}
