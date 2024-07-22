@@ -2,15 +2,16 @@ package manager
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/mutex"
-	"go.uber.org/zap"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 	"golang.org/x/exp/maps"
+	"time"
 )
 
 type ErrUnknownMetricType struct {
@@ -26,6 +27,8 @@ func newErrUnknownMetricType(metricType string) error {
 		MetricType: metricType,
 	}
 }
+
+var ErrDeadlock = errors.New("deadlock detected")
 
 type Manager struct {
 	mutex   *mutex.NamedMutex
@@ -56,14 +59,11 @@ func (manager *Manager) GetAll(ctx context.Context) (<-chan metric.Metric, error
 }
 
 func (manager *Manager) Save(ctx context.Context, metric metric.Metric) (metric.Metric, error) {
-	manager.mutex.Lock(metric.Name())
-	defer manager.mutex.Unlock(metric.Name())
-
 	switch metric.Type() {
 	case gauge.MetricType:
 	case counter.MetricType:
-		if err := manager.prepareCounter(ctx, metric.(*counter.Metric), nil); err != nil {
-			return nil, err
+		if err := manager.prepareCounter(ctx, metric.(*counter.Metric), nil); !errors.Is(err, ErrDeadlock) {
+			defer manager.mutex.Unlock(metric.Name())
 		}
 	default:
 		return nil, newErrUnknownMetricType(metric.Type())
@@ -80,17 +80,15 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 	processed := map[string]metric.Metric{}
 
 	for _, metric := range metrics {
-		previous, ok := processed[metric.Name()]
-		if !ok {
-			manager.mutex.Lock(metric.Name())
-			defer manager.mutex.Unlock(metric.Name())
-		}
+		previous := processed[metric.Name()]
 
 		switch metric.Type() {
 		case gauge.MetricType:
 		case counter.MetricType:
-			if err := manager.prepareCounter(ctx, metric.(*counter.Metric), previous); err != nil {
-				return nil, err
+			err := manager.prepareCounter(ctx, metric.(*counter.Metric), previous)
+
+			if previous == nil && !errors.Is(err, ErrDeadlock) {
+				defer manager.mutex.Unlock(metric.Name())
 			}
 		default:
 			return nil, newErrUnknownMetricType(metric.Type())
@@ -100,9 +98,6 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 	}
 
 	metrics = maps.Values(processed)
-	for _, metric := range metrics {
-		logger.Logger.Info("Saving metric", zap.String("metric", metric.Name()), zap.String("type", metric.Type()), zap.String("value", metric.StringValue()))
-	}
 
 	if err := manager.storage.SaveBatch(ctx, metrics); err != nil {
 		return nil, err
@@ -114,6 +109,17 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 func (manager *Manager) prepareCounter(ctx context.Context, metric *counter.Metric, previous metric.Metric) error {
 	if previous == nil {
 		var err error
+		err = retry.Retry(time.Millisecond*10, time.Millisecond*50, 5, 2, func() error {
+			if !manager.mutex.TryLock(metric.Name()) {
+				return ErrDeadlock
+			}
+
+			return nil
+		}, nil)
+		if err != nil {
+			return err
+		}
+
 		previous, err = manager.storage.Get(ctx, metric.Name())
 		if err != nil {
 			return err
