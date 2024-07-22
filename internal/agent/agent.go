@@ -132,9 +132,7 @@ func collectMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.M
 func collectMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], collectors []collector.Collector) error {
 	var errGroup errgroup.Group
 
-	for _, item := range collectors {
-		collector := item
-
+	for _, collector := range collectors {
 		select {
 		case <-ctx.Done():
 			return context.Cause(ctx)
@@ -179,11 +177,11 @@ func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], clie
 	var errGroup errgroup.Group
 
 	for queue.Count() > 0 {
-		if err := semaphore.Acquire(timeoutCtx); err != nil {
-			return err
-		}
-
 		errGroup.Go(func() error {
+			if err := semaphore.Acquire(timeoutCtx); err != nil {
+				return err
+			}
+
 			defer semaphore.Release()
 			return queue.RemoveBatch(batchSize, func(items []metric.Metric) error {
 				return sendMetrics(timeoutCtx, client, items)
@@ -204,7 +202,7 @@ func sendMetrics(ctx context.Context, client apiClient, metrics []metric.Metric)
 	for _, metric := range metrics {
 		request, err := transformer.TransformToSaveRequest(metric)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
 		requests = append(requests, *request)

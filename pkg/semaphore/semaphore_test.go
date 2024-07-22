@@ -5,7 +5,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
-	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -42,9 +41,9 @@ func TestSemaphore(t *testing.T) {
 	semaphore := New(1)
 	ctx := context.Background()
 	require.NoError(t, semaphore.Acquire(ctx))
-	ctx, cancel := context.WithTimeout(ctx, time.Millisecond)
-	defer cancel()
-	require.Error(t, semaphore.Acquire(ctx))
+	cancelCtx, cancel := context.WithCancel(ctx)
+	cancel()
+	require.Error(t, semaphore.Acquire(cancelCtx))
 	semaphore.Release()
-	require.NoError(t, semaphore.Acquire(context.Background()))
+	require.NoError(t, semaphore.Acquire(ctx))
 }
