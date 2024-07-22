@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func Start(config *config.Config) error {
@@ -49,6 +50,9 @@ func Start(config *config.Config) error {
 	case <-errCtx.Done():
 		return context.Cause(errCtx)
 	case <-suspendCtx.Done():
+		ctx, cancel := context.WithTimeout(ctx, time.Second*30)
+		defer cancel()
+
 		logger.Logger.Info("Received suspend signal. Trying to shutdown gracefully...")
 
 		if err := storage.Close(ctx); err != nil {

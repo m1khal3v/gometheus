@@ -108,7 +108,7 @@ func Start(config *config.Config) error {
 
 	logger.Logger.Info("Received suspend signal. Trying to process already collected metrics...")
 	if err := processMetrics(ctx, queue, client, semaphore, config.BatchSize); err != nil {
-		logger.Logger.Error("Failed to process metrics", zap.Error(err))
+		logger.Logger.Error("Failed to process already collected metrics", zap.Error(err))
 	}
 	logger.Logger.Info("Agent successfully suspended")
 

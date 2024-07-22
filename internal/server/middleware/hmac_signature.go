@@ -43,6 +43,7 @@ func HMACSignatureRespond(header string, hash func() hash.Hash, key string) func
 			defer restore()
 
 			writer.Header().Set("Content-Length", fmt.Sprintf("%d", wrapper.BytesWritten()))
+			encoder.Write(buffer.Bytes())
 			writer.Header().Set(header, hex.EncodeToString(encoder.Sum(nil)))
 			writer.WriteHeader(wrapper.Status())
 

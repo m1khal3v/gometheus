@@ -327,15 +327,19 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 
 		return nil
 	}
+
+	var err error
 	if !client.config.DisableRetry {
-		do = func() error {
-			return retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
-				return !errors.As(err, &ErrUnexpectedStatus{})
-			})
-		}
+		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
+			return !errors.As(err, &ErrUnexpectedStatus{}) &&
+				!errors.Is(err, context.DeadlineExceeded) &&
+				!errors.Is(err, context.Canceled)
+		})
+	} else {
+		err = do()
 	}
 
-	if err := do(); err != nil {
+	if err != nil {
 		return result, err
 	}
 
