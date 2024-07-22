@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestNewFromFunctionWithContext(t *testing.T) {
@@ -36,6 +37,7 @@ func TestNewFromFunctionWithContextClose(t *testing.T) {
 		i++
 		if i == 5 {
 			closer()
+			time.Sleep(time.Millisecond * 100)
 		}
 
 		return i, true
@@ -110,6 +112,7 @@ func TestNewFromMapWithContextClose(t *testing.T) {
 		i++
 		if i == 5 {
 			closer()
+			time.Sleep(time.Millisecond * 100)
 		}
 		items[item.Key] = item.Value
 	}
@@ -192,6 +195,7 @@ func TestNewFromSyncMapWithContextClose(t *testing.T) {
 		i++
 		if i == 5 {
 			closer()
+			time.Sleep(time.Millisecond * 100)
 		}
 		items[item.Key] = item.Value
 	}
@@ -265,6 +269,7 @@ func TestNewFromMapOnlyValueWithContextClose(t *testing.T) {
 		i++
 		if i == 5 {
 			closer()
+			time.Sleep(time.Millisecond * 100)
 		}
 		items = append(items, item)
 	}
@@ -324,6 +329,7 @@ func TestNewFromSyncMapOnlyValueWithContextClose(t *testing.T) {
 		i++
 		if i == 5 {
 			closer()
+			time.Sleep(time.Millisecond * 100)
 		}
 		items = append(items, item)
 	}

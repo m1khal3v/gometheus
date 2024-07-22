@@ -124,7 +124,7 @@ func NewFromMapOnlyValueWithContext[K comparable, T any](
 	go func() {
 		defer close(channel)
 
-		for _, value := range source {
+		for _, value := range maps.Clone(source) {
 			select {
 			case <-ctx.Done():
 				return
