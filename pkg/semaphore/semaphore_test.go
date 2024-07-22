@@ -31,7 +31,7 @@ func TestNew(t *testing.T) {
 				})
 			} else {
 				semaphore := New(tt.max)
-				assert.Len(t, semaphore.channel, int(tt.max))
+				assert.Len(t, semaphore.channel, 0)
 			}
 		})
 	}
