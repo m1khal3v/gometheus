@@ -14,7 +14,7 @@ func Retry(
 ) error {
 	var err error
 	for i := uint64(0); i < attempts; i++ {
-		if err = function(); err != nil && filter(err) {
+		if err = function(); err != nil && (filter == nil || filter(err)) {
 			time.Sleep(calculateDelay(baseDelay, maxDelay, i, multiplier))
 
 			continue

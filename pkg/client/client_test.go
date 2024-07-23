@@ -46,7 +46,7 @@ func TestNew(t *testing.T) {
 			config: &Config{
 				Address:         "https://my.server.ru:443/api/",
 				DisableCompress: true,
-				Transport:       &http.Transport{MaxIdleConns: 123},
+				transport:       &http.Transport{MaxIdleConns: 123},
 			},
 			wantBaseURL:   "https://my.server.ru:443/api",
 			wantTransport: &http.Transport{MaxIdleConns: 123},
@@ -56,7 +56,7 @@ func TestNew(t *testing.T) {
 			config: &Config{
 				Address:         "https://my.server.ru:443/api/sub",
 				DisableCompress: true,
-				Transport:       &http.Transport{MaxIdleConns: 123},
+				transport:       &http.Transport{MaxIdleConns: 123},
 			},
 			wantBaseURL:   "https://my.server.ru:443/api/sub",
 			wantTransport: &http.Transport{MaxIdleConns: 123},
@@ -406,7 +406,7 @@ func newTestClient(t *testing.T, function roundTripFunction) *Client {
 	client, err := New(&Config{
 		DisableRetry:             true,
 		DisableAddressValidation: true,
-		Transport:                function,
+		transport:                function,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, client)

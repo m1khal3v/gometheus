@@ -8,15 +8,16 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"reflect"
 	"runtime"
+	"sync"
+	"sync/atomic"
 )
 
 type Collector struct {
-	pollCount uint8
-	metrics   []string
-	memStats  *runtime.MemStats
+	metrics []string
 }
 
 var ErrEmptyMetrics = errors.New("metrics are empty")
+var float64Type = reflect.TypeOf(float64(0))
 
 type ErrInvalidMetricName struct {
 	Name string
@@ -38,9 +39,7 @@ func New(metrics []string) (*Collector, error) {
 	}
 
 	collector := &Collector{
-		pollCount: 0,
-		metrics:   metrics,
-		memStats:  &runtime.MemStats{},
+		metrics: metrics,
 	}
 
 	if err := collector.validateMetricNames(); err != nil {
@@ -52,9 +51,10 @@ func New(metrics []string) (*Collector, error) {
 
 func (collector *Collector) validateMetricNames() error {
 	var err error = nil
+	memStats := runtime.MemStats{}
 
 	for _, name := range collector.metrics {
-		if !reflect.ValueOf(*collector.memStats).FieldByName(name).IsValid() {
+		if !reflect.ValueOf(memStats).FieldByName(name).IsValid() {
 			err = errors.Join(err, newErrInvalidMetricName(name))
 		}
 	}
@@ -62,35 +62,37 @@ func (collector *Collector) validateMetricNames() error {
 	return err
 }
 
-func (collector *Collector) Collect() []metric.Metric {
-	runtime.ReadMemStats(collector.memStats)
-	metrics := make([]metric.Metric, 0)
+func (collector *Collector) Collect() (<-chan metric.Metric, error) {
+	channel := make(chan metric.Metric, len(collector.metrics)+1)
+
+	memStats := runtime.MemStats{}
+	runtime.ReadMemStats(&memStats)
+	value := reflect.ValueOf(memStats)
+
+	var pollCount int64
+	var waitGroup sync.WaitGroup
+
 	for _, name := range collector.metrics {
-		metrics = append(metrics, collector.collectMetric(name))
+		waitGroup.Add(1)
+
+		go func() {
+			defer waitGroup.Done()
+
+			channel <- gauge.New(
+				name,
+				value.FieldByName(name).Convert(float64Type).Float(),
+			)
+
+			atomic.AddInt64(&pollCount, 1)
+		}()
 	}
-	metrics = append(metrics, collector.getPollCount())
-	collector.refreshPollCount()
 
-	return metrics
-}
-
-func (collector *Collector) collectMetric(name string) metric.Metric {
-	field := reflect.ValueOf(*collector.memStats).FieldByName(name)
-	collector.pollCount = collector.pollCount + 1
-
-	return gauge.New(
-		name,
-		field.Convert(reflect.TypeOf(float64(0))).Float(),
-	)
-}
-
-func (collector *Collector) getPollCount() metric.Metric {
-	return counter.New(
+	waitGroup.Wait()
+	channel <- counter.New(
 		"PollCount",
-		int64(collector.pollCount),
+		pollCount,
 	)
-}
+	close(channel)
 
-func (collector *Collector) refreshPollCount() {
-	collector.pollCount = 0
+	return channel, nil
 }

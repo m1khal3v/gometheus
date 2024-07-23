@@ -21,6 +21,7 @@ func main() {
 		zap.String("database_dsn", config.DatabaseDSN),
 		zap.Uint32("store_interval", config.StoreInterval),
 		zap.Bool("restore", config.Restore),
+		zap.Bool("key", config.Key != ""),
 	)
 
 	if err := server.Start(config); err != nil {

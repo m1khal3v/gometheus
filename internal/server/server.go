@@ -7,9 +7,11 @@ import (
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
+	"go.uber.org/zap"
 	"net/http"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func Start(config *config.Config) error {
@@ -35,7 +37,7 @@ func Start(config *config.Config) error {
 
 	server := &http.Server{
 		Addr:    config.Address,
-		Handler: router.New(storage),
+		Handler: router.New(storage, config.Key),
 	}
 
 	go func() {
@@ -46,18 +48,21 @@ func Start(config *config.Config) error {
 
 	select {
 	case <-errCtx.Done():
-		return errCtx.Err()
+		return context.Cause(errCtx)
 	case <-suspendCtx.Done():
+		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+		defer cancel()
+
 		logger.Logger.Info("Received suspend signal. Trying to shutdown gracefully...")
 
-		if err := storage.Close(ctx); err != nil {
-			logger.Logger.Error(err.Error())
+		if err := storage.Close(timeoutCtx); err != nil {
+			logger.Logger.Error("Failed to close storage", zap.Error(err))
 		} else {
 			logger.Logger.Info("Storage was closed successfully")
 		}
 
-		if err := server.Shutdown(ctx); err != nil {
-			logger.Logger.Error(err.Error())
+		if err := server.Shutdown(timeoutCtx); err != nil {
+			logger.Logger.Error("Failed to shutdown server", zap.Error(err))
 		} else {
 			logger.Logger.Info("Server was shutdown successfully")
 		}

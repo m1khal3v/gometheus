@@ -2,18 +2,23 @@ package agent
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"github.com/m1khal3v/gometheus/internal/agent/collector"
+	"github.com/m1khal3v/gometheus/internal/agent/collector/gopsutil"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/runtime"
 	"github.com/m1khal3v/gometheus/internal/agent/config"
-	"github.com/m1khal3v/gometheus/internal/agent/storage"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	"github.com/m1khal3v/gometheus/pkg/client"
+	"github.com/m1khal3v/gometheus/pkg/queue"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"github.com/m1khal3v/gometheus/pkg/semaphore"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"os/signal"
 	"syscall"
 	"time"
@@ -58,9 +63,19 @@ func createCollectors() ([]collector.Collector, error) {
 		return nil, err
 	}
 
+	gopsUtilCollector, err := gopsutil.New(map[string]string{
+		gopsutil.MetricTotalMemory:    "TotalMemory",
+		gopsutil.MetricFreeMemory:     "FreeMemory",
+		gopsutil.MetricCPUUtilization: "CPUUtilization",
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return []collector.Collector{
 		runtimeCollector,
 		randomCollector,
+		gopsUtilCollector,
 	}, nil
 }
 
@@ -68,10 +83,13 @@ func Start(config *config.Config) error {
 	ctx := context.Background()
 	suspendCtx, _ := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	storage := storage.New()
-	client, err := client.New(&client.Config{
-		Address: config.Address,
-	})
+	queue := queue.New[metric.Metric](10000)
+
+	clientConfig := &client.Config{Address: config.Address}
+	if config.Key != "" {
+		clientConfig.Signature = client.NewSignatureConfig("HashSHA256", config.Key, sha256.New)
+	}
+	client, err := client.New(clientConfig)
 	if err != nil {
 		return err
 	}
@@ -81,78 +99,124 @@ func Start(config *config.Config) error {
 		return err
 	}
 
-	go collectMetrics(suspendCtx, storage, collectors, config.PollInterval)
-	go processMetrics(suspendCtx, storage, client, config.ReportInterval, config.BatchSize)
+	semaphore := semaphore.New(config.RateLimit)
+
+	go collectMetricsWithInterval(suspendCtx, queue, collectors, config.PollInterval)
+	go processMetricsWithInterval(suspendCtx, queue, client, semaphore, config.ReportInterval, config.BatchSize)
 
 	<-suspendCtx.Done()
 
-	logger.Logger.Info("Received suspend signal. Trying to send collected metrics...")
-	sendMetrics(ctx, storage, client, config.BatchSize)
+	logger.Logger.Info("Received suspend signal. Trying to process already collected metrics...")
+	if err := processMetrics(ctx, queue, client, semaphore, config.BatchSize); err != nil {
+		logger.Logger.Error("Failed to process already collected metrics", zap.Error(err))
+	}
 	logger.Logger.Info("Agent successfully suspended")
 
 	return nil
 }
 
-func collectMetrics(ctx context.Context, storage *storage.Storage, collectors []collector.Collector, pollInterval uint32) {
+func collectMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.Metric], collectors []collector.Collector, pollInterval uint32) {
 	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for _, collector := range collectors {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					storage.Append(collector.Collect())
-				}
+			if err := collectMetrics(ctx, queue, collectors); err != nil {
+				logger.Logger.Error("Failed to collect metrics", zap.Error(err))
 			}
 		}
 	}
+}
+
+func collectMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], collectors []collector.Collector) error {
+	var errGroup errgroup.Group
+
+	for _, collector := range collectors {
+		select {
+		case <-ctx.Done():
+			return context.Cause(ctx)
+		default:
+			errGroup.Go(func() error {
+				collected, err := collector.Collect()
+				if err != nil {
+					return err
+				}
+
+				queue.PushChannel(collected)
+
+				return nil
+			})
+		}
+	}
+
+	return errGroup.Wait()
 }
 
 type apiClient interface {
 	SaveMetricsAsJSON(ctx context.Context, requests []request.SaveMetricRequest) ([]response.SaveMetricResponse, *response.APIError, error)
 }
 
-func processMetrics(ctx context.Context, storage *storage.Storage, client apiClient, reportInterval uint32, batchSize uint64) {
+func processMetricsWithInterval(ctx context.Context, queue *queue.Queue[metric.Metric], client apiClient, semaphore *semaphore.Semaphore, reportInterval uint32, batchSize uint64) {
 	ticker := time.NewTicker(time.Duration(reportInterval) * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			sendMetrics(ctx, storage, client, batchSize)
+			if err := processMetrics(ctx, queue, client, semaphore, batchSize); err != nil {
+				logger.Logger.Warn("Failed to process metrics", zap.Error(err))
+			}
 		}
 	}
 }
 
-func sendMetrics(ctx context.Context, storage *storage.Storage, client apiClient, batchSize uint64) {
-	storage.RemoveBatch(func(metrics []metric.Metric) bool {
-		requests := make([]request.SaveMetricRequest, 0, len(metrics))
-		for _, metric := range metrics {
-			request, err := transformer.TransformToSaveRequest(metric)
-			if err != nil {
-				logger.Logger.Error(err.Error())
-				continue
+func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], client apiClient, semaphore *semaphore.Semaphore, batchSize uint64) error {
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+	var errGroup errgroup.Group
+
+	for queue.Count() > 0 {
+		errGroup.Go(func() error {
+			if err := semaphore.Acquire(timeoutCtx); err != nil {
+				return err
 			}
 
-			requests = append(requests, *request)
+			defer semaphore.Release()
+			return queue.RemoveBatch(batchSize, func(items []metric.Metric) error {
+				return sendMetrics(timeoutCtx, client, items)
+			})
+		})
+	}
+
+	return errGroup.Wait()
+}
+
+func sendMetrics(ctx context.Context, client apiClient, metrics []metric.Metric) error {
+	count := len(metrics)
+	if count == 0 {
+		return nil
+	}
+
+	requests := make([]request.SaveMetricRequest, 0, count)
+	for _, metric := range metrics {
+		request, err := transformer.TransformToSaveRequest(metric)
+		if err != nil {
+			return err
 		}
 
-		if _, apiErr, err := client.SaveMetricsAsJSON(ctx, requests); err != nil {
-			logger.Logger.Warn(err.Error())
-			if apiErr != nil {
-				logger.Logger.Warn(
-					apiErr.Message,
-					zap.Int("code", apiErr.Code),
-					zap.Any("details", apiErr.Details),
-				)
-			}
-			return false
+		requests = append(requests, *request)
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	if _, apiErr, err := client.SaveMetricsAsJSON(timeoutCtx, requests); err != nil {
+		if apiErr != nil {
+			return fmt.Errorf("code: %d. %s [%v]", apiErr.Code, apiErr.Message, apiErr.Details)
 		}
 
-		return true
-	}, batchSize)
+		return err
+	}
+
+	return nil
 }

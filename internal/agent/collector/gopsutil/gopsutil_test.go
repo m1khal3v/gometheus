@@ -1,43 +1,49 @@
-package runtime
+package gopsutil
 
 import (
-	"fmt"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestNew(t *testing.T) {
+	cpuCount, err := cpu.Counts(true)
+	require.NoError(t, err)
 	tests := []struct {
 		name    string
-		metrics []string
+		metrics map[string]string
 		want    *Collector
 		wantErr error
 	}{
 		{
 			name: "valid",
-			metrics: []string{
-				"Sys",
-				"Frees",
+			metrics: map[string]string{
+				MetricFreeMemory:     "Free",
+				MetricTotalMemory:    "Total",
+				MetricCPUUtilization: "CPU",
 			},
 			want: &Collector{
-				metrics: []string{"Sys", "Frees"},
+				metrics: map[string]string{
+					MetricFreeMemory:     "Free",
+					MetricTotalMemory:    "Total",
+					MetricCPUUtilization: "CPU",
+				},
+				channelSize: uint16(2 + cpuCount),
 			},
 			wantErr: nil,
 		},
 		{
 			name: "invalid metric",
-			metrics: []string{
-				"Sys",
-				"Frees",
-				"Invalid",
+			metrics: map[string]string{
+				"Invalid": "Metric",
 			},
 			wantErr: newErrInvalidMetricName("Invalid"),
 		},
 		{
 			name:    "empty metrics",
-			metrics: []string{},
+			metrics: map[string]string{},
 			wantErr: ErrEmptyMetrics,
 		},
 	}
@@ -59,30 +65,32 @@ func TestNew(t *testing.T) {
 func TestCollector_Collect(t *testing.T) {
 	tests := []struct {
 		name    string
-		metrics []string
+		metrics map[string]string
 	}{
 		{
 			name: "valid 1",
-			metrics: []string{
-				"Sys",
-				"Frees",
+			metrics: map[string]string{
+				MetricFreeMemory: "Free",
 			},
 		},
 		{
 			name: "valid 2",
-			metrics: []string{
-				"NextGC",
-				"LastGC",
-				"NumGC",
+			metrics: map[string]string{
+				MetricTotalMemory: "Total",
 			},
 		},
 		{
 			name: "valid 3",
-			metrics: []string{
-				"Alloc",
-				"TotalAlloc",
-				"HeapAlloc",
-				"Mallocs",
+			metrics: map[string]string{
+				MetricCPUUtilization: "CPU",
+			},
+		},
+		{
+			name: "valid 4",
+			metrics: map[string]string{
+				MetricFreeMemory:     "Free",
+				MetricTotalMemory:    "Total",
+				MetricCPUUtilization: "CPU",
 			},
 		},
 	}
@@ -98,15 +106,16 @@ func TestCollector_Collect(t *testing.T) {
 			for metric := range collected {
 				metrics = append(metrics, metric)
 			}
-			assert.Len(t, metrics, len(tt.metrics)+1)
+			if collector.isset(MetricCPUUtilization) {
+				cpuCount, err := cpu.Counts(true)
+				require.NoError(t, err)
+				assert.Len(t, metrics, len(tt.metrics)-1+cpuCount)
+			} else {
+				assert.Len(t, metrics, len(tt.metrics))
+			}
 			for _, metric := range metrics {
-				if metric.Name() == "PollCount" {
-					assert.Equal(t, "counter", metric.Type())
-					assert.Equal(t, fmt.Sprintf("%d", len(tt.metrics)), metric.StringValue())
-				} else {
-					assert.Equal(t, "gauge", metric.Type())
-					assert.NotEmpty(t, metric.StringValue())
-				}
+				assert.Equal(t, "gauge", metric.Type())
+				assert.NotEmpty(t, metric.StringValue())
 			}
 		})
 	}

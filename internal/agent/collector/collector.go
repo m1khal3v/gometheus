@@ -5,5 +5,5 @@ import (
 )
 
 type Collector interface {
-	Collect() []metric.Metric
+	Collect() (<-chan metric.Metric, error)
 }

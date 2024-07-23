@@ -19,7 +19,7 @@ type Storage struct {
 	storage storage.Storage
 	file    *os.File
 	sync    bool
-	mutex   sync.Mutex
+	mutex   *sync.Mutex
 }
 
 func New(ctx context.Context, storage storage.Storage, filepath string, storeInterval uint32, restore bool) (*Storage, error) {
@@ -36,6 +36,7 @@ func New(ctx context.Context, storage storage.Storage, filepath string, storeInt
 		storage: storage,
 		file:    file,
 		sync:    storeInterval == 0,
+		mutex:   &sync.Mutex{},
 	}
 
 	if restore {

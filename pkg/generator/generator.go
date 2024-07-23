@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	"golang.org/x/exp/maps"
 	"sync"
 )
 
@@ -59,7 +60,7 @@ func NewFromMapWithContext[K comparable, T any](
 	go func() {
 		defer close(channel)
 
-		for key, value := range source {
+		for key, value := range maps.Clone(source) {
 			select {
 			case <-ctx.Done():
 				return
@@ -123,7 +124,7 @@ func NewFromMapOnlyValueWithContext[K comparable, T any](
 	go func() {
 		defer close(channel)
 
-		for _, value := range source {
+		for _, value := range maps.Clone(source) {
 			select {
 			case <-ctx.Done():
 				return

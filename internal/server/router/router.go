@@ -1,6 +1,7 @@
 package router
 
 import (
+	"crypto/sha256"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
@@ -10,9 +11,13 @@ import (
 	pkgMiddleware "github.com/m1khal3v/gometheus/pkg/middleware"
 )
 
-func New(storage storage.Storage) chi.Router {
+func New(storage storage.Storage, key string) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
+	if key != "" {
+		router.Use(internalMiddleware.HMACSignatureRespond("HashSHA256", sha256.New, key))
+		router.Use(internalMiddleware.HMACSignatureValidate("HashSHA256", sha256.New, key))
+	}
 	router.Use(pkgMiddleware.ZapLogRequest(logger.Logger, "http-request"))
 	router.Use(internalMiddleware.Recover())
 	router.Use(pkgMiddleware.ZapLogPanic(logger.Logger, "http-panic"))

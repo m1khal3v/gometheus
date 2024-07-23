@@ -15,6 +15,7 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/generator"
 	"github.com/m1khal3v/gometheus/pkg/retry"
 	"github.com/pressly/goose/v3"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 )
@@ -103,9 +104,9 @@ func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error
 
 		var metricType, metricName, metricValue string
 		if err := rows.Scan(&metricType, &metricName, &metricValue); err != nil {
-			logger.Logger.Error(err.Error())
+			logger.Logger.Error("Failed to scan row", zap.Error(err))
 			if err := rows.Close(); err != nil {
-				logger.Logger.Error(err.Error())
+				logger.Logger.Error("Failed to close rows", zap.Error(err))
 			}
 
 			return nil, false
@@ -113,9 +114,9 @@ func (storage *Storage) GetAll(ctx context.Context) (<-chan metric.Metric, error
 
 		metric, err := factory.New(metricType, metricName, metricValue)
 		if err != nil {
-			logger.Logger.Error(err.Error())
+			logger.Logger.Error("Failed to create metric", zap.Error(err))
 			if err := rows.Close(); err != nil {
-				logger.Logger.Error(err.Error())
+				logger.Logger.Error("Failed to close rows", zap.Error(err))
 			}
 
 			return nil, false

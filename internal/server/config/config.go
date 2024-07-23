@@ -13,6 +13,7 @@ type Config struct {
 	Restore         bool   `env:"RESTORE"`
 	DatabaseDriver  string `env:"DATABASE_DRIVER"`
 	DatabaseDSN     string `env:"DATABASE_DSN"`
+	Key             string `env:"KEY"`
 }
 
 func ParseConfig() *Config {
@@ -24,6 +25,7 @@ func ParseConfig() *Config {
 	flag.BoolVarP(&config.Restore, "restore", "r", true, "restore metrics from file")
 	flag.StringVar(&config.DatabaseDriver, "database-driver", "pgx", "database driver")
 	flag.StringVarP(&config.DatabaseDSN, "database-dsn", "d", "", "database dsn")
+	flag.StringVarP(&config.Key, "key", "k", "", "secret key")
 	flag.Parse()
 	if err := env.Parse(config); err != nil {
 		panic(err)
