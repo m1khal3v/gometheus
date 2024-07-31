@@ -48,7 +48,7 @@ func TestNewFromFunctionWithContextClose(t *testing.T) {
 		items = append(items, item)
 	}
 
-	assert.Equal(t, []int{1, 2, 3, 4, 5}, items)
+	assert.Equal(t, []int{1, 2, 3, 4}, items)
 }
 
 func TestNewFromMapWithContext(t *testing.T) {

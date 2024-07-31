@@ -24,15 +24,15 @@ func NewFromFunctionWithContext[T any](ctx context.Context, generate func() (T, 
 		defer close(channel)
 
 		for {
+			value, ok := generate()
+			if !ok {
+				return
+			}
+
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				value, ok := generate()
-				if !ok {
-					return
-				}
-
 				channel <- value
 			}
 		}
@@ -61,14 +61,14 @@ func NewFromMapWithContext[K comparable, T any](
 		defer close(channel)
 
 		for key, value := range maps.Clone(source) {
+			if modify != nil {
+				key, value = modify(key, value)
+			}
+
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				if modify != nil {
-					key, value = modify(key, value)
-				}
-
 				channel <- mapItem[K, T]{key, value}
 			}
 		}
@@ -92,15 +92,15 @@ func NewFromSyncMapWithContext[K comparable, T any](
 		defer close(channel)
 
 		source.Range(func(key, value any) bool {
+			keyK, valueT := key.(K), value.(T)
+			if modify != nil {
+				keyK, valueT = modify(keyK, valueT)
+			}
+
 			select {
 			case <-ctx.Done():
 				return false
 			default:
-				keyK, valueT := key.(K), value.(T)
-				if modify != nil {
-					keyK, valueT = modify(keyK, valueT)
-				}
-
 				channel <- mapItem[K, T]{keyK, valueT}
 				return true
 			}
@@ -125,14 +125,14 @@ func NewFromMapOnlyValueWithContext[K comparable, T any](
 		defer close(channel)
 
 		for _, value := range maps.Clone(source) {
+			if modify != nil {
+				value = modify(value)
+			}
+
 			select {
 			case <-ctx.Done():
 				return
 			default:
-				if modify != nil {
-					value = modify(value)
-				}
-
 				channel <- value
 			}
 		}
@@ -156,15 +156,15 @@ func NewFromSyncMapOnlyValueWithContext[T any](
 		defer close(channel)
 
 		source.Range(func(_, value any) bool {
+			valueT := value.(T)
+			if modify != nil {
+				valueT = modify(valueT)
+			}
+
 			select {
 			case <-ctx.Done():
 				return false
 			default:
-				valueT := value.(T)
-				if modify != nil {
-					valueT = modify(valueT)
-				}
-
 				channel <- valueT
 				return true
 			}
