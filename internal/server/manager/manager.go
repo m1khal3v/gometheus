@@ -77,8 +77,8 @@ func (manager *Manager) Save(ctx context.Context, metric metric.Metric) (metric.
 
 func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) ([]metric.Metric, error) {
 	processed := map[string]metric.Metric{}
-	// Sorting metrics to avoid deadlock
-	sort.Slice(metrics, func(i, j int) bool {
+	// Sorting metrics to avoid deadlock, use Stable to save original order
+	sort.SliceStable(metrics, func(i, j int) bool {
 		return metrics[i].Name() < metrics[j].Name()
 	})
 
