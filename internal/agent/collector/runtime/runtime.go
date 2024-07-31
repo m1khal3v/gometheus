@@ -51,10 +51,10 @@ func New(metrics []string) (*Collector, error) {
 
 func (collector *Collector) validateMetricNames() error {
 	var err error = nil
-	memStats := runtime.MemStats{}
+	value := reflect.ValueOf(runtime.MemStats{})
 
 	for _, name := range collector.metrics {
-		if !reflect.ValueOf(memStats).FieldByName(name).IsValid() {
+		if !value.FieldByName(name).IsValid() {
 			err = errors.Join(err, newErrInvalidMetricName(name))
 		}
 	}
