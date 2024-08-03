@@ -40,7 +40,8 @@ func (queue *Queue[T]) Pop(count uint64) []T {
 		case item := <-queue.items:
 			items = append(items, item)
 		default:
-			// no more items to return - break
+			// no more items to return
+			return items
 		}
 	}
 
