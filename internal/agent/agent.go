@@ -177,11 +177,11 @@ func processMetrics(ctx context.Context, queue *queue.Queue[metric.Metric], clie
 	var errGroup errgroup.Group
 
 	for queue.Count() > 0 {
-		errGroup.Go(func() error {
-			if err := semaphore.Acquire(timeoutCtx); err != nil {
-				return err
-			}
+		if err := semaphore.Acquire(timeoutCtx); err != nil {
+			return err
+		}
 
+		errGroup.Go(func() error {
 			defer semaphore.Release()
 			return queue.RemoveBatch(batchSize, func(items []metric.Metric) error {
 				return sendMetrics(timeoutCtx, client, items)
