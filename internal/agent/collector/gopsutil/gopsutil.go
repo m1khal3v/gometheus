@@ -1,3 +1,5 @@
+// Package gopsutil
+// collector for shirou/gopsutil package metrics
 package gopsutil
 
 import (

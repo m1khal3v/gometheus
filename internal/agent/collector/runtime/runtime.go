@@ -1,3 +1,5 @@
+// Package runtime
+// collector for golang runtime package metrics
 package runtime
 
 import (

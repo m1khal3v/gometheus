@@ -1,3 +1,5 @@
+// Package generator
+// contains channel based generator implementations
 package generator
 
 import (

@@ -1,3 +1,5 @@
+// Package pprof
+// contains USR1/USR2 system signals listener for pprof profiles generation
 package pprof
 
 import (

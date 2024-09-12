@@ -1,3 +1,5 @@
+// Package collector
+// contains interface and its implementations
 package collector
 
 import (

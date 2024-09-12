@@ -1,3 +1,5 @@
+// Package config
+// gometheus agent configuration
 package config
 
 import (

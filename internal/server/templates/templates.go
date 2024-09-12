@@ -1,3 +1,5 @@
+// Package templates
+// contains facade for html templates and templates themselves
 package templates
 
 import (

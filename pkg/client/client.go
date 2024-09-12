@@ -1,3 +1,5 @@
+// Package client
+// contains gometheus http client
 package client
 
 import (

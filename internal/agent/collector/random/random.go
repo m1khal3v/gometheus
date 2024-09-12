@@ -1,3 +1,5 @@
+// Package random
+// collector for random value metric
 package random
 
 import (

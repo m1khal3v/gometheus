@@ -1,3 +1,5 @@
+// Package logger
+// contains shared logger
 package logger
 
 import (

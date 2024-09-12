@@ -1,3 +1,5 @@
+// Package factory
+// contains storage factory
 package factory
 
 import (

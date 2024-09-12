@@ -1,3 +1,5 @@
+// Package pprof
+// contains facade for runtime/pprof package
 package pprof
 
 import (

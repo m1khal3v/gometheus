@@ -1,3 +1,5 @@
+// Package transformer
+// contains metric -> request/response transformer
 package transformer
 
 import (

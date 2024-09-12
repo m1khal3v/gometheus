@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/m1khal3v/gometheus/internal/agent"
+	"github.com/m1khal3v/gometheus/internal/agent/app"
 	"github.com/m1khal3v/gometheus/internal/agent/config"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"go.uber.org/zap"
@@ -26,7 +26,7 @@ func main() {
 		zap.Bool("key", config.Key != ""),
 	)
 
-	if err := agent.Start(config); err != nil {
+	if err := app.Start(config); err != nil {
 		logger.Logger.Fatal(err.Error())
 	}
 }

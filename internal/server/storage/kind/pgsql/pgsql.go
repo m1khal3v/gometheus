@@ -1,3 +1,5 @@
+// Package pgsql
+// contains postgres storage implementation
 package pgsql
 
 import (

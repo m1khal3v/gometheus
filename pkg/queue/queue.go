@@ -1,3 +1,5 @@
+// Package queue
+// contains channel based queue implementation
 package queue
 
 type Queue[T any] struct {

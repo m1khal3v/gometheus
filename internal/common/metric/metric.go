@@ -1,3 +1,5 @@
+// Package metrics
+// contains interface, implementations, factory and transformer for metrics
 package metric
 
 type Metric interface {

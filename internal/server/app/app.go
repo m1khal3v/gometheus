@@ -1,4 +1,6 @@
-package server
+// Package app
+// contains dependency injection, general goroutines and start/stop logic
+package app
 
 import (
 	"context"

@@ -1,3 +1,5 @@
+// Package factory
+// contains metrics factory
 package factory
 
 import (

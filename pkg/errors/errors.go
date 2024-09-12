@@ -1,3 +1,5 @@
+// Package errors
+// contains helper functions for error type
 package errors
 
 import (

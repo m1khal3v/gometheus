@@ -1,3 +1,5 @@
+// Package semaphore
+// contains channel based semaphore implementation
 package semaphore
 
 import "context"

@@ -1,3 +1,5 @@
+// Package retry
+// contains Retry helper function
 package retry
 
 import (

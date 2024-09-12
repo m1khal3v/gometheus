@@ -1,3 +1,5 @@
+// Package gauge
+// contains gauge metric implementation
 package gauge
 
 import (

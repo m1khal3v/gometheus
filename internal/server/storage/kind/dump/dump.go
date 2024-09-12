@@ -1,3 +1,5 @@
+// Package dump
+// contains dump to file storage decorator
 package dump
 
 import (

@@ -1,3 +1,5 @@
+// Package config
+// gometheus server configuration
 package config
 
 import (

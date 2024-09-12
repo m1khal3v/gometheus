@@ -1,3 +1,5 @@
+// Package storage
+// contains interface and its implementations
 package storage
 
 import (

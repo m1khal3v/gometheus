@@ -1,3 +1,5 @@
+// Package manager
+// contains storage proxy with app logic
 package manager
 
 import (

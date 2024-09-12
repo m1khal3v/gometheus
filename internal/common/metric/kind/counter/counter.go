@@ -1,3 +1,5 @@
+// Package counter
+// contains counter metric implementation
 package counter
 
 import (
