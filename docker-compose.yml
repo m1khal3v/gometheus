@@ -1,0 +1,55 @@
+name: gometheus
+
+services:
+  pgsql:
+    image: postgres:16
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  server:
+    depends_on:
+      pgsql:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: .docker/server/Dockerfile
+    restart: unless-stopped
+    environment:
+      ADDRESS: ":8080"
+      DATABASE_DSN: "host=pgsql port=5432 user=postgres password=postgres dbname=postgres"
+      CPU_PROFILE_FILE: "/app/profiles/cpu.pprof"
+      MEM_PROFILE_FILE: "/app/profiles/mem.pprof"
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./profiles/server:/app/profiles"
+
+  agent:
+    depends_on:
+      server:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: .docker/agent/Dockerfile
+    restart: unless-stopped
+    environment:
+      ADDRESS: "server:8080"
+      CPU_PROFILE_FILE: "/app/profiles/cpu.pprof"
+      MEM_PROFILE_FILE: "/app/profiles/mem.pprof"
+    volumes:
+      - "./profiles/agent:/app/profiles"
+
+volumes:
+  postgres:
