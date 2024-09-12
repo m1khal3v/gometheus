@@ -28,7 +28,7 @@ services:
     restart: unless-stopped
     environment:
       ADDRESS: ":8080"
-      DATABASE_DSN: "host=pgsql port=5432 user=postgres password=postgres dbname=postgres"
+      DATABASE_DSN: "postgres://postgres:postgres@pgsql:5432/postgres?sslmode=disable"
       CPU_PROFILE_FILE: "/app/profiles/cpu.pprof"
       MEM_PROFILE_FILE: "/app/profiles/mem.pprof"
     ports:
