@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/common/pprof"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
@@ -45,6 +46,7 @@ func Start(config *config.Config) error {
 			errCancel(err)
 		}
 	}()
+	go pprof.ListenSignals(suspendCtx, config.CPUProfileFile, config.CPUProfileDuration, config.MemProfileFile)
 
 	select {
 	case <-errCtx.Done():

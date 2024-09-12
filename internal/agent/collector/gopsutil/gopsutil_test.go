@@ -13,22 +13,22 @@ func TestNew(t *testing.T) {
 	require.NoError(t, err)
 	tests := []struct {
 		name    string
-		metrics map[string]string
+		metrics MetricMap
 		want    *Collector
 		wantErr error
 	}{
 		{
 			name: "valid",
-			metrics: map[string]string{
-				MetricFreeMemory:     "Free",
-				MetricTotalMemory:    "Total",
-				MetricCPUUtilization: "CPU",
+			metrics: MetricMap{
+				FreeMemory:     "Free",
+				TotalMemory:    "Total",
+				CPUUtilization: "CPU",
 			},
 			want: &Collector{
-				metrics: map[string]string{
-					MetricFreeMemory:     "Free",
-					MetricTotalMemory:    "Total",
-					MetricCPUUtilization: "CPU",
+				metrics: MetricMap{
+					FreeMemory:     "Free",
+					TotalMemory:    "Total",
+					CPUUtilization: "CPU",
 				},
 				channelSize: uint16(2 + cpuCount),
 			},
@@ -36,14 +36,14 @@ func TestNew(t *testing.T) {
 		},
 		{
 			name: "invalid metric",
-			metrics: map[string]string{
-				"Invalid": "Metric",
+			metrics: MetricMap{
+				"Invalid": "interest",
 			},
 			wantErr: newErrInvalidMetricName("Invalid"),
 		},
 		{
 			name:    "empty metrics",
-			metrics: map[string]string{},
+			metrics: MetricMap{},
 			wantErr: ErrEmptyMetrics,
 		},
 	}
@@ -65,32 +65,32 @@ func TestNew(t *testing.T) {
 func TestCollector_Collect(t *testing.T) {
 	tests := []struct {
 		name    string
-		metrics map[string]string
+		metrics MetricMap
 	}{
 		{
 			name: "valid 1",
-			metrics: map[string]string{
-				MetricFreeMemory: "Free",
+			metrics: MetricMap{
+				FreeMemory: "Free",
 			},
 		},
 		{
 			name: "valid 2",
-			metrics: map[string]string{
-				MetricTotalMemory: "Total",
+			metrics: MetricMap{
+				TotalMemory: "Total",
 			},
 		},
 		{
 			name: "valid 3",
-			metrics: map[string]string{
-				MetricCPUUtilization: "CPU",
+			metrics: MetricMap{
+				CPUUtilization: "CPU",
 			},
 		},
 		{
 			name: "valid 4",
-			metrics: map[string]string{
-				MetricFreeMemory:     "Free",
-				MetricTotalMemory:    "Total",
-				MetricCPUUtilization: "CPU",
+			metrics: MetricMap{
+				FreeMemory:     "Free",
+				TotalMemory:    "Total",
+				CPUUtilization: "CPU",
 			},
 		},
 	}
@@ -106,7 +106,7 @@ func TestCollector_Collect(t *testing.T) {
 			for metric := range collected {
 				metrics = append(metrics, metric)
 			}
-			if collector.isset(MetricCPUUtilization) {
+			if collector.isset(CPUUtilization) {
 				cpuCount, err := cpu.Counts(true)
 				require.NoError(t, err)
 				assert.Len(t, metrics, len(tt.metrics)-1+cpuCount)

@@ -12,6 +12,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
+	"github.com/m1khal3v/gometheus/internal/common/pprof"
 	"github.com/m1khal3v/gometheus/pkg/client"
 	"github.com/m1khal3v/gometheus/pkg/queue"
 	"github.com/m1khal3v/gometheus/pkg/request"
@@ -63,10 +64,10 @@ func createCollectors() ([]collector.Collector, error) {
 		return nil, err
 	}
 
-	gopsUtilCollector, err := gopsutil.New(map[string]string{
-		gopsutil.MetricTotalMemory:    "TotalMemory",
-		gopsutil.MetricFreeMemory:     "FreeMemory",
-		gopsutil.MetricCPUUtilization: "CPUUtilization",
+	gopsUtilCollector, err := gopsutil.New(gopsutil.MetricMap{
+		gopsutil.TotalMemory:    "TotalMemory",
+		gopsutil.FreeMemory:     "FreeMemory",
+		gopsutil.CPUUtilization: "CPUUtilization",
 	})
 	if err != nil {
 		return nil, err
@@ -103,6 +104,7 @@ func Start(config *config.Config) error {
 
 	go collectMetricsWithInterval(suspendCtx, queue, collectors, config.PollInterval)
 	go processMetricsWithInterval(suspendCtx, queue, client, semaphore, config.ReportInterval, config.BatchSize)
+	go pprof.ListenSignals(suspendCtx, config.CPUProfileFile, config.CPUProfileDuration, config.MemProfileFile)
 
 	<-suspendCtx.Done()
 

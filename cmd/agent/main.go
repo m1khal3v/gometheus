@@ -20,6 +20,9 @@ func main() {
 		zap.Uint32("report_interval", config.ReportInterval),
 		zap.Uint64("batch_size", config.BatchSize),
 		zap.Uint64("rate_limit", config.RateLimit),
+		zap.String("cpu_profile_file", config.CPUProfileFile),
+		zap.Duration("cpu_profile_duration", config.CPUProfileDuration),
+		zap.String("mem_profile_file", config.MemProfileFile),
 		zap.Bool("key", config.Key != ""),
 	)
 
