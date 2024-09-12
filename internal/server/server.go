@@ -3,16 +3,17 @@ package server
 import (
 	"context"
 	"errors"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/common/pprof"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
 	"go.uber.org/zap"
-	"net/http"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func Start(config *config.Config) error {

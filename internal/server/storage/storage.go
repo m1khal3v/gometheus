@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 

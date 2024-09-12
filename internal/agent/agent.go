@@ -4,6 +4,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/m1khal3v/gometheus/internal/agent/collector"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/gopsutil"
 	"github.com/m1khal3v/gometheus/internal/agent/collector/random"
@@ -20,9 +24,6 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/semaphore"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func createCollectors() ([]collector.Collector, error) {

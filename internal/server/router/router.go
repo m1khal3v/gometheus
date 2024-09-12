@@ -2,6 +2,7 @@ package router
 
 import (
 	"crypto/sha256"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/m1khal3v/gometheus/internal/common/logger"

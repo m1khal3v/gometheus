@@ -5,14 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/m1khal3v/gometheus/internal/common/metric"
-	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
-	"github.com/m1khal3v/gometheus/internal/server/storage"
-	"github.com/m1khal3v/gometheus/pkg/retry"
 	"os"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/m1khal3v/gometheus/internal/common/metric"
+	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
+	"github.com/m1khal3v/gometheus/internal/server/storage"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 )
 
 type Storage struct {

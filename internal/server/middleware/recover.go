@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/server/api"
 	"net/http"
+
+	"github.com/m1khal3v/gometheus/internal/server/api"
 )
 
 func Recover() func(next http.Handler) http.Handler {

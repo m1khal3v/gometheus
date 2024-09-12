@@ -3,11 +3,12 @@ package gopsutil
 import (
 	"errors"
 	"fmt"
+	"slices"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
-	"slices"
 )
 
 type (

@@ -2,6 +2,7 @@ package gauge
 
 import (
 	"fmt"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 

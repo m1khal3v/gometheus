@@ -5,12 +5,13 @@ import (
 	"crypto/hmac"
 	"encoding/hex"
 	"fmt"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/m1khal3v/gometheus/internal/server/api"
 	"hash"
 	"io"
 	"net/http"
 	"sync"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/m1khal3v/gometheus/internal/server/api"
 )
 
 type hmacPool struct {

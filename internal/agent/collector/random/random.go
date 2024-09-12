@@ -2,9 +2,10 @@ package random
 
 import (
 	"fmt"
+	"math/rand/v2"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
-	"math/rand/v2"
 )
 
 type Collector struct {

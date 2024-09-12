@@ -2,13 +2,14 @@ package pprof
 
 import (
 	"context"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
-	"github.com/m1khal3v/gometheus/pkg/pprof"
-	"go.uber.org/zap"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/pkg/pprof"
+	"go.uber.org/zap"
 )
 
 func ListenSignals(ctx context.Context, cpuFilename string, cpuDuration time.Duration, memFilename string) {

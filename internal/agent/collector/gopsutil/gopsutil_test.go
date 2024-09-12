@@ -1,11 +1,12 @@
 package gopsutil
 
 import (
+	"testing"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestNew(t *testing.T) {

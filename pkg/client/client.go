@@ -8,16 +8,17 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/m1khal3v/gometheus/pkg/request"
-	"github.com/m1khal3v/gometheus/pkg/response"
-	"github.com/m1khal3v/gometheus/pkg/retry"
 	"hash"
 	"io"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/m1khal3v/gometheus/pkg/request"
+	"github.com/m1khal3v/gometheus/pkg/response"
+	"github.com/m1khal3v/gometheus/pkg/retry"
 )
 
 // This is a very simplified regular expression that will work in most cases.

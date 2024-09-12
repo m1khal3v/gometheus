@@ -3,12 +3,13 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+
 	"github.com/asaskevich/govalidator"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	pkgErrors "github.com/m1khal3v/gometheus/pkg/errors"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 func DecodeAndValidateJSONRequest[T any](request *http.Request, writer http.ResponseWriter) (*T, bool) {

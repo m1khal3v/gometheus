@@ -2,10 +2,11 @@ package memory
 
 import (
 	"context"
+	"sync"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	store "github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/generator"
-	"sync"
 )
 
 type Storage struct {

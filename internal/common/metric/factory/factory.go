@@ -2,11 +2,12 @@ package factory
 
 import (
 	"fmt"
+	"strconv"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/pkg/request"
-	"strconv"
 )
 
 type ErrUnknownType struct {

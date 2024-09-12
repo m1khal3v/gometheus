@@ -5,6 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"testing"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
@@ -15,11 +21,6 @@ import (
 	responses "github.com/m1khal3v/gometheus/pkg/response"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"regexp"
-	"testing"
 )
 
 func testRequest(t *testing.T, server *httptest.Server, method string, path string, body []byte) (*http.Response, string) {

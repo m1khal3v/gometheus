@@ -3,6 +3,11 @@ package pgsql
 import (
 	"context"
 	"fmt"
+	"log"
+	"math/rand/v2"
+	"net"
+	"testing"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
@@ -12,10 +17,6 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log"
-	"math/rand/v2"
-	"net"
-	"testing"
 )
 
 var baseDSN string

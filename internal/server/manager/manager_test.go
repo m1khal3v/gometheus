@@ -2,6 +2,8 @@ package manager
 
 import (
 	"context"
+	"testing"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
@@ -9,7 +11,6 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/slice"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestManager_Save(t *testing.T) {

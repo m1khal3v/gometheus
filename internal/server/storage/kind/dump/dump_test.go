@@ -3,6 +3,11 @@ package dump
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
@@ -11,10 +16,6 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/slice"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
-	"os"
-	"strings"
-	"testing"
 )
 
 func TestNew(t *testing.T) {

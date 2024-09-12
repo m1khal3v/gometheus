@@ -6,14 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"testing"
+
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"io"
 	"k8s.io/utils/ptr"
-	"net/http"
-	"testing"
 )
 
 func TestNew(t *testing.T) {

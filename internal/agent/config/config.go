@@ -1,9 +1,10 @@
 package config
 
 import (
+	"time"
+
 	"github.com/caarlos0/env/v6"
 	flag "github.com/spf13/pflag"
-	"time"
 )
 
 type Config struct {

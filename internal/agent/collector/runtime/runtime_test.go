@@ -2,10 +2,11 @@ package runtime
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestNew(t *testing.T) {

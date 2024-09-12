@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"embed"
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -16,8 +19,6 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/retry"
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
-	"sync"
-	"time"
 )
 
 const (
