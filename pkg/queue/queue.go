@@ -14,6 +14,7 @@ func New[T any](size uint64) *Queue[T] {
 	}
 }
 
+// Push item to Queue
 func (queue *Queue[T]) Push(item T) {
 	queue.items <- item
 }
@@ -30,6 +31,7 @@ func (queue *Queue[T]) PushChannel(items <-chan T) {
 	}
 }
 
+// Pop item from Queue
 func (queue *Queue[T]) Pop(count uint64) []T {
 	if count == 0 || len(queue.items) == 0 {
 		return []T{}
@@ -61,6 +63,7 @@ func (queue *Queue[T]) RemoveBatch(count uint64, filter removeBatchFilter[T]) er
 	return nil
 }
 
+// Count of items in Queue
 func (queue *Queue[T]) Count() uint64 {
 	return uint64(len(queue.items))
 }

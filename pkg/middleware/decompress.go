@@ -33,6 +33,7 @@ func newDecoderPool() *decoderPool {
 	}
 }
 
+// Decompress request with specified content encoding if supports
 func Decompress() func(next http.Handler) http.Handler {
 	decoderPool := newDecoderPool()
 

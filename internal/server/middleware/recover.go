@@ -7,6 +7,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/server/api"
 )
 
+// Recover panic in handlers and transform it to JSON error
 func Recover() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

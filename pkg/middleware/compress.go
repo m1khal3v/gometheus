@@ -70,6 +70,7 @@ func getDefaultContentTypes() []string {
 	}
 }
 
+// Compress response with specified encoder, level and content types, if supports
 func Compress(level uint8, types ...string) func(next http.Handler) http.Handler {
 	if len(types) == 0 {
 		types = getDefaultContentTypes()

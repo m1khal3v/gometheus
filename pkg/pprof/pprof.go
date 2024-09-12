@@ -22,6 +22,7 @@ const (
 	Mutex        profile = "mutex"
 )
 
+// CPUCapture creates file and start CPU profiling for specified duration to it
 func CPUCapture(ctx context.Context, filename string, duration time.Duration) error {
 	filename, err := filepath.Abs(filename)
 	if err != nil {
@@ -50,6 +51,7 @@ func CPUCapture(ctx context.Context, filename string, duration time.Duration) er
 	return file.Close()
 }
 
+// Capture creates file and save specified profiling to it
 func Capture(profile profile, filename string) error {
 	filename, err := filepath.Abs(filename)
 	if err != nil {

@@ -3,8 +3,8 @@
 package metric
 
 type Metric interface {
-	Type() string
-	Name() string
-	StringValue() string
-	Clone() Metric
+	Type() string        // Type of Metric
+	Name() string        // Name of Metric
+	StringValue() string // StringValue of Metric
+	Clone() Metric       // Clone Metric
 }
