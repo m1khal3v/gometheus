@@ -34,14 +34,14 @@ test-agent: ## Run go test agent
 test-race-agent: ## Run go race test agent
 	docker compose run --rm --no-deps agent go test -v -race ./...
 
-cpu-pprof-server: ## Capture CPU pprof server
+pprof-cpu-server: ## Capture CPU pprof server
 	docker compose kill -s SIGUSR1 server
 
-cpu-pprof-agent: ## Capture CPU pprof agent
+pprof-cpu-agent: ## Capture CPU pprof agent
 	docker compose kill -s SIGUSR1 agent
 
-mem-pprof-server: ## Capture memory pprof server
+pprof-mem-server: ## Capture memory pprof server
 	docker compose kill -s SIGUSR2 server
 
-mem-pprof-agent: ## Capture memory pprof agent
+pprof-mem-agent: ## Capture memory pprof agent
 	docker compose kill -s SIGUSR2 agent
