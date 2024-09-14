@@ -108,6 +108,12 @@ func WithHMACSignature(key string, hasher func() hash.Hash, header string, optio
 	}
 }
 
+func withTransport(transport http.RoundTripper) ConfigOption {
+	return func(config *config) {
+		config.transport = transport
+	}
+}
+
 func WithoutSignRequest() SignatureConfigOption {
 	return func(config *signatureConfig) {
 		config.signRequest = false
