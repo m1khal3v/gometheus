@@ -20,7 +20,7 @@ import (
 
 type Client struct {
 	resty  *resty.Client
-	config *Config
+	config *config
 }
 
 type ErrUnexpectedStatus struct {
@@ -40,18 +40,18 @@ func newErrUnexpectedStatus(status int) ErrUnexpectedStatus {
 var ErrInvalidSignature = errors.New("invalid Signature")
 
 func New(address string, options ...ConfigOption) *Client {
-	config := NewConfig(address, options...)
+	config := newConfig(address, options...)
 	client := resty.
 		New().
 		SetTransport(config.transport).
-		SetBaseURL(config.Address()).
+		SetBaseURL(config.address).
 		SetHeader("Accept-Encoding", "gzip")
 
 	hooks := make([]preRequestHook, 0)
-	if config.Compress {
+	if config.compress {
 		hooks = append(hooks, compressRequestBody)
 	}
-	if config.Signature != nil && config.Signature.SignRequest {
+	if config.signature != nil && config.signature.signRequest {
 		hooks = append(hooks, addHMACSignature)
 	}
 
@@ -141,7 +141,7 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 	}
 
 	var err error
-	if client.config.Retry {
+	if client.config.retry {
 		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
 			return !errors.As(err, &ErrUnexpectedStatus{}) &&
 				!errors.Is(err, context.DeadlineExceeded) &&
@@ -155,19 +155,19 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		return result, err
 	}
 
-	signConfig := client.config.Signature
-	if signConfig != nil && signConfig.ValidateResponse {
+	signConfig := client.config.signature
+	if signConfig != nil && signConfig.validateResponse {
 		body, err := result.RawResponse.Body.(*BufferReader).ReadAll()
 		if err != nil {
 			return nil, err
 		}
 
-		resultSignature, err := hex.DecodeString(result.Header().Get(signConfig.Header))
+		resultSignature, err := hex.DecodeString(result.Header().Get(signConfig.header))
 		if err != nil {
 			return nil, err
 		}
 
-		if err := validateHMACSignature(body, resultSignature, []byte(signConfig.Key), signConfig.Hasher); err != nil {
+		if err := validateHMACSignature(body, resultSignature, []byte(signConfig.key), signConfig.hasher); err != nil {
 			return nil, err
 		}
 	}

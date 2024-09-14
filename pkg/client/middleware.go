@@ -13,7 +13,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type preRequestHook func(config *Config, request *http.Request) error
+type preRequestHook func(config *config, request *http.Request) error
 
 type BufferReader struct {
 	*bytes.Reader
@@ -59,7 +59,7 @@ var hmacTransport transportHook = func(response *http.Response) (*http.Response,
 	return response, nil
 }
 
-func preRequestHookCombine(config *Config, functions ...preRequestHook) resty.PreRequestHook {
+func preRequestHookCombine(config *config, functions ...preRequestHook) resty.PreRequestHook {
 	return func(client *resty.Client, request *http.Request) error {
 		for _, function := range functions {
 			if err := function(config, request); err != nil {
@@ -71,7 +71,7 @@ func preRequestHookCombine(config *Config, functions ...preRequestHook) resty.Pr
 	}
 }
 
-func compressRequestBody(config *Config, request *http.Request) error {
+func compressRequestBody(config *config, request *http.Request) error {
 	if request.Body == nil {
 		return nil
 	}
@@ -98,7 +98,7 @@ func compressRequestBody(config *Config, request *http.Request) error {
 	return nil
 }
 
-func addHMACSignature(config *Config, request *http.Request) error {
+func addHMACSignature(config *config, request *http.Request) error {
 	buffer := bytes.NewBuffer([]byte{})
 
 	if request.Body != nil {
@@ -113,12 +113,12 @@ func addHMACSignature(config *Config, request *http.Request) error {
 		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
 	}
 
-	encoder := hmac.New(config.Signature.Hasher, []byte(config.Signature.Key))
+	encoder := hmac.New(config.signature.hasher, []byte(config.signature.key))
 	if _, err := encoder.Write(buffer.Bytes()); err != nil {
 		return err
 	}
 
-	request.Header.Set(config.Signature.Header, hex.EncodeToString(encoder.Sum(nil)))
+	request.Header.Set(config.signature.header, hex.EncodeToString(encoder.Sum(nil)))
 
 	return nil
 }
