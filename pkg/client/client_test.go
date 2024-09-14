@@ -304,10 +304,8 @@ func (function roundTripFunction) RoundTrip(req *http.Request) (*http.Response, 
 
 func newTestClient(t *testing.T, function roundTripFunction) *Client {
 	t.Helper()
-	config := NewConfig("test", WithoutRetry())
-	config.transport = function
-	client := New(config)
-	require.NotNil(t, client)
+	client := New("test", WithoutRetry())
+	client.config.transport = function
 
 	return client
 }

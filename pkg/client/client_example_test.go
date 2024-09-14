@@ -9,11 +9,11 @@ import (
 )
 
 func Example() {
-	client := New(NewConfig(
+	client := New(
 		"foo.bar.com",
 		WithScheme("https"),
 		WithPort(4433),
-	))
+	)
 	responses, apiErr, err := client.SaveMetricsAsJSON(context.TODO(), []request.SaveMetricRequest{
 		{
 			MetricName: "clicks",

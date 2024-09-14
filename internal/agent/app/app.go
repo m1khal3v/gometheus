@@ -94,7 +94,7 @@ func Start(config *config.Config) error {
 		options = append(options, client.WithHMACSignature(config.Key, sha256.New, "HashSHA256"))
 	}
 
-	client := client.New(client.NewConfig(config.Address, options...))
+	client := client.New(config.Address, options...)
 	collectors, err := createCollectors()
 	if err != nil {
 		return err

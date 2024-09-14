@@ -39,7 +39,8 @@ func newErrUnexpectedStatus(status int) ErrUnexpectedStatus {
 
 var ErrInvalidSignature = errors.New("invalid Signature")
 
-func New(config *Config) *Client {
+func New(address string, options ...ConfigOption) *Client {
+	config := NewConfig(address, options...)
 	client := resty.
 		New().
 		SetTransport(config.transport).
