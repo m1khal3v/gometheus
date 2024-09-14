@@ -89,15 +89,12 @@ func Start(config *config.Config) error {
 
 	queue := queue.New[metric.Metric](10000)
 
-	clientConfig := &client.Config{Address: config.Address}
+	options := make([]client.ConfigOption, 0, 1)
 	if config.Key != "" {
-		clientConfig.Signature = client.NewSignatureConfig("HashSHA256", config.Key, sha256.New)
-	}
-	client, err := client.New(clientConfig)
-	if err != nil {
-		return err
+		options = append(options, client.WithHMACSignature(config.Key, sha256.New, "HashSHA256"))
 	}
 
+	client := client.New(client.NewConfig(config.Address, options...))
 	collectors, err := createCollectors()
 	if err != nil {
 		return err

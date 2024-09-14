@@ -9,14 +9,11 @@ import (
 )
 
 func Example() {
-	client, err := New(&Config{
-		Address: "localhost:8080",
-	})
-	if err != nil {
-		fmt.Printf("Failed to create client: %s", err.Error())
-		return
-	}
-
+	client := New(NewConfig(
+		"foo.bar.com",
+		WithScheme("https"),
+		WithPort(4433),
+	))
 	responses, apiErr, err := client.SaveMetricsAsJSON(context.TODO(), []request.SaveMetricRequest{
 		{
 			MetricName: "clicks",
