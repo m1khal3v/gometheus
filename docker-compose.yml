@@ -28,6 +28,7 @@ services:
     restart: unless-stopped
     environment:
       ADDRESS: ":8080"
+      TEST_DATABASE_DSN: "postgres://postgres:postgres@pgsql:5432/postgres?sslmode=disable"
       DATABASE_DSN: "postgres://postgres:postgres@pgsql:5432/postgres?sslmode=disable"
       CPU_PROFILE_FILE: "/app/profiles/cpu.pprof"
       MEM_PROFILE_FILE: "/app/profiles/mem.pprof"

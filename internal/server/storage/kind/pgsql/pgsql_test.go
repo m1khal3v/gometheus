@@ -184,7 +184,7 @@ func TestMain(m *testing.M) {
 func tryUseExistingPostgres() (func(), bool) {
 	baseDSN = os.Getenv("TEST_DATABASE_DSN")
 	if baseDSN == "" {
-		baseDSN = os.Getenv("DATABASE_DSN")
+		return nil, false
 	}
 
 	var err error
