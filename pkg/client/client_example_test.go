@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 
 	"github.com/m1khal3v/gometheus/pkg/request"
@@ -11,9 +12,10 @@ import (
 func Example() {
 	client := New(
 		"foo.bar.com",
-		WithScheme("https"),
-		WithPort(4433),
+		WithoutRetry(),
+		WithHMACSignature("$ecret", sha256.New, "X-Signature"),
 	)
+
 	responses, apiErr, err := client.SaveMetricsAsJSON(context.TODO(), []request.SaveMetricRequest{
 		{
 			MetricName: "clicks",
