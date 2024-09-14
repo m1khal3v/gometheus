@@ -182,7 +182,11 @@ func TestMain(m *testing.M) {
 }
 
 func tryUseExistingPostgres() (func(), bool) {
-	baseDSN = os.Getenv("DATABASE_DSN")
+	baseDSN = os.Getenv("TEST_DATABASE_DSN")
+	if baseDSN == "" {
+		baseDSN = os.Getenv("DATABASE_DSN")
+	}
+
 	var err error
 	connection, err = pgx.Connect(context.Background(), baseDSN)
 

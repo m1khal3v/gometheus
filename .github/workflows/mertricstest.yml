@@ -113,9 +113,9 @@ jobs:
           github.head_ref == 'iter17' ||
           github.head_ref == 'iter18'
         run: |
+          TEST_DATABASE_DSN="postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable"
           metricstest -test.v -test.run=^TestIteration2[AB]*$ \
             -source-path=. \
-            -database-dsn='postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable' \
             -agent-binary-path=cmd/agent/agent
 
       - name: "Code increment #3"
