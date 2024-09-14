@@ -59,13 +59,6 @@ func newConfig(address string, options ...ConfigOption) *config {
 	return config
 }
 
-func (config *config) Address() string {
-	if config.address == "" {
-	}
-
-	return config.address
-}
-
 func WithScheme(scheme string) ConfigOption {
 	return func(config *config) {
 		config.scheme = scheme
