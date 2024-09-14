@@ -5,6 +5,7 @@ import (
 	"hash"
 	"net"
 	"net/http"
+	"strings"
 )
 
 type SignatureConfig struct {
@@ -58,7 +59,7 @@ func NewConfig(address string, options ...ConfigOption) *Config {
 
 func (config *Config) Address() string {
 	if config.address == "" {
-		config.address = fmt.Sprintf("%s://%s", config.Scheme, net.JoinHostPort(config.Host, config.Port))
+		config.address = fmt.Sprintf("%s://%s", config.Scheme, strings.TrimRight(net.JoinHostPort(config.Host, config.Port), ":"))
 	}
 
 	return config.address

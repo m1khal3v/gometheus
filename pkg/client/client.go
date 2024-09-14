@@ -43,7 +43,7 @@ func New(config *Config) *Client {
 	client := resty.
 		New().
 		SetTransport(config.transport).
-		SetBaseURL(config.address).
+		SetBaseURL(config.Address()).
 		SetHeader("Accept-Encoding", "gzip")
 
 	hooks := make([]preRequestHook, 0)
