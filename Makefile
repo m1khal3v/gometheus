@@ -34,6 +34,12 @@ test-agent: ## Run go test agent
 test-race-agent: ## Run go race test agent
 	docker compose run --rm --no-deps agent go test -v -race ./...
 
+test-cover-server: # Run coverage of server
+	docker compose run --rm server bash -c "go test -v -coverpkg=./... -coverprofile=profile.cov ./... > /dev/null && go tool cover -func profile.cov"
+
+test-cover-agent: # Run coverage of agent
+	docker compose run --rm --no-deps agent bash -c "go test -v -coverpkg=./... -coverprofile=profile.cov ./... > /dev/null && go tool cover -func profile.cov"
+
 pprof-cpu-server: ## Capture CPU pprof server
 	docker compose kill -s SIGUSR1 server
 
