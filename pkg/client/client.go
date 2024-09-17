@@ -3,13 +3,16 @@
 package client
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/hmac"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
+	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -19,8 +22,9 @@ import (
 )
 
 type Client struct {
-	resty  *resty.Client
-	config *config
+	gzipPool *sync.Pool
+	resty    *resty.Client
+	config   *config
 }
 
 type ErrUnexpectedStatus struct {
@@ -41,23 +45,37 @@ var ErrInvalidSignature = errors.New("invalid Signature")
 
 func New(address string, options ...ConfigOption) *Client {
 	config := newConfig(address, options...)
-	client := resty.
-		New().
-		SetTransport(config.transport).
-		SetBaseURL(config.baseURL.String()).
-		SetHeader("Accept-Encoding", "gzip")
+	client := &Client{
+		resty: resty.
+			New().
+			SetTransport(config.transport).
+			SetBaseURL(config.baseURL.String()).
+			SetHeader("Accept-Encoding", "gzip"),
+		config: config,
+	}
 
 	hooks := make([]preRequestHook, 0)
 	if config.compress {
-		hooks = append(hooks, compressRequestBody)
+		client.gzipPool = &sync.Pool{
+			New: func() any {
+				writer, err := gzip.NewWriterLevel(io.Discard, 5)
+				if err != nil {
+					return nil
+				}
+
+				return writer
+			},
+		}
+		hooks = append(hooks, client.compressRequestBody)
 	}
 	if config.signature != nil && config.signature.signRequest {
-		hooks = append(hooks, addHMACSignature)
+		hooks = append(hooks, client.addHMACSignature)
+	}
+	if len(hooks) > 0 {
+		client.resty.SetPreRequestHook(preRequestHookCombine(hooks...))
 	}
 
-	client.SetPreRequestHook(preRequestHookCombine(config, hooks...))
-
-	return &Client{resty: client, config: config}
+	return client
 }
 
 func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, metricValue string) (*response.APIError, error) {

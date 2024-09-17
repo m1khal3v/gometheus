@@ -25,4 +25,4 @@ vendor/
 .vscode
 
 # pprof
-profiles/
+# profiles/

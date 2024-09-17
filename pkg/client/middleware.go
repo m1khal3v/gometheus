@@ -13,7 +13,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-type preRequestHook func(config *config, request *http.Request) error
+type preRequestHook func(request *http.Request) error
 
 type BufferReader struct {
 	*bytes.Reader
@@ -59,10 +59,10 @@ var hmacTransport transportHook = func(response *http.Response) (*http.Response,
 	return response, nil
 }
 
-func preRequestHookCombine(config *config, functions ...preRequestHook) resty.PreRequestHook {
+func preRequestHookCombine(functions ...preRequestHook) resty.PreRequestHook {
 	return func(client *resty.Client, request *http.Request) error {
 		for _, function := range functions {
-			if err := function(config, request); err != nil {
+			if err := function(request); err != nil {
 				return err
 			}
 		}
@@ -71,18 +71,17 @@ func preRequestHookCombine(config *config, functions ...preRequestHook) resty.Pr
 	}
 }
 
-func compressRequestBody(config *config, request *http.Request) error {
+func (client *Client) compressRequestBody(request *http.Request) error {
 	if request.Body == nil {
 		return nil
 	}
 
 	buffer := bytes.NewBuffer([]byte{})
-	writer, err := gzip.NewWriterLevel(buffer, 5)
-	if err != nil {
-		return err
-	}
+	writer := client.gzipPool.Get().(*gzip.Writer)
+	defer client.gzipPool.Put(writer)
+	writer.Reset(buffer)
 
-	_, err = io.Copy(writer, request.Body)
+	_, err := io.Copy(writer, request.Body)
 	if err = errors.Join(err, writer.Close(), request.Body.Close()); err != nil {
 		return err
 	}
@@ -98,7 +97,7 @@ func compressRequestBody(config *config, request *http.Request) error {
 	return nil
 }
 
-func addHMACSignature(config *config, request *http.Request) error {
+func (client *Client) addHMACSignature(request *http.Request) error {
 	buffer := bytes.NewBuffer([]byte{})
 
 	if request.Body != nil {
@@ -113,12 +112,12 @@ func addHMACSignature(config *config, request *http.Request) error {
 		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
 	}
 
-	encoder := hmac.New(config.signature.hasher, []byte(config.signature.key))
+	encoder := hmac.New(client.config.signature.hasher, []byte(client.config.signature.key))
 	if _, err := encoder.Write(buffer.Bytes()); err != nil {
 		return err
 	}
 
-	request.Header.Set(config.signature.header, hex.EncodeToString(encoder.Sum(nil)))
+	request.Header.Set(client.config.signature.header, hex.EncodeToString(encoder.Sum(nil)))
 
 	return nil
 }
