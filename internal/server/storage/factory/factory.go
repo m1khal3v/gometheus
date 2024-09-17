@@ -1,8 +1,11 @@
+// Package factory
+// contains storage factory
 package factory
 
 import (
 	"context"
 	"fmt"
+
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/internal/server/storage/kind/dump"
 	"github.com/m1khal3v/gometheus/internal/server/storage/kind/memory"

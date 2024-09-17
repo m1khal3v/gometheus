@@ -1,7 +1,10 @@
+// Package counter
+// contains counter metric implementation
 package counter
 
 import (
 	"fmt"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 

@@ -1,9 +1,13 @@
+// Package retry
+// contains Retry helper function
 package retry
 
 import (
 	"time"
 )
 
+// Retry - repeats the function execution a specified number of attempts
+// with increasing wait time between them. Stops retrying if the error does not pass the filter
 func Retry(
 	baseDelay,
 	maxDelay time.Duration,

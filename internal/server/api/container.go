@@ -1,3 +1,5 @@
+// Package api
+// contains controllers and json decode/encode logic
 package api
 
 import (

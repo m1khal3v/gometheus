@@ -1,30 +1,40 @@
+// Package gopsutil
+// collector for shirou/gopsutil package metrics
 package gopsutil
 
 import (
 	"errors"
 	"fmt"
+	"slices"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
-	"slices"
 )
 
-const MetricTotalMemory = "memTotal"
-const MetricFreeMemory = "memFree"
-const MetricCPUUtilization = "cpuUtilization"
+type (
+	interest  string
+	MetricMap map[interest]string
+)
 
-func getAvailableMetrics() []string {
-	return []string{
-		MetricTotalMemory,
-		MetricFreeMemory,
-		MetricCPUUtilization,
+const (
+	TotalMemory    interest = "memTotal"
+	FreeMemory     interest = "memFree"
+	CPUUtilization interest = "cpuUtilization"
+)
+
+func getAvailableMetrics() []interest {
+	return []interest{
+		TotalMemory,
+		FreeMemory,
+		CPUUtilization,
 	}
 }
 
 type Collector struct {
 	channelSize uint16
-	metrics     map[string]string
+	metrics     MetricMap
 }
 
 type ErrInvalidMetricName struct {
@@ -35,9 +45,9 @@ func (err ErrInvalidMetricName) Error() string {
 	return fmt.Sprintf("invalid metric name: %s", err.Name)
 }
 
-func newErrInvalidMetricName(name string) error {
+func newErrInvalidMetricName(name interest) error {
 	return &ErrInvalidMetricName{
-		Name: name,
+		Name: string(name),
 	}
 }
 
@@ -57,7 +67,7 @@ func newErrNonUniqueOutName(name string) error {
 
 var ErrEmptyMetrics = errors.New("metrics are empty")
 
-func New(metrics map[string]string) (*Collector, error) {
+func New(metrics map[interest]string) (*Collector, error) {
 	if len(metrics) == 0 {
 		return nil, ErrEmptyMetrics
 	}
@@ -75,7 +85,7 @@ func New(metrics map[string]string) (*Collector, error) {
 			return nil, newErrInvalidMetricName(name)
 		}
 
-		if name == MetricCPUUtilization {
+		if name == CPUUtilization {
 			cpuCount, err := cpu.Counts(true)
 			if err != nil {
 				return nil, err
@@ -99,13 +109,13 @@ func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	var utilization []float64
 	var err error
 
-	if collector.isset(MetricTotalMemory) || collector.isset(MetricFreeMemory) {
+	if collector.isset(TotalMemory) || collector.isset(FreeMemory) {
 		memory, err = mem.VirtualMemory()
 		if err != nil {
 			return nil, err
 		}
 	}
-	if collector.isset(MetricCPUUtilization) {
+	if collector.isset(CPUUtilization) {
 		utilization, err = cpu.Percent(0, true)
 		if err != nil {
 			return nil, err
@@ -117,11 +127,11 @@ func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 
 		for name, outName := range collector.metrics {
 			switch name {
-			case MetricTotalMemory:
+			case TotalMemory:
 				channel <- gauge.New(outName, float64(memory.Total))
-			case MetricFreeMemory:
+			case FreeMemory:
 				channel <- gauge.New(outName, float64(memory.Free))
-			case MetricCPUUtilization:
+			case CPUUtilization:
 				for i, value := range utilization {
 					channel <- gauge.New(
 						fmt.Sprintf("%s%d", outName, i+1),
@@ -135,7 +145,7 @@ func (collector *Collector) Collect() (<-chan metric.Metric, error) {
 	return channel, nil
 }
 
-func (collector *Collector) isset(name string) bool {
+func (collector *Collector) isset(name interest) bool {
 	_, ok := collector.metrics[name]
 	return ok
 }

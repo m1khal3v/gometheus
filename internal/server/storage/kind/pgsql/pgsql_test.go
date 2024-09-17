@@ -3,6 +3,12 @@ package pgsql
 import (
 	"context"
 	"fmt"
+	"log"
+	"math/rand/v2"
+	"net"
+	"os"
+	"testing"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
@@ -12,10 +18,6 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"log"
-	"math/rand/v2"
-	"net"
-	"testing"
 )
 
 var baseDSN string
@@ -180,7 +182,11 @@ func TestMain(m *testing.M) {
 }
 
 func tryUseExistingPostgres() (func(), bool) {
-	baseDSN = "postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable"
+	baseDSN = os.Getenv("TEST_DATABASE_DSN")
+	if baseDSN == "" {
+		return nil, false
+	}
+
 	var err error
 	connection, err = pgx.Connect(context.Background(), baseDSN)
 

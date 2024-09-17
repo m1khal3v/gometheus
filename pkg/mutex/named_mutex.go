@@ -1,3 +1,5 @@
+// Package mutex
+// contains named mutex implementation
 package mutex
 
 import (

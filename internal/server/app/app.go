@@ -1,17 +1,21 @@
-package server
+// Package app
+// contains dependency injection, general goroutines and start/stop logic
+package app
 
 import (
 	"context"
 	"errors"
-	"github.com/m1khal3v/gometheus/internal/common/logger"
-	"github.com/m1khal3v/gometheus/internal/server/config"
-	"github.com/m1khal3v/gometheus/internal/server/router"
-	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
-	"go.uber.org/zap"
 	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/m1khal3v/gometheus/internal/common/logger"
+	"github.com/m1khal3v/gometheus/internal/common/pprof"
+	"github.com/m1khal3v/gometheus/internal/server/config"
+	"github.com/m1khal3v/gometheus/internal/server/router"
+	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
+	"go.uber.org/zap"
 )
 
 func Start(config *config.Config) error {
@@ -45,6 +49,7 @@ func Start(config *config.Config) error {
 			errCancel(err)
 		}
 	}()
+	go pprof.ListenSignals(suspendCtx, config.CPUProfileFile, config.CPUProfileDuration, config.MemProfileFile)
 
 	select {
 	case <-errCtx.Done():

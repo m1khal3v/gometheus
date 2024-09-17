@@ -1,9 +1,12 @@
+// Package errors
+// contains helper functions for error type
 package errors
 
 import (
 	"slices"
 )
 
+// Unwrap some types of wrapped errors
 func Unwrap(err error) []error {
 	if err == nil {
 		return []error{}
@@ -48,6 +51,7 @@ func Unwrap(err error) []error {
 	return []error{err}
 }
 
+// ToUniqueStrings convert errors to unique slice of messages
 func ToUniqueStrings(errs ...error) []string {
 	messages := make([]string, 0, len(errs))
 	for _, err := range errs {

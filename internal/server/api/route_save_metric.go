@@ -1,9 +1,10 @@
 package api
 
 import (
-	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	"net/http"
 	"strings"
+
+	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 )
 
 func (container Container) SaveMetric(writer http.ResponseWriter, request *http.Request) {

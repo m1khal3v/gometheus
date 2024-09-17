@@ -1,15 +1,18 @@
+// Package runtime
+// collector for golang runtime package metrics
 package runtime
 
 import (
 	"errors"
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/common/metric"
-	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
-	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"reflect"
 	"runtime"
 	"sync"
 	"sync/atomic"
+
+	"github.com/m1khal3v/gometheus/internal/common/metric"
+	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
+	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 )
 
 type Collector struct {

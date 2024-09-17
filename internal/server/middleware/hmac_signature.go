@@ -5,12 +5,13 @@ import (
 	"crypto/hmac"
 	"encoding/hex"
 	"fmt"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/m1khal3v/gometheus/internal/server/api"
 	"hash"
 	"io"
 	"net/http"
 	"sync"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/m1khal3v/gometheus/internal/server/api"
 )
 
 type hmacPool struct {
@@ -27,6 +28,7 @@ func newHMACPool(hash func() hash.Hash, key string) *hmacPool {
 	}
 }
 
+// HMACSignatureRespond add HMAC signature to response, based on response content
 func HMACSignatureRespond(header string, hash func() hash.Hash, key string) func(next http.Handler) http.Handler {
 	pool := newHMACPool(hash, key)
 
@@ -54,6 +56,7 @@ func HMACSignatureRespond(header string, hash func() hash.Hash, key string) func
 	}
 }
 
+// HMACSignatureValidate validate HMAC signature in request, based on request content
 func HMACSignatureValidate(header string, hash func() hash.Hash, key string) func(next http.Handler) http.Handler {
 	pool := newHMACPool(hash, key)
 

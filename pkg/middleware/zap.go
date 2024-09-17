@@ -2,12 +2,14 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/go-chi/chi/v5/middleware"
-	"go.uber.org/zap"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5/middleware"
+	"go.uber.org/zap"
 )
 
+// ZapLogRequest log request method, url, status, response size, duration. Powered by uber/zap
 func ZapLogRequest(logger *zap.Logger, name string) func(next http.Handler) http.Handler {
 	logger = logger.Named(name).WithOptions(zap.WithCaller(false))
 

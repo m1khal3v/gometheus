@@ -1,3 +1,5 @@
+// Package semaphore
+// contains channel based semaphore implementation
 package semaphore
 
 import "context"
@@ -16,6 +18,7 @@ func New(max uint64) *Semaphore {
 	}
 }
 
+// Acquire trying to increment semaphore, waits if can`t. Return cause if context closed
 func (semaphore *Semaphore) Acquire(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
@@ -25,6 +28,7 @@ func (semaphore *Semaphore) Acquire(ctx context.Context) error {
 	}
 }
 
+// Release semaphore
 func (semaphore *Semaphore) Release() {
 	<-semaphore.channel
 }

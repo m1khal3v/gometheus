@@ -1,3 +1,5 @@
+// Package collector
+// contains interface and its implementations
 package collector
 
 import (
@@ -5,5 +7,5 @@ import (
 )
 
 type Collector interface {
-	Collect() (<-chan metric.Metric, error)
+	Collect() (<-chan metric.Metric, error) // Collect metrics as channel(generator) from Collector
 }

@@ -1,10 +1,11 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric/factory"
 	"github.com/m1khal3v/gometheus/internal/common/metric/transformer"
 	requests "github.com/m1khal3v/gometheus/pkg/request"
-	"net/http"
 )
 
 func (container Container) JSONSaveMetric(writer http.ResponseWriter, request *http.Request) {

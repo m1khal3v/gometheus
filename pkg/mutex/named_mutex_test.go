@@ -1,8 +1,9 @@
 package mutex
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNamedMutex_Lock(t *testing.T) {

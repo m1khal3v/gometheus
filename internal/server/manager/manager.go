@@ -1,15 +1,18 @@
+// Package manager
+// contains storage proxy with app logic
 package manager
 
 import (
 	"context"
 	"fmt"
+	"sort"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
 	"github.com/m1khal3v/gometheus/internal/server/storage"
 	"github.com/m1khal3v/gometheus/pkg/mutex"
 	"golang.org/x/exp/maps"
-	"sort"
 )
 
 type ErrUnknownMetricType struct {

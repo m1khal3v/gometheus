@@ -1,12 +1,15 @@
+// Package templates
+// contains facade for html templates and templates themselves
 package templates
 
 import (
 	"embed"
 	"fmt"
-	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"html/template"
 	"io"
 	"sync"
+
+	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 
 type Storage struct {

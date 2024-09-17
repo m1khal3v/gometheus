@@ -1,7 +1,10 @@
+// Package gauge
+// contains gauge metric implementation
 package gauge
 
 import (
 	"fmt"
+
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 )
 

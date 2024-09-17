@@ -1,3 +1,5 @@
+// Package slice
+// contains helper functions for slices
 package slice
 
 // Chunk returns a channel over consecutive sub-slices of up to n elements of slice.

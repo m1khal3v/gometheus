@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
-	"golang.org/x/exp/maps"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+
+	"golang.org/x/exp/maps"
 )
 
 type decoderPool struct {
@@ -32,6 +33,7 @@ func newDecoderPool() *decoderPool {
 	}
 }
 
+// Decompress request with specified content encoding if supports
 func Decompress() func(next http.Handler) http.Handler {
 	decoderPool := newDecoderPool()
 
