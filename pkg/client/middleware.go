@@ -3,10 +3,10 @@ package client
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/hmac"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"net/http"
 
@@ -112,7 +112,9 @@ func (client *Client) addHMACSignature(request *http.Request) error {
 		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
 	}
 
-	encoder := hmac.New(client.config.signature.hasher, []byte(client.config.signature.key))
+	encoder := client.hmacPool.Get().(hash.Hash)
+	defer client.hmacPool.Put(encoder)
+	encoder.Reset()
 	if _, err := encoder.Write(buffer.Bytes()); err != nil {
 		return err
 	}

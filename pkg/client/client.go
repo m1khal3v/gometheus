@@ -23,6 +23,7 @@ import (
 
 type Client struct {
 	gzipPool *sync.Pool
+	hmacPool *sync.Pool
 	resty    *resty.Client
 	config   *config
 }
@@ -69,6 +70,11 @@ func New(address string, options ...ConfigOption) *Client {
 		hooks = append(hooks, client.compressRequestBody)
 	}
 	if config.signature != nil && config.signature.signRequest {
+		client.hmacPool = &sync.Pool{
+			New: func() any {
+				return hmac.New(config.signature.hasher, []byte(config.signature.key))
+			},
+		}
 		hooks = append(hooks, client.addHMACSignature)
 	}
 	if len(hooks) > 0 {
