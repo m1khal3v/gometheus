@@ -107,17 +107,17 @@
 
 ## Используемые сторонние пакеты
 
-| Пакет                                                               | Описание                          |
-|---------------------------------------------------------------------|-----------------------------------|
-| [caarlos0/env](https://github.com/caarlos0/env)                     | Обработка переменных окружения    |
-| [spf13/pflag](https://github.com/spf13/pflag)                       | Обработка флагов процесса         |
-| [uber-go/zap](https://github.com/uber-go/zap)                       | Логирование                       |
-| [go-chi/chi](https://github.com/go-chi/chi)                         | HTTP-роутинг                      |
-| [asaskevich/govalidator](https://github.com/asaskevich/govalidator) | Валидация данных                  |
-| [go-resty/resty](https://github.com/go-resty/resty)                 | HTTP-клиент                       |
-| [jackc/pgx](https://github.com/jackc/pgx)                           | Драйвер pgsql                     |
-| [pressly/goose](https://github.com/pressly/goose)                   | Миграции БД                       |
-| [shirou/gopsutil](https://github.com/shirou/gopsutil)               | Коллектор метрик CPU, RAM         |
-| [stretchr/testify](https://github.com/stretchr/testify)             | Unit-тестирование                 |
-| [ory/dockertest](https://github.com/ory/dockertest)                 | Тестирование БД (если недоступна) |
+| Пакет                                                               | Описание                       |
+|---------------------------------------------------------------------|--------------------------------|
+| [caarlos0/env](https://github.com/caarlos0/env)                     | Обработка переменных окружения |
+| [spf13/pflag](https://github.com/spf13/pflag)                       | Обработка флагов процесса      |
+| [uber-go/zap](https://github.com/uber-go/zap)                       | Логирование                    |
+| [go-chi/chi](https://github.com/go-chi/chi)                         | HTTP-роутинг                   |
+| [asaskevich/govalidator](https://github.com/asaskevich/govalidator) | Валидация данных               |
+| [go-resty/resty](https://github.com/go-resty/resty)                 | HTTP-клиент                    |
+| [jackc/pgx](https://github.com/jackc/pgx)                           | Драйвер pgsql                  |
+| [pressly/goose](https://github.com/pressly/goose)                   | Миграции БД                    |
+| [shirou/gopsutil](https://github.com/shirou/gopsutil)               | Коллектор метрик CPU, RAM      |
+| [stretchr/testify](https://github.com/stretchr/testify)             | Автотесты                      |
+| [ory/dockertest](https://github.com/ory/dockertest)                 | Автотесты БД (если недоступна) |
 
