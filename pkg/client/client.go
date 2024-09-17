@@ -69,13 +69,15 @@ func New(address string, options ...ConfigOption) *Client {
 		}
 		hooks = append(hooks, client.compressRequestBody)
 	}
-	if config.signature != nil && config.signature.signRequest {
+	if config.signature != nil {
 		client.hmacPool = &sync.Pool{
 			New: func() any {
 				return hmac.New(config.signature.hasher, []byte(config.signature.key))
 			},
 		}
-		hooks = append(hooks, client.addHMACSignature)
+		if config.signature.signRequest {
+			hooks = append(hooks, client.addHMACSignature)
+		}
 	}
 	if len(hooks) > 0 {
 		client.resty.SetPreRequestHook(preRequestHookCombine(hooks...))
@@ -191,7 +193,11 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 			return nil, err
 		}
 
-		if err := validateHMACSignature(body, resultSignature, []byte(signConfig.key), signConfig.hasher); err != nil {
+		encoder := client.hmacPool.Get().(hash.Hash)
+		defer client.hmacPool.Put(encoder)
+		encoder.Reset()
+
+		if err := validateHMACSignature(body, resultSignature, encoder); err != nil {
 			return nil, err
 		}
 	}
@@ -199,8 +205,7 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 	return result, nil
 }
 
-func validateHMACSignature(body, signature, key []byte, hash func() hash.Hash) error {
-	encoder := hmac.New(hash, key)
+func validateHMACSignature(body, signature []byte, encoder hash.Hash) error {
 	if _, err := encoder.Write(body); err != nil {
 		return err
 	}
