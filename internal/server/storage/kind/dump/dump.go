@@ -148,12 +148,12 @@ func (storage *Storage) dump(ctx context.Context) error {
 	}
 
 	for metric := range allMetrics {
-		anonymousMetric := anonymousMetric{
+		anonMetric := anonymousMetric{
 			Type:  metric.Type(),
 			Name:  metric.Name(),
 			Value: metric.StringValue(),
 		}
-		jsonMetric, err := json.Marshal(anonymousMetric)
+		jsonMetric, err := json.Marshal(anonMetric)
 		if err != nil {
 			return err
 		}
