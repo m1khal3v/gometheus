@@ -191,7 +191,7 @@ func tryUseExistingPostgres() (func(), bool) {
 	connection, err = pgx.Connect(context.Background(), baseDSN)
 
 	return func() {
-		if err := connection.Close(context.Background()); err != nil {
+		if err = connection.Close(context.Background()); err != nil {
 			log.Fatalf("Could not close connection: %s", err)
 		}
 	}, err == nil
@@ -234,7 +234,7 @@ func createPostgresContainer() func() {
 		log.Fatalf("Could not start resource: %s", err)
 	}
 
-	if err := resource.Expire(180); err != nil {
+	if err = resource.Expire(180); err != nil {
 		log.Fatalf("Could not set expire: %s", err)
 	}
 

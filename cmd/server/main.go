@@ -1,13 +1,21 @@
 package main
 
 import (
+	"github.com/m1khal3v/gometheus/internal/common/buildlog"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"github.com/m1khal3v/gometheus/internal/server/app"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"go.uber.org/zap"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	buildlog.Print(buildVersion, buildDate, buildCommit)
 	config := config.ParseConfig()
 	logger.Init("server", config.LogLevel)
 	defer logger.Logger.Sync()

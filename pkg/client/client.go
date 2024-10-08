@@ -100,9 +100,9 @@ func (client *Client) SaveMetric(ctx context.Context, metricType, metricName, me
 	if err != nil {
 		if result == nil || result.RawResponse == nil {
 			return nil, err
-		} else {
-			return result.Error().(*response.APIError), err
 		}
+
+		return result.Error().(*response.APIError), err
 	}
 
 	return nil, nil
@@ -119,9 +119,9 @@ func (client *Client) SaveMetricAsJSON(ctx context.Context, request *request.Sav
 	if err != nil {
 		if result == nil || result.RawResponse == nil {
 			return nil, nil, err
-		} else {
-			return nil, result.Error().(*response.APIError), err
 		}
+
+		return nil, result.Error().(*response.APIError), err
 	}
 
 	return result.Result().(*response.SaveMetricResponse), nil, nil
@@ -138,9 +138,9 @@ func (client *Client) SaveMetricsAsJSON(ctx context.Context, requests []request.
 	if err != nil {
 		if result == nil || result.RawResponse == nil {
 			return nil, nil, err
-		} else {
-			return nil, result.Error().(*response.APIError), err
 		}
+
+		return nil, result.Error().(*response.APIError), err
 	}
 
 	return *result.Result().(*[]response.SaveMetricResponse), nil, nil
