@@ -1,6 +1,9 @@
 package client
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"hash"
 	"net/http"
 	"net/url"
@@ -22,8 +25,9 @@ type config struct {
 	baseURL   *url.URL
 	signature *signatureConfig
 
-	compress bool
-	retry    bool
+	compress  bool
+	retry     bool
+	publicKey *rsa.PublicKey
 
 	transport http.RoundTripper
 }
@@ -82,6 +86,22 @@ func WithHMACSignature(key string, hasher func() hash.Hash, header string, optio
 		}
 
 		config.transport = hmacTransport
+	}
+}
+
+func WithAsymmetricCrypt(key []byte) ConfigOption {
+	return func(config *config) {
+		block, _ := pem.Decode(key)
+		if block == nil {
+			return
+		}
+
+		pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+		if err != nil {
+			return
+		}
+
+		config.publicKey = pubKey.(*rsa.PublicKey)
 	}
 }
 

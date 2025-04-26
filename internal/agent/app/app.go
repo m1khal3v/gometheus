@@ -5,6 +5,7 @@ package app
 import (
 	"context"
 	"crypto/sha256"
+	"os"
 	"os/signal"
 	"syscall"
 
@@ -27,6 +28,15 @@ func Start(config *config.Config) error {
 	options := make([]client.ConfigOption, 0, 1)
 	if config.Key != "" {
 		options = append(options, client.WithHMACSignature(config.Key, sha256.New, "HashSHA256"))
+	}
+
+	if config.CryptoKey != "" {
+		pubKey, err := os.ReadFile(config.CryptoKey)
+		if err != nil {
+			return err
+		}
+
+		options = append(options, client.WithAsymmetricCrypt(pubKey))
 	}
 
 	client := client.New(config.Address, options...)

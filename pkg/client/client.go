@@ -56,6 +56,10 @@ func New(address string, options ...ConfigOption) *Client {
 	}
 
 	hooks := make([]preRequestHook, 0)
+	if config.publicKey != nil {
+		hooks = append(hooks, client.cryptRequestBody)
+	}
+
 	if config.compress {
 		client.gzipPool = &sync.Pool{
 			New: func() any {
