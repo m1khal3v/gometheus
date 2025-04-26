@@ -34,7 +34,7 @@ type Config struct {
 
 func ParseConfig() *Config {
 	config := &Config{}
-	jsonCfg, err := parseJsonConfig()
+	jsonCfg, err := parseJSONConfig()
 	if err != nil {
 		panic(err)
 	}
@@ -87,7 +87,7 @@ func ParseConfig() *Config {
 	return config
 }
 
-func parseJsonConfig() (*jsonConfig, error) {
+func parseJSONConfig() (*jsonConfig, error) {
 	var configFile string
 	configFs := flag.NewFlagSet("config", flag.ContinueOnError)
 	configFs.StringVarP(&configFile, "config", "c", "", "config file path")
