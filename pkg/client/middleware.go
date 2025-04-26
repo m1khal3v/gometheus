@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -74,7 +74,7 @@ func preRequestHookCombine(functions ...preRequestHook) resty.PreRequestHook {
 	}
 }
 
-func (client *Client) cryptRequestBody(request *http.Request) error {
+func (client *Client) encryptRequestBody(request *http.Request) error {
 	if request.Body == nil {
 		return nil
 	}
@@ -85,23 +85,25 @@ func (client *Client) cryptRequestBody(request *http.Request) error {
 		return err
 	}
 
-	cipher, err := rsa.EncryptOAEP(
-		sha256.New(),
+	cipher, err := rsa.EncryptPKCS1v15(
 		rand.Reader,
 		client.config.publicKey,
 		buffer.Bytes(),
-		nil,
 	)
 	if err != nil {
 		return err
 	}
 
-	request.Body = io.NopCloser(bytes.NewBuffer(cipher))
+	base64Encoded := make([]byte, base64.StdEncoding.EncodedLen(len(cipher)))
+	base64.StdEncoding.Encode(base64Encoded, cipher)
+
+	request.Body = io.NopCloser(bytes.NewBuffer(base64Encoded))
 	request.GetBody = func() (io.ReadCloser, error) {
 		return io.NopCloser(bytes.NewReader(buffer.Bytes())), nil
 	}
 	request.ContentLength = int64(buffer.Len())
 	request.Header.Set("Content-Length", fmt.Sprintf("%d", buffer.Len()))
+	request.Header.Set("Content-Encryption", "RSA-PKCS1v15")
 
 	return nil
 }

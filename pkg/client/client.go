@@ -57,7 +57,7 @@ func New(address string, options ...ConfigOption) *Client {
 
 	hooks := make([]preRequestHook, 0)
 	if config.publicKey != nil {
-		hooks = append(hooks, client.cryptRequestBody)
+		hooks = append(hooks, client.encryptRequestBody)
 	}
 
 	if config.compress {

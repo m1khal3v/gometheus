@@ -3,6 +3,7 @@
 package router
 
 import (
+	"crypto/rsa"
 	"crypto/sha256"
 
 	"github.com/go-chi/chi/v5"
@@ -14,7 +15,7 @@ import (
 	pkgMiddleware "github.com/m1khal3v/gometheus/pkg/middleware"
 )
 
-func New(storage storage.Storage, key string) chi.Router {
+func New(storage storage.Storage, key string, privKey *rsa.PrivateKey) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
 	if key != "" {
@@ -25,6 +26,9 @@ func New(storage storage.Storage, key string) chi.Router {
 	router.Use(internalMiddleware.Recover())
 	router.Use(pkgMiddleware.ZapLogPanic(logger.Logger, "http-panic"))
 	router.Use(middleware.RealIP)
+	if privKey != nil {
+		router.Use(internalMiddleware.Decrypt(privKey))
+	}
 	router.Use(pkgMiddleware.Decompress())
 	router.Use(pkgMiddleware.Compress(5, "text/html", "application/json"))
 	router.Get("/", routes.GetAllMetrics)
