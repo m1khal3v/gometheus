@@ -26,6 +26,8 @@ import (
 func Start(config *config.Config) error {
 	ctx := context.Background()
 
+	//              ||
+	// increment 23 \/
 	suspendCtx, suspendCancel := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer suspendCancel()
 

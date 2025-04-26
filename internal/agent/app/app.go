@@ -21,6 +21,8 @@ import (
 
 func Start(config *config.Config) error {
 	ctx := context.Background()
+	//              ||
+	// increment 23 \/
 	suspendCtx, _ := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
 	queue := queue.New[metric.Metric](10000)
