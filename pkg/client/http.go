@@ -163,7 +163,6 @@ func (client *HTTPClient) doRequest(request *resty.Request, method, url string) 
 
 	var result *resty.Response = nil
 	do := func() error {
-		var err error
 		result, err = request.Execute(method, url)
 		if err != nil {
 			return err
