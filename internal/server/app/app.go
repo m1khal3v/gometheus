@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -54,9 +55,17 @@ func Start(config *config.Config) error {
 		}
 	}
 
+	var subnet *net.IPNet
+	if config.TrustedSubnet != "" {
+		_, subnet, err = net.ParseCIDR(config.TrustedSubnet)
+		if err != nil {
+			return err
+		}
+	}
+
 	server := &http.Server{
 		Addr:    config.Address,
-		Handler: router.New(storage, config.Key, privKey),
+		Handler: router.New(storage, config.Key, privKey, subnet),
 	}
 
 	go func() {

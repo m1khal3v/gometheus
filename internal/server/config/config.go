@@ -18,6 +18,7 @@ type jsonConfig struct {
 	Restore         *bool   `json:"restore"`
 	DatabaseDSN     *string `json:"database_dsn"`
 	CryptoKey       *string `json:"crypto_key"`
+	TrustedSubnet   *string `json:"trusted_subnet"`
 }
 
 type Config struct {
@@ -33,6 +34,7 @@ type Config struct {
 	CPUProfileDuration time.Duration `env:"CPU_PROFILE_DURATION"`
 	MemProfileFile     string        `env:"MEM_PROFILE_FILE"`
 	CryptoKey          string        `env:"CRYPTO_KEY"`
+	TrustedSubnet      string        `env:"TRUSTED_SUBNET"`
 }
 
 func ParseConfig() *Config {
@@ -82,6 +84,12 @@ func ParseConfig() *Config {
 		defaultCryptoKey = *jsonCfg.CryptoKey
 	}
 	flag.StringVar(&config.CryptoKey, "crypto-key", defaultCryptoKey, "path to private key")
+
+	defaultTrustedSubnet := ""
+	if jsonCfg != nil && jsonCfg.TrustedSubnet != nil {
+		defaultTrustedSubnet = *jsonCfg.TrustedSubnet
+	}
+	flag.StringVarP(&config.TrustedSubnet, "trusted-subnet", "t", defaultTrustedSubnet, "CIDR")
 
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
 	flag.StringVar(&config.DatabaseDriver, "database-driver", "pgx", "database driver")

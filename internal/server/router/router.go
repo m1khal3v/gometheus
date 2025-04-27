@@ -5,6 +5,7 @@ package router
 import (
 	"crypto/rsa"
 	"crypto/sha256"
+	"net"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,7 +16,7 @@ import (
 	pkgMiddleware "github.com/m1khal3v/gometheus/pkg/middleware"
 )
 
-func New(storage storage.Storage, key string, privKey *rsa.PrivateKey) chi.Router {
+func New(storage storage.Storage, key string, privKey *rsa.PrivateKey, subnet *net.IPNet) chi.Router {
 	routes := api.New(storage)
 	router := chi.NewRouter()
 	if key != "" {
@@ -31,6 +32,9 @@ func New(storage storage.Storage, key string, privKey *rsa.PrivateKey) chi.Route
 	}
 	router.Use(pkgMiddleware.Decompress())
 	router.Use(pkgMiddleware.Compress(5, "text/html", "application/json"))
+	if subnet != nil {
+		router.Use(internalMiddleware.SubnetValidate("X-Real-IP", subnet))
+	}
 	router.Get("/", routes.GetAllMetrics)
 	router.Route("/ping", func(router chi.Router) {
 		router.Get("/", routes.PingStorage)

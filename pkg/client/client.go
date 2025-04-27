@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ type Client struct {
 	hmacPool *sync.Pool
 	resty    *resty.Client
 	config   *config
+	realIP   net.IP
 }
 
 type ErrUnexpectedStatus struct {
@@ -155,6 +157,12 @@ func (client *Client) createRequest(ctx context.Context) *resty.Request {
 }
 
 func (client *Client) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
+	realIP, err := client.getRealIP()
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("X-Real-IP", realIP.String())
+
 	var result *resty.Response = nil
 	do := func() error {
 		var err error
@@ -170,7 +178,6 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 		return nil
 	}
 
-	var err error
 	if client.config.retry {
 		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
 			return !errors.As(err, &ErrUnexpectedStatus{}) &&
@@ -207,6 +214,28 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 	}
 
 	return result, nil
+}
+
+func (client *Client) getRealIP() (net.IP, error) {
+	if client.realIP != nil {
+		return client.realIP, nil
+	}
+
+	port := "80"
+	if client.config.baseURL.Port() != "" {
+		port = client.config.baseURL.Port()
+	}
+
+	conn, err := net.Dial("udp", client.config.baseURL.Host+":"+port)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Close()
+
+	client.realIP = conn.LocalAddr().(*net.UDPAddr).IP
+
+	return client.realIP, nil
 }
 
 func validateHMACSignature(body, signature []byte, encoder hash.Hash) error {
