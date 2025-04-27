@@ -22,6 +22,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/server/router"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 func Start(config *config.Config) error {
@@ -63,16 +64,45 @@ func Start(config *config.Config) error {
 		}
 	}
 
-	server := &http.Server{
-		Addr:    config.Address,
-		Handler: router.New(storage, config.Key, privKey, subnet),
-	}
+	var shutdown func(ctx context.Context) error
 
-	go func() {
-		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+	if config.Protocol == "http" {
+		// Настройка HTTP-сервера
+		server := &http.Server{
+			Addr:    config.Address,
+			Handler: router.New(storage, config.Key, privKey, subnet),
+		}
+		shutdown = func(ctx context.Context) error {
+			return server.Shutdown(ctx)
+		}
+
+		go func() {
+			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				errCancel(err)
+			}
+		}()
+
+	} else {
+		// Настройка gRPC-сервера
+		listener, err := net.Listen("tcp", config.Address)
+		if err != nil {
 			errCancel(err)
 		}
-	}()
+
+		server := grpc.NewServer()
+		shutdown = func(ctx context.Context) error {
+			server.GracefulStop()
+
+			return nil
+		}
+
+		go func() {
+			if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+				errCancel(err)
+			}
+		}()
+	}
+
 	go pprof.ListenSignals(suspendCtx, config.CPUProfileFile, config.CPUProfileDuration, config.MemProfileFile)
 
 	select {
@@ -90,7 +120,7 @@ func Start(config *config.Config) error {
 			logger.Logger.Info("Storage was closed successfully")
 		}
 
-		if err := server.Shutdown(timeoutCtx); err != nil {
+		if err := shutdown(timeoutCtx); err != nil {
 			logger.Logger.Error("Failed to shutdown server", zap.Error(err))
 		} else {
 			logger.Logger.Info("Server was shutdown successfully")
