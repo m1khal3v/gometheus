@@ -3,11 +3,19 @@ package main
 import (
 	"github.com/m1khal3v/gometheus/internal/agent/app"
 	"github.com/m1khal3v/gometheus/internal/agent/config"
+	"github.com/m1khal3v/gometheus/internal/common/buildlog"
 	"github.com/m1khal3v/gometheus/internal/common/logger"
 	"go.uber.org/zap"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	buildlog.Print(buildVersion, buildDate, buildCommit)
 	config := config.ParseConfig()
 	logger.Init("agent", config.LogLevel)
 	defer logger.Logger.Sync()

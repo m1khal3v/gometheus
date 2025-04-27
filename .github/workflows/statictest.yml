@@ -31,3 +31,12 @@ jobs:
       - name: Run statictest
         run: |
           go vet -vettool=$(which statictest) ./...
+
+      - name: Build gostan binary
+        run: |
+          cd cmd/gostan
+          go build -buildvcs=false -o gostan
+
+      - name: Run gostan
+        run: |
+          cmd/gostan/gostan ./...

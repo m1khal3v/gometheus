@@ -11,6 +11,6 @@ COPY ./internal/agent ./internal/agent
 COPY ./internal/common ./internal/common
 COPY ./pkg ./pkg
 
-RUN CGO_ENABLED=0 GOOS=linux go build -C ./cmd/agent -o agent
+RUN CGO_ENABLED=0 GOOS=linux go build -C ./cmd/agent -o agent -ldflags "-X main.buildVersion=dev -X 'main.buildDate=$(date)'"
 
 CMD ["/app/cmd/agent/agent"]
