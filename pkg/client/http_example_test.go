@@ -9,7 +9,7 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func Example() {
+func Example_http() {
 	client := NewHTTP(
 		"foo.bar.com",
 		WithoutRetry(),
