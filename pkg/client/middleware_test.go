@@ -33,9 +33,9 @@ func TestTransportHook_RoundTrip(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 
 	resp, err := httpClient.Do(req)
-	defer resp.Body.Close()
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+	resp.Body.Close()
 }
 
 func TestPreRequestHookCombine(t *testing.T) {
