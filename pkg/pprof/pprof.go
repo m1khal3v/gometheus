@@ -58,16 +58,16 @@ func Capture(profile profile, filename string) error {
 		return err
 	}
 
+	pprofile := pprof.Lookup(string(profile))
+	if pprofile == nil {
+		return fmt.Errorf("pprof profile not found")
+	}
+
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
-	pprofile := pprof.Lookup(string(profile))
-	if pprofile == nil {
-		return fmt.Errorf("pprof profile not found")
-	}
 
 	if err := pprofile.WriteTo(file, 0); err != nil {
 		return err
