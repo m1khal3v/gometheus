@@ -1,4 +1,4 @@
-// Package metrics
+// Package metric
 // contains interface, implementations, factory and transformer for metrics
 package metric
 

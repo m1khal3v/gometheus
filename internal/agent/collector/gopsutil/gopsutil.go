@@ -33,8 +33,8 @@ func getAvailableMetrics() []interest {
 }
 
 type Collector struct {
-	channelSize uint16
 	metrics     MetricMap
+	channelSize uint16
 }
 
 type ErrInvalidMetricName struct {
