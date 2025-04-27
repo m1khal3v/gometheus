@@ -197,3 +197,12 @@ func TestManager_Get(t *testing.T) {
 		})
 	}
 }
+
+func TestManager_PingStorage(t *testing.T) {
+	ctx := context.Background()
+	storage := memory.New() // актуальный storage всегда должен отвечать на ping
+	manager := New(storage)
+
+	err := manager.PingStorage(ctx)
+	require.NoError(t, err)
+}
