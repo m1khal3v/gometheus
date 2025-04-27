@@ -82,7 +82,7 @@ func TestClient_SaveMetric(t *testing.T) {
 
 				return tt.transport(req)
 			})
-			apiErr, err := client.SaveMetric(ctx, tt.metricType, tt.metricName, tt.metricValue)
+			apiErr, err := client.SimpleSaveMetric(ctx, tt.metricType, tt.metricName, tt.metricValue)
 			if tt.wantErr != nil {
 				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
@@ -175,7 +175,7 @@ func TestClient_SaveMetricAsJSON(t *testing.T) {
 
 				return tt.transport(req)
 			})
-			response, apiErr, err := client.SaveMetricAsJSON(ctx, tt.request)
+			response, apiErr, err := client.SaveMetric(ctx, tt.request)
 			if tt.wantErr != nil {
 				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
@@ -274,7 +274,7 @@ func TestClient_SaveMetricsAsJSON(t *testing.T) {
 
 				return tt.transport(req)
 			})
-			response, apiErr, err := client.SaveMetricsAsJSON(ctx, tt.request)
+			response, apiErr, err := client.SaveMetrics(ctx, tt.request)
 			if tt.wantErr != nil {
 				assert.ErrorAs(t, err, &tt.wantErr)
 			} else {
@@ -302,9 +302,9 @@ func (function roundTripFunction) RoundTrip(req *http.Request) (*http.Response, 
 	return function(req)
 }
 
-func newTestClient(t *testing.T, function roundTripFunction) *Client {
+func newTestClient(t *testing.T, function roundTripFunction) *HTTPClient {
 	t.Helper()
-	client := New("test", WithoutRetry(), withTransport(function))
+	client := NewHTTP("test", WithoutRetry(), withTransport(function))
 
 	return client
 }

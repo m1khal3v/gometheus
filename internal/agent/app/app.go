@@ -41,7 +41,6 @@ func Start(config *config.Config) error {
 		options = append(options, client.WithAsymmetricCrypt(pubKey))
 	}
 
-	client := client.New(config.Address, options...)
 	collectors, err := createCollectors()
 	if err != nil {
 		return err
@@ -49,14 +48,24 @@ func Start(config *config.Config) error {
 
 	semaphore := semaphore.New(config.RateLimit)
 
+	var clnt client.Client
+	if config.Protocol == "http" {
+		clnt = client.NewHTTP(config.Address, options...)
+	} else {
+		clnt, err = client.NewGRPC(config.Address, options...)
+		if err != nil {
+			return err
+		}
+	}
+
 	go collectMetricsWithInterval(suspendCtx, queue, collectors, config.PollInterval)
-	go processMetricsWithInterval(suspendCtx, queue, client, semaphore, config.ReportInterval, config.BatchSize)
+	go processMetricsWithInterval(suspendCtx, queue, clnt, semaphore, config.ReportInterval, config.BatchSize)
 	go pprof.ListenSignals(suspendCtx, config.CPUProfileFile, config.CPUProfileDuration, config.MemProfileFile)
 
 	<-suspendCtx.Done()
 
 	logger.Logger.Info("Received suspend signal. Trying to process already collected metrics...")
-	if err := processMetrics(ctx, queue, client, semaphore, config.BatchSize); err != nil {
+	if err := processMetrics(ctx, queue, clnt, semaphore, config.BatchSize); err != nil {
 		logger.Logger.Error("Failed to process already collected metrics", zap.Error(err))
 	}
 	logger.Logger.Info("Agent successfully suspended")
