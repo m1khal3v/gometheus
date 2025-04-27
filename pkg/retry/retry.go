@@ -49,7 +49,7 @@ func pow(x, y uint64) uint64 {
 func calculateDelay(baseDelay time.Duration, maxDelay time.Duration, attempt uint64, multiplier uint64) time.Duration {
 	if attempt == 0 {
 		return min(baseDelay, maxDelay)
-	} else {
-		return min(baseDelay*time.Duration(pow(multiplier, attempt)), maxDelay)
 	}
+
+	return min(baseDelay*time.Duration(pow(multiplier, attempt)), maxDelay)
 }
