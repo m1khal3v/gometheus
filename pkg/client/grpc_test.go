@@ -35,6 +35,7 @@ func TestGRPCClient_SaveMetric(t *testing.T) {
 	mockClient := &mockMetricsServiceClient{}
 	client := &GRPCClient{
 		client: mockClient,
+		config: newConfig("localhost"),
 		hmacPool: &sync.Pool{
 			New: func() any { return mockHasher() },
 		},
@@ -78,6 +79,7 @@ func TestGRPCClient_SaveMetrics(t *testing.T) {
 	mockClient := &mockMetricsServiceClient{}
 	client := &GRPCClient{
 		client: mockClient,
+		config: newConfig("localhost"),
 		hmacPool: &sync.Pool{
 			New: func() any { return mockHasher() },
 		},

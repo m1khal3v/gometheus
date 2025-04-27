@@ -141,21 +141,37 @@ func (c *GRPCClient) addHeaders(ctx context.Context, req gproto.Message) context
 }
 
 func (c *GRPCClient) convertRequest(req *request.SaveMetricRequest) *proto.SaveMetricRequest {
-	return &proto.SaveMetricRequest{
+	request := &proto.SaveMetricRequest{
 		MetricName: req.MetricName,
 		MetricType: req.MetricType,
-		Delta:      wrapperspb.Int64(*req.Delta),
-		Value:      wrapperspb.Double(*req.Value),
 	}
+
+	if nil != req.Delta {
+		request.Delta = wrapperspb.Int64(*req.Delta)
+	}
+
+	if nil != req.Value {
+		request.Value = wrapperspb.Double(*req.Value)
+	}
+
+	return request
 }
 
 func (c *GRPCClient) convertResponse(resp *proto.SaveMetricResponse) *response.SaveMetricResponse {
-	return &response.SaveMetricResponse{
+	response := &response.SaveMetricResponse{
 		MetricName: resp.MetricName,
 		MetricType: resp.MetricType,
-		Delta:      &resp.Delta.Value,
-		Value:      &resp.Value.Value,
 	}
+
+	if nil != resp.Delta {
+		response.Delta = &resp.Delta.Value
+	}
+
+	if nil != resp.Value {
+		response.Value = &resp.Value.Value
+	}
+
+	return response
 }
 
 func convertError(err error) *response.APIError {
