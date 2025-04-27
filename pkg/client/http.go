@@ -104,9 +104,9 @@ func (client *HTTPClient) SimpleSaveMetric(ctx context.Context, metricType, metr
 	if err != nil {
 		if result == nil || result.RawResponse == nil {
 			return nil, err
-		} else {
-			return result.Error().(*response.APIError), err
 		}
+
+		return result.Error().(*response.APIError), err
 	}
 
 	return nil, nil
@@ -123,9 +123,9 @@ func (client *HTTPClient) SaveMetric(ctx context.Context, request *request.SaveM
 	if err != nil {
 		if result == nil || result.RawResponse == nil {
 			return nil, nil, err
-		} else {
-			return nil, result.Error().(*response.APIError), err
 		}
+
+		return nil, result.Error().(*response.APIError), err
 	}
 
 	return result.Result().(*response.SaveMetricResponse), nil, nil
@@ -142,9 +142,9 @@ func (client *HTTPClient) SaveMetrics(ctx context.Context, requests []request.Sa
 	if err != nil {
 		if result == nil || result.RawResponse == nil {
 			return nil, nil, err
-		} else {
-			return nil, result.Error().(*response.APIError), err
 		}
+
+		return nil, result.Error().(*response.APIError), err
 	}
 
 	return *result.Result().(*[]response.SaveMetricResponse), nil, nil

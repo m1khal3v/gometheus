@@ -40,3 +40,12 @@ jobs:
       - name: Run gostan
         run: |
           cmd/gostan/gostan ./...
+
+      - name: Build gostan binary
+        run: |
+          cd cmd/gostan
+          go build -buildvcs=false -o gostan
+
+      - name: Run gostan
+        run: |
+          cmd/gostan/gostan ./...
