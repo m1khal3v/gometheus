@@ -69,7 +69,7 @@ func NewGRPC(address string, options ...ConfigOption) (*GRPCClient, error) {
 		grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
 	}
 
-	conn, err := grpc.Dial(cfg.baseURL.Host, grpcOpts...)
+	conn, err := grpc.NewClient(cfg.baseURL.Host, grpcOpts...)
 	if err != nil {
 		return nil, err
 	}
