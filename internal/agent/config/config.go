@@ -104,11 +104,15 @@ func parseJSONConfig() (*jsonConfig, error) {
 			// Удаляем обработанные аргументы из os.Args
 			os.Args = append(os.Args[:1+i], os.Args[i+2:]...)
 			break
-		} else if strings.HasPrefix(arg, "--config=") {
+		}
+
+		if strings.HasPrefix(arg, "--config=") {
 			configFile = strings.TrimPrefix(arg, "--config=")
 			os.Args = append(os.Args[:1+i], os.Args[i+1:]...)
 			break
-		} else if strings.HasPrefix(arg, "-c=") {
+		}
+
+		if strings.HasPrefix(arg, "-c=") {
 			configFile = strings.TrimPrefix(arg, "-c=")
 			os.Args = append(os.Args[:1+i], os.Args[i+1:]...)
 			break
