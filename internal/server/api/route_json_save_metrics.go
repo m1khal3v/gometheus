@@ -18,7 +18,8 @@ func (container Container) JSONSaveMetrics(writer http.ResponseWriter, request *
 	}
 
 	var errs []error
-	var metrics []metric.Metric
+
+	metrics := make([]metric.Metric, 0, len(saveMetricsRequest))
 	for _, saveMetricRequest := range saveMetricsRequest {
 		metric, err := factory.NewFromRequest(saveMetricRequest)
 		if err != nil {
