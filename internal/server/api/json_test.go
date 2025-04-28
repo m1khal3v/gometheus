@@ -57,10 +57,14 @@ func TestDecodeAndValidateJSONRequest(t *testing.T) {
 			if tc.expectedValid {
 				assert.True(t, isValid)
 				assert.Equal(t, tc.expectedResult, result)
-				assert.Equal(t, http.StatusOK, writer.Result().StatusCode)
+				res := writer.Result()
+				defer res.Body.Close()
+				assert.Equal(t, http.StatusOK, res.StatusCode)
 			} else {
 				assert.False(t, isValid)
-				assert.Equal(t, tc.expectedStatus, writer.Result().StatusCode)
+				res := writer.Result()
+				defer res.Body.Close()
+				assert.Equal(t, tc.expectedStatus, res.StatusCode)
 			}
 		})
 	}
@@ -106,10 +110,14 @@ func TestDecodeAndValidateJSONRequests(t *testing.T) {
 			if tc.expectedValid {
 				assert.True(t, isValid)
 				assert.Equal(t, tc.expectedResult, result)
-				assert.Equal(t, http.StatusOK, writer.Result().StatusCode)
+				res := writer.Result()
+				defer res.Body.Close()
+				assert.Equal(t, http.StatusOK, res.StatusCode)
 			} else {
 				assert.False(t, isValid)
-				assert.Equal(t, tc.expectedStatus, writer.Result().StatusCode)
+				res := writer.Result()
+				defer res.Body.Close()
+				assert.Equal(t, tc.expectedStatus, res.StatusCode)
 			}
 		})
 	}
@@ -120,7 +128,9 @@ func TestWriteJSONResponse(t *testing.T) {
 	responseData := map[string]string{"message": "success"}
 	WriteJSONResponse(responseData, writer)
 
-	assert.Equal(t, http.StatusOK, writer.Result().StatusCode)
+	res := writer.Result()
+	defer res.Body.Close()
+	assert.Equal(t, http.StatusOK, res.StatusCode)
 	assert.Equal(t, "application/json", writer.Header().Get("Content-Type"))
 
 	var actualResponse map[string]string
@@ -134,7 +144,9 @@ func TestWriteJSONErrorResponse(t *testing.T) {
 
 	WriteJSONErrorResponse(http.StatusBadRequest, writer, "Error occurred", errors.New("some error"))
 
-	assert.Equal(t, http.StatusBadRequest, writer.Result().StatusCode)
+	res := writer.Result()
+	defer res.Body.Close()
+	assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 	assert.Equal(t, "application/json", writer.Header().Get("Content-Type"))
 
 	var actualResponse response.APIError
