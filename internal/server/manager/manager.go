@@ -93,7 +93,6 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 		case counter.MetricType:
 			if previous == nil {
 				manager.mutex.Lock(metric.Name())
-				defer manager.mutex.Unlock(metric.Name())
 			}
 
 			if err := manager.prepareCounter(ctx, metric.(*counter.Metric), previous); err != nil {
@@ -104,6 +103,14 @@ func (manager *Manager) SaveBatch(ctx context.Context, metrics []metric.Metric) 
 		}
 
 		processed[metric.Name()] = metric
+	}
+
+	for name, metric := range processed {
+		if metric.Type() != counter.MetricType {
+			continue
+		}
+
+		manager.mutex.Unlock(name)
 	}
 
 	metrics = maps.Values(processed)

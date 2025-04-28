@@ -28,7 +28,11 @@ func NewNamedMutex() *NamedMutex {
 
 		for range ticker.C {
 			namedMutex.mutexMap.Range(func(key, value any) bool {
-				item := value.(*mutexItem)
+				item, ok := value.(*mutexItem)
+				if !ok {
+					panic("invalid mutex item")
+				}
+
 				if now.After(item.lastAccess.Add(ttl)) && item.mutex.TryLock() {
 					namedMutex.mutexMap.Delete(key)
 					item.mutex.Unlock()
@@ -48,7 +52,11 @@ func (namedMutex *NamedMutex) createOrGetLock(name string) *sync.Mutex {
 		lastAccess: now,
 	})
 
-	item := actual.(*mutexItem)
+	item, ok := actual.(*mutexItem)
+	if !ok {
+		panic("invalid mutex item")
+	}
+
 	if exists {
 		item.lastAccess = now
 	}
