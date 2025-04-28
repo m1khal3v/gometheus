@@ -30,16 +30,16 @@ type Client struct {
 	realIP   net.IP
 }
 
-type ErrUnexpectedStatus struct {
+type UnexpectedStatusError struct {
 	Status int
 }
 
-func (err ErrUnexpectedStatus) Error() string {
+func (err UnexpectedStatusError) Error() string {
 	return fmt.Sprintf("unexpected status code: %d", err.Status)
 }
 
-func newErrUnexpectedStatus(status int) ErrUnexpectedStatus {
-	return ErrUnexpectedStatus{
+func newErrUnexpectedStatus(status int) UnexpectedStatusError {
+	return UnexpectedStatusError{
 		Status: status,
 	}
 }
@@ -180,7 +180,7 @@ func (client *Client) doRequest(request *resty.Request, method, url string) (*re
 
 	if client.config.retry {
 		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
-			return !errors.As(err, &ErrUnexpectedStatus{}) &&
+			return !errors.As(err, &UnexpectedStatusError{}) &&
 				!errors.Is(err, context.DeadlineExceeded) &&
 				!errors.Is(err, context.Canceled)
 		})
