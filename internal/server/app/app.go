@@ -5,6 +5,7 @@ package app
 import (
 	"context"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -20,9 +21,9 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/pprof"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
+	"github.com/m1khal3v/gometheus/internal/server/rpc"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 )
 
 func Start(config *config.Config) error {
@@ -83,21 +84,32 @@ func Start(config *config.Config) error {
 		}()
 
 	} else {
-		// Настройка gRPC-сервера
-		listener, err := net.Listen("tcp", config.Address)
+		opts := []rpc.ServerOption{}
+		if config.Key != "" {
+			opts = append(opts, rpc.WithHMAC(config.Key, "X-Signature", sha256.New))
+		}
+
+		if privKey != nil {
+			opts = append(opts, rpc.WithTLS(privKey))
+		}
+
+		if subnet != nil {
+			opts = append(opts, rpc.WithSubnet("X-Real-IP", subnet))
+		}
+
+		server, err := rpc.NewGRPCServer(storage, opts...)
 		if err != nil {
 			errCancel(err)
 		}
 
-		server := grpc.NewServer()
 		shutdown = func(ctx context.Context) error {
-			server.GracefulStop()
+			server.Stop()
 
 			return nil
 		}
 
 		go func() {
-			if err := server.Serve(listener); !errors.Is(err, http.ErrServerClosed) {
+			if err := server.Start(config.Address); !errors.Is(err, http.ErrServerClosed) {
 				errCancel(err)
 			}
 		}()
