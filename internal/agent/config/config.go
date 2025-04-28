@@ -4,7 +4,9 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -95,15 +97,35 @@ func ParseConfig() *Config {
 
 func parseJSONConfig() (*jsonConfig, error) {
 	var configFile string
-	configFs := flag.NewFlagSet("config", flag.ContinueOnError)
-	configFs.StringVarP(&configFile, "config", "c", "", "config file path")
 	args := os.Args[1:]
-	if err := configFs.Parse(args); err != nil {
-		return nil, err
-	}
-	remainingArgs := configFs.Args()
-	os.Args = append([]string{os.Args[0]}, remainingArgs...)
 
+	// Ручная обработка аргументов для извлечения -c/--config
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "-c" || arg == "--config" {
+			if i+1 >= len(args) {
+				return nil, fmt.Errorf("config flag requires a value")
+			}
+			configFile = args[i+1]
+			// Удаляем обработанные аргументы из os.Args
+			os.Args = append(os.Args[:1+i], os.Args[i+2:]...)
+			break
+		}
+
+		if strings.HasPrefix(arg, "--config=") {
+			configFile = strings.TrimPrefix(arg, "--config=")
+			os.Args = append(os.Args[:1+i], os.Args[i+1:]...)
+			break
+		}
+
+		if strings.HasPrefix(arg, "-c=") {
+			configFile = strings.TrimPrefix(arg, "-c=")
+			os.Args = append(os.Args[:1+i], os.Args[i+1:]...)
+			break
+		}
+	}
+
+	// Проверяем переменную окружения CONFIG
 	if envConfig := os.Getenv("CONFIG"); envConfig != "" {
 		configFile = envConfig
 	}
