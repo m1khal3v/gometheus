@@ -4,8 +4,13 @@ package app
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -21,6 +26,8 @@ import (
 func Start(config *config.Config) error {
 	ctx := context.Background()
 
+	//              ||
+	// increment 23 \/
 	suspendCtx, suspendCancel := signal.NotifyContext(ctx, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer suspendCancel()
 
@@ -39,9 +46,17 @@ func Start(config *config.Config) error {
 	errCtx, errCancel := context.WithCancelCause(ctx)
 	defer errCancel(nil)
 
+	var privKey *rsa.PrivateKey
+	if config.CryptoKey != "" {
+		privKey, err = readPrivateKeyFromFile(config.CryptoKey)
+		if err != nil {
+			return err
+		}
+	}
+
 	server := &http.Server{
 		Addr:    config.Address,
-		Handler: router.New(storage, config.Key),
+		Handler: router.New(storage, config.Key, privKey),
 	}
 
 	go func() {
@@ -74,4 +89,18 @@ func Start(config *config.Config) error {
 
 		return nil
 	}
+}
+
+func readPrivateKeyFromFile(filepath string) (*rsa.PrivateKey, error) {
+	keyBytes, err := os.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(keyBytes)
+	if block == nil {
+		return nil, fmt.Errorf("can`t decode PEM")
+	}
+
+	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
