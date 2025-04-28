@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"hash"
+	"net"
 	"sync"
 
 	"github.com/m1khal3v/gometheus/pkg/proto"
@@ -29,6 +30,7 @@ type GRPCClient struct {
 	gzipPool *sync.Pool
 	hmacPool *sync.Pool
 	config   *config
+	realIP   net.IP
 }
 
 func NewGRPC(address string, options ...ConfigOption) (*GRPCClient, error) {
@@ -137,6 +139,9 @@ func (c *GRPCClient) addHeaders(ctx context.Context, req gproto.Message) context
 		md.Set(c.config.signature.header, signature)
 	}
 
+	realIP, _ := c.getRealIP()
+	md.Set("X-Real-IP", realIP.String())
+
 	return metadata.NewOutgoingContext(ctx, md)
 }
 
@@ -172,6 +177,28 @@ func (c *GRPCClient) convertResponse(resp *proto.SaveMetricResponse) *response.S
 	}
 
 	return response
+}
+
+func (c *GRPCClient) getRealIP() (net.IP, error) {
+	if c.realIP != nil {
+		return c.realIP, nil
+	}
+
+	port := "80"
+	if c.config.baseURL.Port() != "" {
+		port = c.config.baseURL.Port()
+	}
+
+	conn, err := net.Dial("udp", c.config.baseURL.Host+":"+port)
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Close()
+
+	c.realIP = conn.LocalAddr().(*net.UDPAddr).IP
+
+	return c.realIP, nil
 }
 
 func convertError(err error) *response.APIError {
