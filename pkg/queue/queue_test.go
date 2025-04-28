@@ -2,6 +2,7 @@ package queue
 
 import (
 	"errors"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,4 +70,75 @@ func TestQueue(t *testing.T) {
 			require.Equal(t, uint64(0), queue.Count())
 		})
 	}
+}
+
+func TestQueueEnhanced(t *testing.T) {
+	t.Run("Pop with zero count", func(t *testing.T) {
+		queue := New[int](10)
+		queue.Push(1)
+		queue.Push(2)
+
+		items := queue.Pop(0)
+		require.Empty(t, items, "Expected empty result when count is zero")
+		require.Equal(t, uint64(2), queue.Count(), "Queue count should remain the same")
+	})
+
+	t.Run("Concurrency test", func(t *testing.T) {
+		queue := New[int](100)
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 50; i++ {
+				queue.Push(i)
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			for i := 50; i < 100; i++ {
+				queue.Push(i)
+			}
+		}()
+
+		wg.Wait()
+
+		require.Equal(t, uint64(100), queue.Count(), "Incorrect item count in the queue after concurrent pushes")
+	})
+
+	t.Run("RemoveBatch with zero count", func(t *testing.T) {
+		queue := New[int](10)
+		queue.Push(1)
+		queue.Push(2)
+
+		err := queue.RemoveBatch(0, func(items []int) error {
+			return nil
+		})
+
+		require.NoError(t, err, "Expected no error when removing zero items")
+		require.Equal(t, uint64(2), queue.Count(), "Queue count should remain unchanged")
+	})
+
+	t.Run("RemoveBatch filter rejects all items", func(t *testing.T) {
+		queue := New[int](10)
+		queue.PushBatch([]int{1, 2, 3})
+
+		err := queue.RemoveBatch(3, func(items []int) error {
+			return errors.New("reject all items")
+		})
+
+		require.Error(t, err, "Expected error when filter rejects all items")
+		require.Equal(t, uint64(3), queue.Count(), "Queue count should remain unchanged after rejected removal")
+	})
+
+	t.Run("Edge case: Pop more items than present", func(t *testing.T) {
+		queue := New[int](5)
+		queue.Push(1)
+		queue.Push(2)
+
+		items := queue.Pop(10)
+		require.Equal(t, []int{1, 2}, items, "Should return all available items when count exceeds present items")
+		require.Equal(t, uint64(0), queue.Count(), "Queue count should be zero after popping all items")
+	})
 }

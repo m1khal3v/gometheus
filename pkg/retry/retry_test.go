@@ -205,3 +205,107 @@ func TestRetry(t *testing.T) {
 		})
 	}
 }
+
+func Test_pow_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name string
+		x    uint64
+		y    uint64
+		want uint64
+	}{
+		{
+			name: "0 pow 0",
+			x:    0,
+			y:    0,
+			want: 1, // Стандартное определение
+		},
+		{
+			name: "0 pow 5",
+			x:    0,
+			y:    5,
+			want: 0,
+		},
+		{
+			name: "5 pow 0",
+			x:    5,
+			y:    0,
+			want: 1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, pow(tt.x, tt.y))
+		})
+	}
+}
+
+func Test_calculateDelay_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name       string
+		baseDelay  time.Duration
+		maxDelay   time.Duration
+		attempt    uint64
+		multiplier uint64
+		want       time.Duration
+	}{
+		{
+			name:       "maxDelay less than baseDelay",
+			baseDelay:  2 * time.Second,
+			maxDelay:   1 * time.Second,
+			attempt:    2,
+			multiplier: 2,
+			want:       1 * time.Second,
+		},
+		{
+			name:       "multiplier is 1",
+			baseDelay:  time.Second,
+			maxDelay:   10 * time.Second,
+			attempt:    3,
+			multiplier: 1,
+			want:       time.Second, // Задержка не меняется
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, calculateDelay(tt.baseDelay, tt.maxDelay, tt.attempt, tt.multiplier))
+		})
+	}
+}
+
+func TestRetry_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name         string
+		attempts     uint64
+		wantAttempts uint64
+		function     func() error
+		filter       func(err error) bool
+		wantErr      bool
+	}{
+		{
+			name:         "nil filter allows all retries",
+			attempts:     3,
+			wantAttempts: 3,
+			function: func() error {
+				return errors.New("some error")
+			},
+			filter:  nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		attempts := uint64(0)
+		t.Run(tt.name, func(t *testing.T) {
+			function := func() error {
+				attempts++
+				return tt.function()
+			}
+			err := Retry(0, 0, tt.attempts, 0, function, tt.filter)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.wantAttempts, attempts)
+		})
+	}
+}
