@@ -15,7 +15,7 @@ import (
 
 type MetricsService struct {
 	proto.UnimplementedMetricsServiceServer
-	manager *manager.Manager // Замените на ваш реальный интерфейс менеджера
+	manager *manager.Manager
 }
 
 func NewMetricsService(storage storage.Storage) *MetricsService {
