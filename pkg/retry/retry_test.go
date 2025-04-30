@@ -123,7 +123,7 @@ func Test_calculateDelay(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, calculateDelay(tt.baseDelay, tt.maxDelay, tt.attempt, tt.multiplier))
+			assert.Equal(t, tt.want, calculateDelay(RetryOptions{BaseDelay: tt.baseDelay, MaxDelay: tt.maxDelay, Multiplier: tt.multiplier}, tt.attempt))
 		})
 	}
 }
@@ -196,7 +196,12 @@ func TestRetry(t *testing.T) {
 				attempts++
 				return tt.function()
 			}
-			err := Retry(0, 0, tt.attempts, 0, function, tt.filter)
+			err := Retry(RetryOptions{
+				BaseDelay:  0,
+				MaxDelay:   0,
+				Attempts:   tt.attempts,
+				Multiplier: 0,
+			}, function, tt.filter)
 			if tt.wantErr {
 				assert.Error(t, err)
 			}
@@ -267,7 +272,7 @@ func Test_calculateDelay_EdgeCases(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, calculateDelay(tt.baseDelay, tt.maxDelay, tt.attempt, tt.multiplier))
+			assert.Equal(t, tt.want, calculateDelay(RetryOptions{BaseDelay: tt.baseDelay, MaxDelay: tt.maxDelay, Multiplier: tt.multiplier}, tt.attempt))
 		})
 	}
 }
@@ -299,7 +304,12 @@ func TestRetry_EdgeCases(t *testing.T) {
 				attempts++
 				return tt.function()
 			}
-			err := Retry(0, 0, tt.attempts, 0, function, tt.filter)
+			err := Retry(RetryOptions{
+				BaseDelay:  0,
+				MaxDelay:   0,
+				Attempts:   tt.attempts,
+				Multiplier: 0,
+			}, function, tt.filter)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

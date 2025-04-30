@@ -176,7 +176,12 @@ func (client *HTTPClient) doRequest(request *resty.Request, method, url string) 
 	}
 
 	if client.config.retry {
-		err = retry.Retry(time.Second, 5*time.Second, 4, 2, do, func(err error) bool {
+		err = retry.Retry(retry.RetryOptions{
+			BaseDelay:  time.Second,
+			MaxDelay:   5 * time.Second,
+			Attempts:   4,
+			Multiplier: 2,
+		}, do, func(err error) bool {
 			return !errors.As(err, &UnexpectedStatusError{}) &&
 				!errors.Is(err, context.DeadlineExceeded) &&
 				!errors.Is(err, context.Canceled)

@@ -13,30 +13,30 @@ import (
 	"github.com/m1khal3v/gometheus/pkg/request"
 )
 
-type ErrUnknownType struct {
+type UnknownTypeError struct {
 	Type string
 }
 
-func (err ErrUnknownType) Error() string {
+func (err UnknownTypeError) Error() string {
 	return fmt.Sprintf("metric type '%s' is not defined", err.Type)
 }
 
 func newErrUnknownType(metricType string) error {
-	return &ErrUnknownType{
+	return &UnknownTypeError{
 		Type: metricType,
 	}
 }
 
-type ErrInvalidValue struct {
+type InvalidValueError struct {
 	Value string
 }
 
-func (err ErrInvalidValue) Error() string {
+func (err InvalidValueError) Error() string {
 	return fmt.Sprintf("metric value '%s' is invalid", err.Value)
 }
 
 func newErrInvalidValue(value string) error {
-	return &ErrInvalidValue{
+	return &InvalidValueError{
 		Value: value,
 	}
 }

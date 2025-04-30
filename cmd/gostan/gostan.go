@@ -220,6 +220,8 @@ import (
 )
 
 func main() {
+	nocall.SetupAnalyzer()
+
 	analyzers := []*analysis.Analyzer{
 		// self-made
 		nocall.Analyzer,

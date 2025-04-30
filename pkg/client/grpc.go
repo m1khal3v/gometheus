@@ -27,7 +27,6 @@ import (
 type GRPCClient struct {
 	conn     *grpc.ClientConn
 	client   proto.MetricsServiceClient
-	gzipPool *sync.Pool
 	hmacPool *sync.Pool
 	config   *config
 	realIP   net.IP

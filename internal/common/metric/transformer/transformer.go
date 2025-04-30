@@ -14,16 +14,16 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-type ErrUnknownType struct {
+type UnknownTypeError struct {
 	Type string
 }
 
-func (err ErrUnknownType) Error() string {
+func (err UnknownTypeError) Error() string {
 	return fmt.Sprintf("metric type '%s' is not defined", err.Type)
 }
 
 func newErrUnknownType(metricType string) error {
-	return &ErrUnknownType{
+	return &UnknownTypeError{
 		Type: metricType,
 	}
 }

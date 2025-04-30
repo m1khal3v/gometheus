@@ -48,8 +48,8 @@ func (s *MetricsService) SaveMetrics(
 	ctx context.Context,
 	req *proto.SaveMetricsBatchRequest,
 ) (*proto.SaveMetricsBatchResponse, error) {
-	var metrics []metric.Metric
 	var errors []error
+	metrics := make([]metric.Metric, 0, len(req.GetMetrics()))
 
 	for _, grpcReq := range req.GetMetrics() {
 		m, err := factory.NewFromGRPCRequest(grpcReq)
@@ -72,7 +72,7 @@ func (s *MetricsService) SaveMetrics(
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	var responses []*proto.SaveMetricResponse
+	responses := make([]*proto.SaveMetricResponse, 0, len(savedMetrics))
 	for _, m := range savedMetrics {
 		resp, err := transformer.TransformToGRPCSaveResponse(m)
 		if err != nil {

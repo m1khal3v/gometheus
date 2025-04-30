@@ -41,7 +41,7 @@ func TestNewUnknownDriver(t *testing.T) {
 	assert.Nil(t, storage)
 	assert.Error(t, err)
 
-	var unknownDriverErr *ErrUnknownDriver
+	var unknownDriverErr *UnknownDriverError
 	isUnknownDriverErr := errors.As(err, &unknownDriverErr)
 	assert.True(t, isUnknownDriverErr)
 	assert.Equal(t, databaseDriver, unknownDriverErr.Driver)

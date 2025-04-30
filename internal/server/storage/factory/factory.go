@@ -12,16 +12,16 @@ import (
 	"github.com/m1khal3v/gometheus/internal/server/storage/kind/pgsql"
 )
 
-type ErrUnknownDriver struct {
+type UnknownDriverError struct {
 	Driver string
 }
 
-func (err ErrUnknownDriver) Error() string {
+func (err UnknownDriverError) Error() string {
 	return fmt.Sprintf("driver '%s' is not defined", err.Driver)
 }
 
 func newErrUnknownDriver(driver string) error {
-	return &ErrUnknownDriver{
+	return &UnknownDriverError{
 		Driver: driver,
 	}
 }
