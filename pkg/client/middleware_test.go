@@ -58,7 +58,7 @@ func TestPreRequestHookCombine(t *testing.T) {
 
 func TestClient_EncryptRequestBody(t *testing.T) {
 	key, _ := rsa.GenerateKey(rand.Reader, 2048)
-	client := &Client{
+	client := &HTTPClient{
 		config: &config{
 			publicKey: &key.PublicKey,
 		},
@@ -74,7 +74,7 @@ func TestClient_EncryptRequestBody(t *testing.T) {
 }
 
 func TestClient_CompressRequestBody(t *testing.T) {
-	client := &Client{
+	client := &HTTPClient{
 		gzipPool: &sync.Pool{
 			New: func() interface{} {
 				return gzip.NewWriter(io.Discard)
@@ -92,7 +92,7 @@ func TestClient_CompressRequestBody(t *testing.T) {
 }
 
 func TestClient_AddHMACSignature(t *testing.T) {
-	client := &Client{
+	client := &HTTPClient{
 		config: &config{
 			signature: &signatureConfig{header: "X-Signature"},
 		},

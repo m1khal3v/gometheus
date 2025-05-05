@@ -15,17 +15,17 @@ type Collector struct {
 	max float64
 }
 
-type ErrMinGreaterThanMax struct {
+type MinGreaterThanMaxError struct {
 	Min float64
 	Max float64
 }
 
-func (err ErrMinGreaterThanMax) Error() string {
+func (err MinGreaterThanMaxError) Error() string {
 	return fmt.Sprintf("min=%g can`t be greater than max=%g", err.Min, err.Max)
 }
 
 func newErrMinGreaterThanMax(min, max float64) error {
-	return &ErrMinGreaterThanMax{
+	return &MinGreaterThanMaxError{
 		Min: min,
 		Max: max,
 	}

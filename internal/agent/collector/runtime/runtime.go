@@ -22,16 +22,16 @@ type Collector struct {
 var ErrEmptyMetrics = errors.New("metrics are empty")
 var float64Type = reflect.TypeOf(float64(0))
 
-type ErrInvalidMetricName struct {
+type InvalidMetricNameError struct {
 	Name string
 }
 
-func (err ErrInvalidMetricName) Error() string {
+func (err InvalidMetricNameError) Error() string {
 	return fmt.Sprintf("invalid metric name: %s", err.Name)
 }
 
 func newErrInvalidMetricName(name string) error {
-	return &ErrInvalidMetricName{
+	return &InvalidMetricNameError{
 		Name: name,
 	}
 }

@@ -9,33 +9,34 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/pkg/proto"
 	"github.com/m1khal3v/gometheus/pkg/request"
 )
 
-type ErrUnknownType struct {
+type UnknownTypeError struct {
 	Type string
 }
 
-func (err ErrUnknownType) Error() string {
+func (err UnknownTypeError) Error() string {
 	return fmt.Sprintf("metric type '%s' is not defined", err.Type)
 }
 
 func newErrUnknownType(metricType string) error {
-	return &ErrUnknownType{
+	return &UnknownTypeError{
 		Type: metricType,
 	}
 }
 
-type ErrInvalidValue struct {
+type InvalidValueError struct {
 	Value string
 }
 
-func (err ErrInvalidValue) Error() string {
+func (err InvalidValueError) Error() string {
 	return fmt.Sprintf("metric value '%s' is invalid", err.Value)
 }
 
 func newErrInvalidValue(value string) error {
-	return &ErrInvalidValue{
+	return &InvalidValueError{
 		Value: value,
 	}
 }
@@ -75,6 +76,25 @@ func NewFromRequest(request *request.SaveMetricRequest) (metric.Metric, error) {
 		}
 
 		return counter.New(request.MetricName, *request.Delta), nil
+	default:
+		return nil, newErrUnknownType(request.MetricType)
+	}
+}
+
+func NewFromGRPCRequest(request *proto.SaveMetricRequest) (metric.Metric, error) {
+	switch request.MetricType {
+	case gauge.MetricType:
+		if nil == request.Value {
+			return nil, newErrInvalidValue("nil")
+		}
+
+		return gauge.New(request.MetricName, request.Value.Value), nil
+	case counter.MetricType:
+		if nil == request.Delta {
+			return nil, newErrInvalidValue("nil")
+		}
+
+		return counter.New(request.MetricName, request.Delta.Value), nil
 	default:
 		return nil, newErrUnknownType(request.MetricType)
 	}

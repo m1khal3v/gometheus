@@ -38,7 +38,7 @@ func testRequest(t *testing.T, server *httptest.Server, method string, path stri
 
 func TestSaveMetric(t *testing.T) {
 	storage := memory.New()
-	server := httptest.NewServer(router.New(storage, "", nil))
+	server := httptest.NewServer(router.New(storage, "", nil, nil))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -188,7 +188,7 @@ type saveMetricRequest struct {
 
 func TestSaveMetricJSON(t *testing.T) {
 	storage := memory.New()
-	server := httptest.NewServer(router.New(storage, "", nil))
+	server := httptest.NewServer(router.New(storage, "", nil, nil))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -365,7 +365,7 @@ func TestSaveMetricJSON(t *testing.T) {
 
 func TestSaveMetricsJSON(t *testing.T) {
 	storage := memory.New()
-	server := httptest.NewServer(router.New(storage, "", nil))
+	server := httptest.NewServer(router.New(storage, "", nil, nil))
 	defer server.Close()
 	tests := []struct {
 		method             string
@@ -736,7 +736,7 @@ func TestGetMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			storage := memory.New()
-			server := httptest.NewServer(router.New(storage, "", nil))
+			server := httptest.NewServer(router.New(storage, "", nil, nil))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
@@ -875,7 +875,7 @@ func TestGetMetricJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			storage := memory.New()
-			server := httptest.NewServer(router.New(storage, "", nil))
+			server := httptest.NewServer(router.New(storage, "", nil, nil))
 			defer server.Close()
 
 			for _, metric := range tt.preset {
@@ -952,7 +952,7 @@ func TestGetAllMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			storage := memory.New()
-			server := httptest.NewServer(router.New(storage, "", nil))
+			server := httptest.NewServer(router.New(storage, "", nil, nil))
 			defer server.Close()
 
 			for _, metric := range tt.preset {

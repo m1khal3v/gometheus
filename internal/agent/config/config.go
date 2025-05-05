@@ -32,6 +32,7 @@ type Config struct {
 	CPUProfileDuration time.Duration `env:"CPU_PROFILE_DURATION"`
 	MemProfileFile     string        `env:"MEM_PROFILE_FILE"`
 	CryptoKey          string        `env:"CRYPTO_KEY"`
+	Protocol           string        `env:"PROTOCOL"`
 }
 
 func ParseConfig() *Config {
@@ -80,10 +81,15 @@ func ParseConfig() *Config {
 	flag.StringVar(&config.CPUProfileFile, "cpu-profile-file", "cpu.pprof", "path to save CPU profile")
 	flag.DurationVar(&config.CPUProfileDuration, "cpu-profile-duration", time.Second*30, "duration to save CPU profile")
 	flag.StringVar(&config.MemProfileFile, "mem-profile-file", "mem.pprof", "path to save memory profile")
+	flag.StringVar(&config.Protocol, "protocol", "http", "http/grpc")
 	flag.Parse()
 
 	if err := env.Parse(config); err != nil {
 		panic(err)
+	}
+
+	if config.Protocol != "http" && config.Protocol != "grpc" {
+		panic("invalid protocol")
 	}
 
 	return config

@@ -9,14 +9,14 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func Example() {
-	client := New(
+func Example_http() {
+	client := NewHTTP(
 		"foo.bar.com",
 		WithoutRetry(),
 		WithHMACSignature("$ecret", sha256.New, "X-Signature"),
 	)
 
-	responses, apiErr, err := client.SaveMetricsAsJSON(context.TODO(), []request.SaveMetricRequest{
+	responses, apiErr, err := client.SaveMetrics(context.TODO(), []request.SaveMetricRequest{
 		{
 			MetricName: "clicks",
 			MetricType: "counter",

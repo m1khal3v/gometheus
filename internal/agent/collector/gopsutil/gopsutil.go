@@ -37,30 +37,30 @@ type Collector struct {
 	channelSize uint16
 }
 
-type ErrInvalidMetricName struct {
+type InvalidMetricNameError struct {
 	Name string
 }
 
-func (err ErrInvalidMetricName) Error() string {
+func (err InvalidMetricNameError) Error() string {
 	return fmt.Sprintf("invalid metric name: %s", err.Name)
 }
 
 func newErrInvalidMetricName(name interest) error {
-	return &ErrInvalidMetricName{
+	return &InvalidMetricNameError{
 		Name: string(name),
 	}
 }
 
-type ErrNonUniqueOutName struct {
+type NonUniqueOutNameError struct {
 	Name string
 }
 
-func (err ErrNonUniqueOutName) Error() string {
+func (err NonUniqueOutNameError) Error() string {
 	return fmt.Sprintf("out name '%s' is not unique", err.Name)
 }
 
 func newErrNonUniqueOutName(name string) error {
-	return &ErrNonUniqueOutName{
+	return &NonUniqueOutNameError{
 		Name: name,
 	}
 }

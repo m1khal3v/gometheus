@@ -20,6 +20,7 @@ type jsonConfig struct {
 	Restore         *bool   `json:"restore"`
 	DatabaseDSN     *string `json:"database_dsn"`
 	CryptoKey       *string `json:"crypto_key"`
+	TrustedSubnet   *string `json:"trusted_subnet"`
 }
 
 type Config struct {
@@ -35,6 +36,8 @@ type Config struct {
 	CPUProfileDuration time.Duration `env:"CPU_PROFILE_DURATION"`
 	MemProfileFile     string        `env:"MEM_PROFILE_FILE"`
 	CryptoKey          string        `env:"CRYPTO_KEY"`
+	TrustedSubnet      string        `env:"TRUSTED_SUBNET"`
+	Protocol           string        `env:"Protocol"` // Добавлено поле Platform
 }
 
 func ParseConfig() *Config {
@@ -85,16 +88,27 @@ func ParseConfig() *Config {
 	}
 	flag.StringVar(&config.CryptoKey, "crypto-key", defaultCryptoKey, "path to private key")
 
+	defaultTrustedSubnet := ""
+	if jsonCfg != nil && jsonCfg.TrustedSubnet != nil {
+		defaultTrustedSubnet = *jsonCfg.TrustedSubnet
+	}
+	flag.StringVarP(&config.TrustedSubnet, "trusted-subnet", "t", defaultTrustedSubnet, "CIDR")
+
 	flag.StringVarP(&config.LogLevel, "log-level", "l", "info", "log level")
 	flag.StringVar(&config.DatabaseDriver, "database-driver", "pgx", "database driver")
 	flag.StringVarP(&config.Key, "key", "k", "", "secret key")
 	flag.StringVar(&config.CPUProfileFile, "cpu-profile-file", "cpu.pprof", "path to save CPU profile")
 	flag.DurationVar(&config.CPUProfileDuration, "cpu-profile-duration", time.Second*30, "duration to save CPU profile")
 	flag.StringVar(&config.MemProfileFile, "mem-profile-file", "mem.pprof", "path to save memory profile")
+	flag.StringVar(&config.Protocol, "protocol", "http", "http/grpc")
 	flag.Parse()
 
 	if err := env.Parse(config); err != nil {
 		panic(err)
+	}
+
+	if config.Protocol != "http" && config.Protocol != "grpc" {
+		panic("invalid protocol")
 	}
 
 	return config

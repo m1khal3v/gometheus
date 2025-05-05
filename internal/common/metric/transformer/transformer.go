@@ -8,20 +8,22 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/metric"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/counter"
 	"github.com/m1khal3v/gometheus/internal/common/metric/kind/gauge"
+	"github.com/m1khal3v/gometheus/pkg/proto"
 	"github.com/m1khal3v/gometheus/pkg/request"
 	"github.com/m1khal3v/gometheus/pkg/response"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-type ErrUnknownType struct {
+type UnknownTypeError struct {
 	Type string
 }
 
-func (err ErrUnknownType) Error() string {
+func (err UnknownTypeError) Error() string {
 	return fmt.Sprintf("metric type '%s' is not defined", err.Type)
 }
 
 func newErrUnknownType(metricType string) error {
-	return &ErrUnknownType{
+	return &UnknownTypeError{
 		Type: metricType,
 	}
 }
@@ -81,6 +83,26 @@ func TransformToGetResponse(metric metric.Metric) (*response.GetMetricResponse, 
 			MetricType: metric.Type(),
 			MetricName: metric.Name(),
 			Delta:      &value,
+		}, nil
+	}
+	return nil, newErrUnknownType(metric.Type())
+}
+
+func TransformToGRPCSaveResponse(metric metric.Metric) (*proto.SaveMetricResponse, error) {
+	switch metric.Type() {
+	case gauge.MetricType:
+		value := metric.(*gauge.Metric).GetValue()
+		return &proto.SaveMetricResponse{
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
+			Value:      wrapperspb.Double(value),
+		}, nil
+	case counter.MetricType:
+		value := metric.(*counter.Metric).GetValue()
+		return &proto.SaveMetricResponse{
+			MetricType: metric.Type(),
+			MetricName: metric.Name(),
+			Delta:      wrapperspb.Int64(value),
 		}, nil
 	}
 	return nil, newErrUnknownType(metric.Type())

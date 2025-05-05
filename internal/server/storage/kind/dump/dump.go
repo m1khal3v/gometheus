@@ -201,7 +201,12 @@ func (storage *Storage) restoreFromFile(ctx context.Context) error {
 
 func openFile(filepath string) (*os.File, error) {
 	var file *os.File
-	err := retry.Retry(time.Second, 5*time.Second, 4, 2, func() error {
+	err := retry.Retry(retry.RetryOptions{
+		BaseDelay:  time.Second,
+		MaxDelay:   5 * time.Second,
+		Attempts:   4,
+		Multiplier: 2,
+	}, func() error {
 		var err error
 		file, err = os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 		return err

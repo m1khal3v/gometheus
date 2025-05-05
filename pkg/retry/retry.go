@@ -6,20 +6,24 @@ import (
 	"time"
 )
 
+type RetryOptions struct {
+	BaseDelay  time.Duration
+	MaxDelay   time.Duration
+	Attempts   uint64
+	Multiplier uint64
+}
+
 // Retry - repeats the function execution a specified number of attempts
 // with increasing wait time between them. Stops retrying if the error does not pass the filter
 func Retry(
-	baseDelay,
-	maxDelay time.Duration,
-	attempts,
-	multiplier uint64,
+	options RetryOptions,
 	function func() error,
 	filter func(err error) bool,
 ) error {
 	var err error
-	for i := uint64(0); i < attempts; i++ {
+	for i := uint64(0); i < options.Attempts; i++ {
 		if err = function(); err != nil && (filter == nil || filter(err)) {
-			time.Sleep(calculateDelay(baseDelay, maxDelay, i, multiplier))
+			time.Sleep(calculateDelay(options, i))
 
 			continue
 		}
@@ -46,10 +50,10 @@ func pow(x, y uint64) uint64 {
 	return result
 }
 
-func calculateDelay(baseDelay time.Duration, maxDelay time.Duration, attempt uint64, multiplier uint64) time.Duration {
+func calculateDelay(options RetryOptions, attempt uint64) time.Duration {
 	if attempt == 0 {
-		return min(baseDelay, maxDelay)
+		return min(options.BaseDelay, options.MaxDelay)
 	}
 
-	return min(baseDelay*time.Duration(pow(multiplier, attempt)), maxDelay)
+	return min(options.BaseDelay*time.Duration(pow(options.Multiplier, attempt)), options.MaxDelay)
 }

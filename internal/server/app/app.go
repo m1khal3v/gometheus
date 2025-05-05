@@ -5,10 +5,12 @@ package app
 import (
 	"context"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +21,7 @@ import (
 	"github.com/m1khal3v/gometheus/internal/common/pprof"
 	"github.com/m1khal3v/gometheus/internal/server/config"
 	"github.com/m1khal3v/gometheus/internal/server/router"
+	"github.com/m1khal3v/gometheus/internal/server/rpc"
 	"github.com/m1khal3v/gometheus/internal/server/storage/factory"
 	"go.uber.org/zap"
 )
@@ -54,16 +57,64 @@ func Start(config *config.Config) error {
 		}
 	}
 
-	server := &http.Server{
-		Addr:    config.Address,
-		Handler: router.New(storage, config.Key, privKey),
+	var subnet *net.IPNet
+	if config.TrustedSubnet != "" {
+		_, subnet, err = net.ParseCIDR(config.TrustedSubnet)
+		if err != nil {
+			return err
+		}
 	}
 
-	go func() {
-		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+	var shutdown func(ctx context.Context) error
+
+	if config.Protocol == "http" {
+		// Настройка HTTP-сервера
+		server := &http.Server{
+			Addr:    config.Address,
+			Handler: router.New(storage, config.Key, privKey, subnet),
+		}
+		shutdown = func(ctx context.Context) error {
+			return server.Shutdown(ctx)
+		}
+
+		go func() {
+			if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+				errCancel(err)
+			}
+		}()
+
+	} else {
+		opts := []rpc.ServerOption{}
+		if config.Key != "" {
+			opts = append(opts, rpc.WithHMAC(config.Key, "X-Signature", sha256.New))
+		}
+
+		if privKey != nil {
+			opts = append(opts, rpc.WithTLS(privKey))
+		}
+
+		if subnet != nil {
+			opts = append(opts, rpc.WithSubnet("X-Real-IP", subnet))
+		}
+
+		server, err := rpc.NewGRPCServer(storage, opts...)
+		if err != nil {
 			errCancel(err)
 		}
-	}()
+
+		shutdown = func(ctx context.Context) error {
+			server.Stop()
+
+			return nil
+		}
+
+		go func() {
+			if err := server.Start(config.Address); !errors.Is(err, http.ErrServerClosed) {
+				errCancel(err)
+			}
+		}()
+	}
+
 	go pprof.ListenSignals(suspendCtx, config.CPUProfileFile, config.CPUProfileDuration, config.MemProfileFile)
 
 	select {
@@ -81,7 +132,7 @@ func Start(config *config.Config) error {
 			logger.Logger.Info("Storage was closed successfully")
 		}
 
-		if err := server.Shutdown(timeoutCtx); err != nil {
+		if err := shutdown(timeoutCtx); err != nil {
 			logger.Logger.Error("Failed to shutdown server", zap.Error(err))
 		} else {
 			logger.Logger.Info("Server was shutdown successfully")

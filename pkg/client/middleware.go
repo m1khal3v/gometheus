@@ -74,7 +74,7 @@ func preRequestHookCombine(functions ...preRequestHook) resty.PreRequestHook {
 	}
 }
 
-func (client *Client) encryptRequestBody(request *http.Request) error {
+func (client *HTTPClient) encryptRequestBody(request *http.Request) error {
 	if request.Body == nil {
 		return nil
 	}
@@ -108,7 +108,7 @@ func (client *Client) encryptRequestBody(request *http.Request) error {
 	return nil
 }
 
-func (client *Client) compressRequestBody(request *http.Request) error {
+func (client *HTTPClient) compressRequestBody(request *http.Request) error {
 	if request.Body == nil {
 		return nil
 	}
@@ -134,7 +134,7 @@ func (client *Client) compressRequestBody(request *http.Request) error {
 	return nil
 }
 
-func (client *Client) addHMACSignature(request *http.Request) error {
+func (client *HTTPClient) addHMACSignature(request *http.Request) error {
 	buffer := bytes.NewBuffer([]byte{})
 
 	if request.Body != nil {

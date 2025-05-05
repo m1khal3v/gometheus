@@ -19,7 +19,7 @@ var Analyzer = &analysis.Analyzer{
 	Run:  run,
 }
 
-func init() {
+func SetupAnalyzer() {
 	Analyzer.Flags.StringVar(&flagFunctions, "functions", "", "comma separated functions which are restricted")
 }
 

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package gometheus;
+
+option go_package = "github.com/m1khalev/gometheus/pkg/proto";
+
+import "google/protobuf/wrappers.proto";
+
+service MetricsService {
+  rpc SaveMetric(SaveMetricRequest) returns (SaveMetricResponse);
+  rpc SaveMetrics(SaveMetricsBatchRequest) returns (SaveMetricsBatchResponse);
+}
+
+message SaveMetricRequest {
+  string metric_name = 1;
+  string metric_type = 2;
+  google.protobuf.Int64Value delta = 3;
+  google.protobuf.DoubleValue value = 4;
+}
+
+message SaveMetricResponse {
+  string metric_name = 1;
+  string metric_type = 2;
+  google.protobuf.Int64Value delta = 3;
+  google.protobuf.DoubleValue value = 4;
+}
+
+message SaveMetricsBatchRequest {
+  repeated SaveMetricRequest metrics = 1;
+}
+
+message SaveMetricsBatchResponse {
+  repeated SaveMetricResponse metrics = 1;
+}
+
+message APIError {
+  int32 code = 1;
+  string message = 2;
+  repeated string details = 3;
+}

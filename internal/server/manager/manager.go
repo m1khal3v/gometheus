@@ -15,16 +15,16 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type ErrUnknownMetricType struct {
+type UnknownMetricTypeError struct {
 	MetricType string
 }
 
-func (err ErrUnknownMetricType) Error() string {
+func (err UnknownMetricTypeError) Error() string {
 	return fmt.Sprintf("unsupported metric type: %s", err.MetricType)
 }
 
 func newErrUnknownMetricType(metricType string) error {
-	return &ErrUnknownMetricType{
+	return &UnknownMetricTypeError{
 		MetricType: metricType,
 	}
 }
