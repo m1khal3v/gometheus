@@ -158,7 +158,9 @@ func (client *HTTPClient) doRequest(request *resty.Request, method, url string) 
 	var err error
 
 	if client.config.realIP {
-		realIP, err := client.getRealIP()
+		var realIP net.IP
+
+		realIP, err = client.getRealIP()
 		if err != nil {
 			return nil, err
 		}
