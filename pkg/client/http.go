@@ -228,7 +228,7 @@ func (client *HTTPClient) getRealIP() (net.IP, error) {
 		port = client.config.baseURL.Port()
 	}
 
-	conn, err := net.Dial("udp", client.config.baseURL.Host+":"+port)
+	conn, err := net.Dial("udp", client.config.baseURL.Hostname()+":"+port)
 	if err != nil {
 		return nil, err
 	}

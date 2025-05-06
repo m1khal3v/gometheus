@@ -37,7 +37,7 @@ type Config struct {
 	MemProfileFile     string        `env:"MEM_PROFILE_FILE"`
 	CryptoKey          string        `env:"CRYPTO_KEY"`
 	TrustedSubnet      string        `env:"TRUSTED_SUBNET"`
-	Protocol           string        `env:"Protocol"` // Добавлено поле Platform
+	Protocol           string        `env:"PROTOCOL"`
 }
 
 func ParseConfig() *Config {

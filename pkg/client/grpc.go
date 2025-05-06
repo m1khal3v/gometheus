@@ -188,7 +188,7 @@ func (c *GRPCClient) getRealIP() (net.IP, error) {
 		port = c.config.baseURL.Port()
 	}
 
-	conn, err := net.Dial("udp", c.config.baseURL.Host+":"+port)
+	conn, err := net.Dial("udp", c.config.baseURL.Hostname()+":"+port)
 	if err != nil {
 		return nil, err
 	}
