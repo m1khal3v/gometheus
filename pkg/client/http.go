@@ -155,11 +155,15 @@ func (client *HTTPClient) createRequest(ctx context.Context) *resty.Request {
 }
 
 func (client *HTTPClient) doRequest(request *resty.Request, method, url string) (*resty.Response, error) {
-	realIP, err := client.getRealIP()
-	if err != nil {
-		return nil, err
+	var err error
+
+	if client.config.realIP {
+		realIP, err := client.getRealIP()
+		if err != nil {
+			return nil, err
+		}
+		request.Header.Set("X-Real-IP", realIP.String())
 	}
-	request.Header.Set("X-Real-IP", realIP.String())
 
 	var result *resty.Response = nil
 	do := func() error {

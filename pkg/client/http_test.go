@@ -304,7 +304,7 @@ func (function roundTripFunction) RoundTrip(req *http.Request) (*http.Response, 
 
 func newTestClient(t *testing.T, function roundTripFunction) *HTTPClient {
 	t.Helper()
-	client := NewHTTP("test", WithoutRetry(), withTransport(function))
+	client := NewHTTP("test", WithoutRetry(), withTransport(function), WithoutRealIP())
 
 	return client
 }

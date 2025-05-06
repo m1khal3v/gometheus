@@ -27,6 +27,7 @@ type config struct {
 
 	compress  bool
 	retry     bool
+	realIP    bool
 	publicKey *rsa.PublicKey
 
 	transport http.RoundTripper
@@ -68,6 +69,12 @@ func WithoutCompress() ConfigOption {
 func WithoutRetry() ConfigOption {
 	return func(config *config) {
 		config.retry = false
+	}
+}
+
+func WithoutRealIP() ConfigOption {
+	return func(config *config) {
+		config.realIP = false
 	}
 }
 
