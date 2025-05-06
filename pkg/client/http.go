@@ -228,14 +228,14 @@ func (client *HTTPClient) getRealIP() (net.IP, error) {
 		port = client.config.baseURL.Port()
 	}
 
-	conn, err := net.Dial("udp", client.config.baseURL.Hostname()+":"+port)
+	conn, err := net.Dial("tcp", client.config.baseURL.Hostname()+":"+port)
 	if err != nil {
 		return nil, err
 	}
 
 	defer conn.Close()
 
-	client.realIP = conn.LocalAddr().(*net.UDPAddr).IP
+	client.realIP = conn.LocalAddr().(*net.TCPAddr).IP
 
 	return client.realIP, nil
 }

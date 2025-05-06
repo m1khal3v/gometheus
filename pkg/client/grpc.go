@@ -188,14 +188,14 @@ func (c *GRPCClient) getRealIP() (net.IP, error) {
 		port = c.config.baseURL.Port()
 	}
 
-	conn, err := net.Dial("udp", c.config.baseURL.Hostname()+":"+port)
+	conn, err := net.Dial("tcp", c.config.baseURL.Hostname()+":"+port)
 	if err != nil {
 		return nil, err
 	}
 
 	defer conn.Close()
 
-	c.realIP = conn.LocalAddr().(*net.UDPAddr).IP
+	c.realIP = conn.LocalAddr().(*net.TCPAddr).IP
 
 	return c.realIP, nil
 }
